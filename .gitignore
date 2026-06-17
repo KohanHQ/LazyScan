@@ -1,0 +1,20 @@
+# Secrets — never commit a real .env (only .env.example is tracked)
+.env
+.env.*
+!.env.example
+
+# Node / Bun deps + build output
+node_modules/
+dist/
+build/
+
+# Go build output
+*.exe
+*.test
+*.out
+/image-svc/image-svc
+/mail-svc/mail-svc
+
+# Logs + OS cruft
+*.log
+.DS_Store

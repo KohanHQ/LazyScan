@@ -1,0 +1,17 @@
+{
+  "name": "web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "bun test src/test"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "typescript": "~6.0.3",
+    "vite": "^7.2.4"
+  }
+}

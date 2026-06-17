@@ -1,0 +1,38 @@
+package health
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+)
+
+func TestHandler_Healthz(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	rec := httptest.NewRecorder()
+	Handler(nil).ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rec.Code)
+	}
+	var body struct {
+		Status  string `json:"status"`
+		Service string `json:"service"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("invalid JSON body %q: %v", rec.Body.String(), err)
+	}
+	if body.Status != "ok" || body.Service != "kiln" {
+		t.Errorf("body = %+v, want status=ok service=kiln", body)
+	}
+}
+
+func TestHandler_OtherPath_404(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/anything-else", nil)
+	rec := httptest.NewRecorder()
+	Handler(nil).ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want 404", rec.Code)
+	}
+}

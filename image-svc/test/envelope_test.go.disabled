@@ -1,0 +1,88 @@
+package processor
+
+import (
+	"strings"
+	"testing"
+)
+
+const validRaw = `{
+	"eventId": "0b6cdef0-1234-4abc-9def-0123456789ab",
+	"eventType": "chapter.page.processing_requested",
+	"schemaVersion": 1,
+	"occurredAt": "2026-06-04T10:00:00Z",
+	"aggregateType": "chapter_page",
+	"aggregateId": "7e1f0000-1111-4222-8333-444455556666",
+	"payload": {
+		"importId": "11111111-2222-4333-8444-555566667777",
+		"chapterId": "88888888-9999-4aaa-8bbb-ccccddddeeee",
+		"pageId": "7e1f0000-1111-4222-8333-444455556666"
+	}
+}`
+
+func TestParseEnvelope_Valid(t *testing.T) {
+	env, pl, err := parseEnvelope(validRaw)
+	if err != nil {
+		t.Fatalf("parseEnvelope() error = %v", err)
+	}
+	if env.EventID != "0b6cdef0-1234-4abc-9def-0123456789ab" {
+		t.Errorf("EventID = %q", env.EventID)
+	}
+	if env.EventType != EventTypeProcessingRequested {
+		t.Errorf("EventType = %q", env.EventType)
+	}
+	if env.SchemaVersion != 1 {
+		t.Errorf("SchemaVersion = %d, want 1", env.SchemaVersion)
+	}
+	if pl.PageID != "7e1f0000-1111-4222-8333-444455556666" {
+		t.Errorf("PageID = %q", pl.PageID)
+	}
+	if pl.ImportID == "" || pl.ChapterID == "" {
+		t.Errorf("payload IDs missing: %+v", pl)
+	}
+}
+
+func TestParseEnvelope_UnknownFieldsIgnored(t *testing.T) {
+	raw := strings.Replace(validRaw, `"schemaVersion": 1,`,
+		`"schemaVersion": 1, "futureField": {"nested": true},`, 1)
+	if _, _, err := parseEnvelope(raw); err != nil {
+		t.Errorf("parseEnvelope() error = %v, want unknown fields ignored", err)
+	}
+}
+
+func TestParseEnvelope_Poison(t *testing.T) {
+	cases := map[string]string{
+		"malformed JSON":   `{"eventId": `,
+		"empty eventId":    strings.Replace(validRaw, "0b6cdef0-1234-4abc-9def-0123456789ab", "", 1),
+		"non-UUID eventId": strings.Replace(validRaw, "0b6cdef0-1234-4abc-9def-0123456789ab", "not-a-uuid-but-36-characters-long!!!", 1),
+		"missing pageId":   strings.Replace(validRaw, `"pageId": "7e1f0000-1111-4222-8333-444455556666"`, `"pageId": ""`, 1),
+		"payload is array": `{
+			"eventId": "0b6cdef0-1234-4abc-9def-0123456789ab",
+			"eventType": "chapter.page.processing_requested",
+			"schemaVersion": 1,
+			"payload": [1, 2, 3]
+		}`,
+		"double-encoded payload (jsonb gotcha)": `{
+			"eventId": "0b6cdef0-1234-4abc-9def-0123456789ab",
+			"eventType": "chapter.page.processing_requested",
+			"schemaVersion": 1,
+			"payload": "{\"importId\":\"x\",\"chapterId\":\"y\",\"pageId\":\"z\"}"
+		}`,
+	}
+	for name, raw := range cases {
+		if _, _, err := parseEnvelope(raw); err == nil {
+			t.Errorf("parseEnvelope(%s) = nil error, want poison", name)
+		}
+	}
+}
+
+func TestIsUUID(t *testing.T) {
+	if !isUUID("0b6cdef0-1234-4abc-9def-0123456789ab") {
+		t.Error("isUUID(valid) = false")
+	}
+	for _, s := range []string{"", "short", "0b6cdef0-1234-4abc-9def-0123456789aZ",
+		"0b6cdef0x1234-4abc-9def-0123456789ab"} {
+		if isUUID(s) {
+			t.Errorf("isUUID(%q) = true, want false", s)
+		}
+	}
+}

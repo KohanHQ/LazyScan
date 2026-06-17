@@ -1,0 +1,655 @@
+.reader-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #141a22;
+}
+
+.reader-shell-vertical .reader-viewport {
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow-y: auto;
+}
+
+.reader-shell-vertical .reader-page-image {
+  position: relative;
+  max-width: 100%;
+  height: auto;
+}
+
+.reader-shell-vertical .reader-vertical-hint {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #8a8278;
+  font-size: 0.78rem;
+  background: rgba(24, 34, 43, 0.85);
+  padding: 6px 12px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.reader-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #18222b;
+  border-bottom: 1px solid #283441;
+  color: #e8e4dd;
+  font-size: 0.875rem;
+}
+
+.reader-back {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: #8a8278;
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.reader-back:hover,
+.reader-back:focus-visible {
+  color: #e8e4dd;
+  background: #1f2a35;
+}
+
+.reader-header-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reader-chapter-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #e8e4dd;
+  font-weight: 700;
+}
+
+.reader-chapter-number {
+  color: #8a8278;
+  font-size: 0.78rem;
+}
+
+.reader-page-counter {
+  color: #8a8278;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reader-settings-btn,
+.reader-fullscreen-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  color: #8a8278;
+  font-size: 1rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  min-width: 28px;
+}
+
+.reader-btn-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.reader-settings-btn:hover,
+.reader-settings-btn:focus-visible,
+.reader-fullscreen-btn:hover,
+.reader-fullscreen-btn:focus-visible {
+  color: #e8e4dd;
+  background: #1f2a35;
+}
+
+.reader-viewport {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #141a22;
+  min-height: 0;
+}
+
+.reader-viewport-scroll {
+  display: block;
+  overflow-y: auto;
+}
+
+.reader-viewport-scroll .reader-page-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.reader-page-image {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 120px);
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+.reader-fit-width {
+  max-width: 100%;
+  max-height: calc(100vh - 120px);
+  object-fit: contain;
+}
+
+.reader-fit-height {
+  max-width: none;
+  max-height: calc(100vh - 120px);
+  width: auto;
+  object-fit: contain;
+}
+
+.reader-fit-original {
+  max-width: none;
+  max-height: none;
+  width: auto;
+  height: auto;
+}
+
+.reader-shell-vertical .reader-fit-width,
+.reader-shell-vertical .reader-fit-height,
+.reader-shell-vertical .reader-fit-original {
+  max-width: 100%;
+  max-height: none;
+  width: 100%;
+  height: auto;
+}
+
+.reader-image-loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #141a22;
+  z-index: 0;
+}
+
+.reader-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #283441;
+  border-top-color: #0f6f5c;
+  border-radius: 50%;
+  animation: reader-spin 0.8s linear infinite;
+}
+
+@keyframes reader-spin {
+  to { transform: rotate(360deg); }
+}
+
+.reader-image-error {
+  color: #8a8278;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 20px;
+}
+
+.reader-tap-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.reader-tap-left {
+  left: 0;
+  width: 30%;
+}
+
+.reader-tap-center {
+  left: 30%;
+  right: 30%;
+}
+
+.reader-tap-right {
+  right: 0;
+  width: 30%;
+}
+
+/* "You're caught up" end card: a synthetic view past the last page, shown only
+   when stepping forward with no next chapter. Tap-left/‹/arrows return to the
+   last page; the button exits to the title page. */
+.reader-endcard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  padding: 24px;
+  text-align: center;
+}
+
+.reader-endcard-eyebrow {
+  margin: 0;
+  color: #2dd4a8;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.reader-endcard-title {
+  margin: 0;
+  color: #e8e4dd;
+  font-size: 1.6rem;
+}
+
+.reader-endcard-sub {
+  margin: 0 0 14px;
+  color: #8a8278;
+  font-size: 0.92rem;
+}
+
+.reader-endcard-back {
+  position: relative;
+  z-index: 5; /* above the tap zones so the click is the button's */
+  padding: 9px 18px;
+  border: 1px solid #283441;
+  border-radius: 8px;
+  background: #18222b;
+  color: #e8e4dd;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reader-endcard-back:hover,
+.reader-endcard-back:focus-visible {
+  border-color: #2dd4a8;
+  color: #2dd4a8;
+}
+
+/* Compact centered control bar: « ‹ page › » | chapters ⚙. The footer strip
+   shares the shell background so the pill reads as floating. It is the anchor
+   for the settings popup. */
+.reader-footer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  background: #141a22;
+}
+
+/* Settings popup above the control bar (direction / fit / preload rows). Each
+   row cycles its setting; the view rebuild keeps the popup open via module
+   state in reader.ts. */
+.reader-settings-pop {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 230px;
+  padding: 6px;
+  background: #18222b;
+  border: 1px solid #283441;
+  border-radius: 10px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  z-index: 30;
+}
+
+.reader-settings-pop.is-open {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reader-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #8a8278;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.reader-settings-row:hover,
+.reader-settings-row:focus-visible {
+  color: #e8e4dd;
+  background: #1f2a35;
+}
+
+.reader-settings-name {
+  font-weight: 700;
+}
+
+.reader-settings-value {
+  color: #e8e4dd;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reader-ctrl.is-active {
+  color: #e8e4dd;
+  background: #1f2a35;
+}
+
+.reader-controlbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  background: #18222b;
+  border: 1px solid #283441;
+  border-radius: 10px;
+}
+
+.reader-ctrl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #8a8278;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.reader-ctrl:hover,
+.reader-ctrl:focus-visible {
+  color: #e8e4dd;
+  background: #1f2a35;
+}
+
+.reader-ctrl-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: #283441;
+}
+
+.reader-footer .reader-page-counter {
+  padding: 0 10px;
+}
+
+/* Progress save status chip. Successful saves are silent (per-page "Saved"
+   read as noise); only "Save failed" surfaces, cleared by the next successful
+   save. Empty (no state) collapses so the control bar keeps its compact width. */
+.reader-save-status {
+  padding: 0 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reader-save-status:not([data-state]),
+.reader-save-status[data-state=""] {
+  display: none;
+}
+
+.reader-save-status[data-state="failed"] {
+  color: #e2705f;
+}
+
+.reader-chapter-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+}
+
+.reader-chapter-overlay-open {
+  display: flex;
+}
+
+.reader-chapter-overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.reader-chapter-overlay-panel {
+  position: relative;
+  z-index: 1;
+  width: min(420px, 90vw);
+  max-height: 80vh;
+  margin: auto;
+  background: #18222b;
+  border: 1px solid #283441;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.reader-chapter-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #283441;
+}
+
+.reader-chapter-overlay-header h3 {
+  margin: 0;
+  color: #e8e4dd;
+  font-size: 1rem;
+}
+
+.reader-chapter-overlay-search {
+  padding: 10px 16px;
+  border-bottom: 1px solid #283441;
+}
+
+.reader-chapter-overlay-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  background: #0f1820;
+  border: 1px solid #283441;
+  border-radius: 6px;
+  color: #e8e4dd;
+  font-size: 0.875rem;
+}
+
+.reader-chapter-overlay-search-input::placeholder {
+  color: #5f6b75;
+}
+
+.reader-chapter-overlay-search-input:focus {
+  outline: none;
+  border-color: #0f6f5c;
+}
+
+.reader-overlay-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: #8a8278;
+  font-size: 0.875rem;
+}
+
+.reader-close-overlay {
+  border: 0;
+  background: transparent;
+  color: #8a8278;
+  font-size: 1.4rem;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.reader-close-overlay:hover,
+.reader-close-overlay:focus-visible {
+  color: #e8e4dd;
+  background: #1f2a35;
+}
+
+.reader-chapter-overlay-list {
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.reader-overlay-chapter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  color: #e8e4dd;
+}
+
+.reader-overlay-chapter-row:hover,
+.reader-overlay-chapter-row:focus-visible {
+  background: #1f2a35;
+}
+
+.reader-overlay-chapter-current {
+  background: #1f2a35;
+  color: #0f6f5c;
+}
+
+.reader-overlay-chapter-num {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #8a8278;
+  white-space: nowrap;
+  min-width: 50px;
+}
+
+.reader-overlay-chapter-current .reader-overlay-chapter-num {
+  color: #0f6f5c;
+}
+
+.reader-overlay-chapter-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+}
+
+:fullscreen .reader-header,
+:fullscreen .reader-footer {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  /* While hidden, do not intercept taps: they sit above the full-height
+     reader-tap-zone (z-index 1), so on touch (no :hover) they would otherwise
+     swallow page-turn/menu taps in the top and bottom strips. */
+  pointer-events: none;
+}
+
+:fullscreen .reader-header {
+  top: 0;
+}
+
+:fullscreen .reader-footer {
+  bottom: 0;
+}
+
+:fullscreen .reader-shell:hover .reader-header,
+:fullscreen .reader-shell:hover .reader-footer {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+:fullscreen .reader-viewport {
+  min-height: 100vh;
+}
+
+:fullscreen .reader-fit-width,
+:fullscreen .reader-fit-height {
+  max-height: 100vh;
+}
+
+:fullscreen .reader-fit-original {
+  max-height: none;
+}
+
+:fullscreen .reader-tap-zone {
+  min-height: 100vh;
+}
+
+@media (max-width: 720px) {
+  .reader-header {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .reader-back {
+    padding: 4px 6px;
+    font-size: 0.8rem;
+  }
+
+  .reader-chapter-title {
+    font-size: 0.8rem;
+  }
+
+  .reader-chapter-number {
+    font-size: 0.7rem;
+  }
+
+  .reader-page-counter {
+    font-size: 0.7rem;
+  }
+
+  /* Tight header on phones: drop the text labels, keep the icons + tooltips. */
+  .reader-btn-label {
+    display: none;
+  }
+
+  .reader-page-image {
+    max-height: calc(100vh - 100px);
+  }
+
+  .reader-footer {
+    padding: 8px 10px;
+  }
+
+  .reader-ctrl {
+    min-width: 32px;
+    min-height: 30px;
+    padding: 0 6px;
+  }
+
+  .reader-chapter-overlay-panel {
+    width: 95vw;
+    max-height: 90vh;
+  }
+}
+
+@media (min-width: 1200px) {
+  .reader-page-image {
+    max-height: calc(100vh - 140px);
+  }
+}

@@ -1,0 +1,320 @@
+package processor
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"strings"
+	"testing"
+
+	"github.com/LazyScan/Herald/internal/mailer"
+	"github.com/LazyScan/Herald/internal/store"
+)
+
+var errTransient = errors.New("connection refused")
+
+// fakeStore scripts the narrow Store surface and records writes.
+type fakeStore struct {
+	processed        map[string]bool
+	failures         []store.Failure
+	marked           []string
+	isProcessedErr   error
+	markProcessedErr error
+	recordFailureErr error
+}
+
+func newFakeStore() *fakeStore {
+	return &fakeStore{processed: map[string]bool{}}
+}
+
+func (f *fakeStore) IsProcessed(_ context.Context, eventID string) (bool, error) {
+	if f.isProcessedErr != nil {
+		return false, f.isProcessedErr
+	}
+	return f.processed[eventID], nil
+}
+
+func (f *fakeStore) MarkProcessed(_ context.Context, eventID, eventType string) error {
+	if f.markProcessedErr != nil {
+		return f.markProcessedErr
+	}
+	f.marked = append(f.marked, eventID+"|"+eventType)
+	return nil
+}
+
+func (f *fakeStore) RecordFailure(_ context.Context, failure store.Failure) error {
+	if f.recordFailureErr != nil {
+		return f.recordFailureErr
+	}
+	f.failures = append(f.failures, failure)
+	return nil
+}
+
+type sendCall struct {
+	to, code, expiresAt string
+}
+
+// fakeMailer records sends and returns a scripted error.
+type fakeMailer struct {
+	sends   []sendCall
+	sendErr error
+}
+
+func (f *fakeMailer) SendVerificationCode(_ context.Context, to, code, expiresAt string) error {
+	if f.sendErr != nil {
+		return f.sendErr
+	}
+	f.sends = append(f.sends, sendCall{to, code, expiresAt})
+	return nil
+}
+
+func newHandler(st *fakeStore, m *fakeMailer) (*Handler, *bytes.Buffer) {
+	var buf bytes.Buffer
+	log := slog.New(slog.NewTextHandler(&buf, nil))
+	return New(st, m, log), &buf
+}
+
+func TestHandleSuccess(t *testing.T) {
+	st := newFakeStore()
+	m := &fakeMailer{}
+	h, logs := newHandler(st, m)
+
+	outcome, err := h.Handle(context.Background(), validRaw())
+	if err != nil || outcome != OutcomeAck {
+		t.Fatalf("Handle = %v, %v; want OutcomeAck, nil", outcome, err)
+	}
+	if len(m.sends) != 1 {
+		t.Fatalf("sends = %d, want 1", len(m.sends))
+	}
+	if m.sends[0].to != "person@example.com" || m.sends[0].code != "482917" {
+		t.Errorf("send = %+v", m.sends[0])
+	}
+	if len(st.marked) != 1 || st.marked[0] != testEventID+"|"+EventTypeVerificationRequested {
+		t.Errorf("marked = %v", st.marked)
+	}
+	if len(st.failures) != 0 {
+		t.Errorf("failures = %v, want none", st.failures)
+	}
+	if strings.Contains(logs.String(), "482917") {
+		t.Errorf("log output leaks code:\n%s", logs.String())
+	}
+}
+
+func TestHandleUnparseableLeavesPending(t *testing.T) {
+	st := newFakeStore()
+	m := &fakeMailer{}
+	h, _ := newHandler(st, m)
+
+	outcome, err := h.Handle(context.Background(), "garbage")
+	if err != nil || outcome != OutcomeRetryable {
+		t.Fatalf("Handle = %v, %v; want OutcomeRetryable, nil", outcome, err)
+	}
+	if len(m.sends) != 0 || len(st.marked) != 0 || len(st.failures) != 0 {
+		t.Error("unparseable envelope must not touch mailer or store")
+	}
+}
+
+func TestHandleWrongSchemaVersion(t *testing.T) {
+	st := newFakeStore()
+	m := &fakeMailer{}
+	h, _ := newHandler(st, m)
+
+	raw := strings.Replace(validRaw(), `"schemaVersion": 1`, `"schemaVersion": 2`, 1)
+	outcome, err := h.Handle(context.Background(), raw)
+	if err != nil || outcome != OutcomeAck {
+		t.Fatalf("Handle = %v, %v; want OutcomeAck, nil", outcome, err)
+	}
+	if len(m.sends) != 0 {
+		t.Error("rejected event must not send")
+	}
+	if len(st.marked) != 0 {
+		t.Error("rejected event must not be marked processed")
+	}
+	if len(st.failures) != 1 || st.failures[0].Retryable {
+		t.Fatalf("failures = %+v, want one non-retryable", st.failures)
+	}
+	if st.failures[0].EventID == nil || *st.failures[0].EventID != testEventID {
+		t.Errorf("failure EventID = %v", st.failures[0].EventID)
+	}
+	if st.failures[0].UserID == nil || *st.failures[0].UserID != testUserID {
+		t.Errorf("failure UserID = %v", st.failures[0].UserID)
+	}
+}
+
+func TestHandleUnknownEventType(t *testing.T) {
+	st := newFakeStore()
+	m := &fakeMailer{}
+	h, _ := newHandler(st, m)
+
+	raw := strings.Replace(validRaw(), "auth.email.verification_requested", "auth.email.password_reset_requested", 1)
+	outcome, err := h.Handle(context.Background(), raw)
+	if err != nil || outcome != OutcomeAck {
+		t.Fatalf("Handle = %v, %v; want OutcomeAck, nil", outcome, err)
+	}
+	if len(m.sends) != 0 {
+		t.Error("unknown eventType must not send")
+	}
+	if len(st.marked) != 1 {
+		t.Errorf("marked = %v, want the unknown event recorded", st.marked)
+	}
+	if len(st.failures) != 0 {
+		t.Errorf("failures = %v, want none (forward-compat, not an error)", st.failures)
+	}
+}
+
+func TestHandleDuplicateDelivery(t *testing.T) {
+	st := newFakeStore()
+	st.processed[testEventID] = true
+	m := &fakeMailer{}
+	h, _ := newHandler(st, m)
+
+	outcome, err := h.Handle(context.Background(), validRaw())
+	if err != nil || outcome != OutcomeAck {
+		t.Fatalf("Handle = %v, %v; want OutcomeAck, nil", outcome, err)
+	}
+	if len(m.sends) != 0 {
+		t.Error("duplicate delivery must not re-send")
+	}
+	if len(st.marked) != 0 {
+		t.Error("duplicate delivery must not re-mark")
+	}
+}
+
+func TestHandleTransientSendError(t *testing.T) {
+	st := newFakeStore()
+	m := &fakeMailer{sendErr: errTransient}
+	h, logs := newHandler(st, m)
+
+	outcome, err := h.Handle(context.Background(), validRaw())
+	if outcome != OutcomeRetryable || err == nil {
+		t.Fatalf("Handle = %v, %v; want OutcomeRetryable + error", outcome, err)
+	}
+	if len(st.marked) != 0 || len(st.failures) != 0 {
+		t.Error("transient send failure must leave no durable outcome")
+	}
+	if strings.Contains(logs.String(), "482917") {
+		t.Errorf("log output leaks code:\n%s", logs.String())
+	}
+}
+
+func TestHandlePermanentSendError(t *testing.T) {
+	st := newFakeStore()
+	m := &fakeMailer{sendErr: fmt.Errorf("550 mailbox unavailable: %w", mailer.ErrPermanent)}
+	h, _ := newHandler(st, m)
+
+	outcome, err := h.Handle(context.Background(), validRaw())
+	if err != nil || outcome != OutcomeAck {
+		t.Fatalf("Handle = %v, %v; want OutcomeAck, nil", outcome, err)
+	}
+	if len(st.failures) != 1 || st.failures[0].Retryable {
+		t.Fatalf("failures = %+v, want one non-retryable", st.failures)
+	}
+	if len(st.marked) != 1 {
+		t.Errorf("marked = %v, want processed (outcome is failure, but durable)", st.marked)
+	}
+}
+
+func TestHandleMarkProcessedFailureAfterSend(t *testing.T) {
+	st := newFakeStore()
+	st.markProcessedErr = errTransient
+	m := &fakeMailer{}
+	h, _ := newHandler(st, m)
+
+	outcome, err := h.Handle(context.Background(), validRaw())
+	if outcome != OutcomeRetryable || err == nil {
+		t.Fatalf("Handle = %v, %v; want OutcomeRetryable + error (redelivery re-sends)", outcome, err)
+	}
+	if len(m.sends) != 1 {
+		t.Errorf("sends = %d, want 1", len(m.sends))
+	}
+}
+
+func TestHandleIsProcessedError(t *testing.T) {
+	st := newFakeStore()
+	st.isProcessedErr = errTransient
+	m := &fakeMailer{}
+	h, _ := newHandler(st, m)
+
+	outcome, err := h.Handle(context.Background(), validRaw())
+	if outcome != OutcomeRetryable || err == nil {
+		t.Fatalf("Handle = %v, %v; want OutcomeRetryable + error", outcome, err)
+	}
+	if len(m.sends) != 0 {
+		t.Error("must not send when dedup check fails")
+	}
+}
+
+func TestHandlePoisonParsedEvent(t *testing.T) {
+	st := newFakeStore()
+	m := &fakeMailer{}
+	h, logs := newHandler(st, m)
+
+	outcome, err := h.HandlePoison(context.Background(), validRaw(), 5)
+	if err != nil || outcome != OutcomeAck {
+		t.Fatalf("HandlePoison = %v, %v; want OutcomeAck, nil", outcome, err)
+	}
+	if len(st.failures) != 1 || st.failures[0].Retryable {
+		t.Fatalf("failures = %+v, want one non-retryable", st.failures)
+	}
+	if st.failures[0].EventID == nil || st.failures[0].UserID == nil {
+		t.Error("parsed poison must carry eventId and userId")
+	}
+	if len(st.marked) != 1 {
+		t.Errorf("marked = %v, want poisoned event recorded", st.marked)
+	}
+	if strings.Contains(logs.String(), "482917") {
+		t.Errorf("log output leaks code:\n%s", logs.String())
+	}
+}
+
+func TestHandlePoisonAlreadyProcessed(t *testing.T) {
+	st := newFakeStore()
+	st.processed[testEventID] = true
+	m := &fakeMailer{}
+	h, _ := newHandler(st, m)
+
+	outcome, err := h.HandlePoison(context.Background(), validRaw(), 5)
+	if err != nil || outcome != OutcomeAck {
+		t.Fatalf("HandlePoison = %v, %v; want OutcomeAck, nil", outcome, err)
+	}
+	if len(st.failures) != 0 {
+		t.Errorf("failures = %v, want none (success-then-lost-ack)", st.failures)
+	}
+}
+
+func TestHandlePoisonGarbage(t *testing.T) {
+	st := newFakeStore()
+	m := &fakeMailer{}
+	h, _ := newHandler(st, m)
+
+	outcome, err := h.HandlePoison(context.Background(), "garbage", 5)
+	if err != nil || outcome != OutcomeAck {
+		t.Fatalf("HandlePoison = %v, %v; want OutcomeAck, nil", outcome, err)
+	}
+	if len(st.failures) != 1 {
+		t.Fatalf("failures = %d, want 1", len(st.failures))
+	}
+	if st.failures[0].EventID != nil || st.failures[0].UserID != nil {
+		t.Error("garbage poison must carry NULL ids")
+	}
+	if st.failures[0].RawEvent != "garbage" {
+		t.Errorf("RawEvent = %q", st.failures[0].RawEvent)
+	}
+	if len(st.marked) != 0 {
+		t.Error("unparsed poison must not be marked processed")
+	}
+}
+
+func TestHandlePoisonRecordFailureError(t *testing.T) {
+	st := newFakeStore()
+	st.recordFailureErr = errTransient
+	m := &fakeMailer{}
+	h, _ := newHandler(st, m)
+
+	outcome, err := h.HandlePoison(context.Background(), validRaw(), 5)
+	if outcome != OutcomeRetryable || err == nil {
+		t.Fatalf("HandlePoison = %v, %v; want OutcomeRetryable + error", outcome, err)
+	}
+}

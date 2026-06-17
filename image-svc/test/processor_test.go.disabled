@@ -1,0 +1,485 @@
+package processor
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"log/slog"
+	"strings"
+	"testing"
+
+	"github.com/LazyScan/Kiln/internal/convert"
+	"github.com/LazyScan/Kiln/internal/storage"
+	"github.com/LazyScan/Kiln/internal/store"
+)
+
+var errTransient = errors.New("connection refused")
+
+type readyCall struct {
+	pageID, importID, imageURL string
+	width, height, sizeBytes   int
+}
+
+type failCall struct {
+	pageID, importID, errorMessage string
+}
+
+// fakeStore scripts the narrow Store surface and records writes.
+type fakeStore struct {
+	processed             map[string]bool
+	pages                 map[string]store.Page
+	failures              []store.Failure
+	marked                []string
+	processingMarked      []string
+	readyCalls            []readyCall
+	failedCalls           []failCall
+	isProcessedErr        error
+	markProcessedErr      error
+	loadPageErr           error
+	recordFailureErr      error
+	markPageProcessingErr error
+	markPageReadyErr      error
+	markPageFailedErr     error
+}
+
+func newFakeStore() *fakeStore {
+	return &fakeStore{
+		processed: map[string]bool{},
+		pages:     map[string]store.Page{},
+	}
+}
+
+func (f *fakeStore) IsProcessed(_ context.Context, eventID string) (bool, error) {
+	if f.isProcessedErr != nil {
+		return false, f.isProcessedErr
+	}
+	return f.processed[eventID], nil
+}
+
+func (f *fakeStore) MarkProcessed(_ context.Context, eventID, eventType string) error {
+	if f.markProcessedErr != nil {
+		return f.markProcessedErr
+	}
+	f.marked = append(f.marked, eventID+"|"+eventType)
+	return nil
+}
+
+func (f *fakeStore) LoadPage(_ context.Context, pageID string) (store.Page, error) {
+	if f.loadPageErr != nil {
+		return store.Page{}, f.loadPageErr
+	}
+	p, ok := f.pages[pageID]
+	if !ok {
+		return store.Page{}, store.ErrPageNotFound
+	}
+	return p, nil
+}
+
+func (f *fakeStore) MarkPageProcessing(_ context.Context, pageID string) error {
+	if f.markPageProcessingErr != nil {
+		return f.markPageProcessingErr
+	}
+	f.processingMarked = append(f.processingMarked, pageID)
+	return nil
+}
+
+func (f *fakeStore) MarkPageReady(_ context.Context, pageID, importID, imageURL string, width, height, sizeBytes int) error {
+	if f.markPageReadyErr != nil {
+		return f.markPageReadyErr
+	}
+	f.readyCalls = append(f.readyCalls, readyCall{pageID, importID, imageURL, width, height, sizeBytes})
+	return nil
+}
+
+func (f *fakeStore) MarkPageFailed(_ context.Context, pageID, importID, errorMessage string) error {
+	if f.markPageFailedErr != nil {
+		return f.markPageFailedErr
+	}
+	f.failedCalls = append(f.failedCalls, failCall{pageID, importID, errorMessage})
+	return nil
+}
+
+func (f *fakeStore) RecordFailure(_ context.Context, fail store.Failure) error {
+	if f.recordFailureErr != nil {
+		return f.recordFailureErr
+	}
+	f.failures = append(f.failures, fail)
+	return nil
+}
+
+// fakeObjects scripts the ObjectStore surface and records uploads.
+type fakeObjects struct {
+	objects     map[string][]byte
+	uploads     map[string][]byte
+	contentType string
+	downloadErr error
+	uploadErr   error
+}
+
+func newFakeObjects() *fakeObjects {
+	return &fakeObjects{objects: map[string][]byte{}, uploads: map[string][]byte{}}
+}
+
+func (f *fakeObjects) Download(_ context.Context, key string) ([]byte, error) {
+	if f.downloadErr != nil {
+		return nil, f.downloadErr
+	}
+	data, ok := f.objects[key]
+	if !ok {
+		return nil, fmt.Errorf("object %s: %w", key, storage.ErrObjectNotFound)
+	}
+	return data, nil
+}
+
+func (f *fakeObjects) Upload(_ context.Context, key string, data []byte, contentType, _ string) error {
+	if f.uploadErr != nil {
+		return f.uploadErr
+	}
+	f.uploads[key] = data
+	f.contentType = contentType
+	return nil
+}
+
+// fakeConverter returns a scripted result.
+type fakeConverter struct {
+	result convert.Result
+	err    error
+}
+
+func (f *fakeConverter) Convert(_ []byte) (convert.Result, error) {
+	if f.err != nil {
+		return convert.Result{}, f.err
+	}
+	return f.result, nil
+}
+
+const (
+	testEventID  = "0b6cdef0-1234-4abc-9def-0123456789ab"
+	testPageID   = "7e1f0000-1111-4222-8333-444455556666"
+	testImportID = "11111111-2222-4333-8444-555566667777"
+
+	testOriginalKey = "imports/x/originals/001-page.jpg"
+	testStorageKey  = "manga/slug/chapters/c/pages/001.webp"
+)
+
+func newHandler(f *fakeStore, o *fakeObjects, c *fakeConverter) *Handler {
+	// Trailing slash on the domain exercises the trim (getPublicUrl parity).
+	return New(f, o, c, "http://localhost:9000/lazyscan/", slog.New(slog.NewTextHandler(io.Discard, nil)))
+}
+
+func newWorkingFixture(pageStatus string) (*fakeStore, *fakeObjects, *fakeConverter) {
+	f := newFakeStore()
+	f.pages[testPageID] = store.Page{
+		ID:          testPageID,
+		ImportID:    testImportID,
+		ChapterID:   "88888888-9999-4aaa-8bbb-ccccddddeeee",
+		PageNumber:  1,
+		OriginalKey: testOriginalKey,
+		StorageKey:  testStorageKey,
+		Status:      pageStatus,
+	}
+	o := newFakeObjects()
+	o.objects[testOriginalKey] = []byte("original-jpeg-bytes")
+	c := &fakeConverter{result: convert.Result{WebP: []byte("webp-bytes"), Width: 800, Height: 1200}}
+	return f, o, c
+}
+
+func TestHandle_ProcessesPage(t *testing.T) {
+	f, o, c := newWorkingFixture("processing")
+	out, err := newHandler(f, o, c).Handle(context.Background(), validRaw)
+	if err != nil || out != OutcomeAck {
+		t.Fatalf("Handle() = (%v, %v), want (OutcomeAck, nil)", out, err)
+	}
+	if len(f.processingMarked) != 1 || f.processingMarked[0] != testPageID {
+		t.Errorf("processingMarked = %v, want [%s]", f.processingMarked, testPageID)
+	}
+	if got, ok := o.uploads[testStorageKey]; !ok || string(got) != "webp-bytes" {
+		t.Errorf("uploads = %v, want webp at %s", o.uploads, testStorageKey)
+	}
+	if o.contentType != "image/webp" {
+		t.Errorf("contentType = %q, want image/webp", o.contentType)
+	}
+	if len(f.readyCalls) != 1 {
+		t.Fatalf("readyCalls = %v, want one", f.readyCalls)
+	}
+	ready := f.readyCalls[0]
+	wantURL := "http://localhost:9000/lazyscan/" + testStorageKey
+	if ready.imageURL != wantURL {
+		t.Errorf("imageURL = %q, want %q", ready.imageURL, wantURL)
+	}
+	if ready.importID != testImportID || ready.width != 800 || ready.height != 1200 || ready.sizeBytes != len("webp-bytes") {
+		t.Errorf("readyCall = %+v, want import/dimensions/size from the row and converter", ready)
+	}
+	if len(f.marked) != 1 || !strings.HasPrefix(f.marked[0], testEventID) {
+		t.Errorf("marked = %v, want one entry for %s", f.marked, testEventID)
+	}
+	if len(f.failures) != 0 || len(f.failedCalls) != 0 {
+		t.Errorf("failures = %v / %v, want none", f.failures, f.failedCalls)
+	}
+}
+
+func TestHandle_DedupHit(t *testing.T) {
+	f, o, c := newWorkingFixture("processing")
+	f.processed[testEventID] = true
+	out, err := newHandler(f, o, c).Handle(context.Background(), validRaw)
+	if err != nil || out != OutcomeAck {
+		t.Fatalf("Handle() = (%v, %v), want (OutcomeAck, nil)", out, err)
+	}
+	if len(f.marked) != 0 || len(f.readyCalls) != 0 || len(o.uploads) != 0 {
+		t.Errorf("writes happened on dedup hit: marked=%v ready=%v uploads=%v", f.marked, f.readyCalls, o.uploads)
+	}
+}
+
+func TestHandle_ReadyIsTerminal(t *testing.T) {
+	f, o, c := newWorkingFixture("ready")
+	out, err := newHandler(f, o, c).Handle(context.Background(), validRaw)
+	if err != nil || out != OutcomeAck {
+		t.Fatalf("Handle() = (%v, %v), want (OutcomeAck, nil)", out, err)
+	}
+	if len(f.marked) != 1 {
+		t.Errorf("marked = %v, want processed-row for terminal no-op", f.marked)
+	}
+	if len(f.processingMarked) != 0 || len(o.uploads) != 0 || len(f.readyCalls) != 0 {
+		t.Errorf("ready page was touched: processing=%v uploads=%v ready=%v",
+			f.processingMarked, o.uploads, f.readyCalls)
+	}
+}
+
+func TestHandle_PageMissing(t *testing.T) {
+	f := newFakeStore() // no page seeded
+	out, err := newHandler(f, newFakeObjects(), &fakeConverter{}).Handle(context.Background(), validRaw)
+	if err != nil || out != OutcomeAck {
+		t.Fatalf("Handle() = (%v, %v), want (OutcomeAck, nil)", out, err)
+	}
+	if len(f.marked) != 1 {
+		t.Errorf("marked = %v, want processed-row for stale event", f.marked)
+	}
+	if len(f.failures) != 0 {
+		t.Errorf("failures = %v, want none (deleted page is not a failure)", f.failures)
+	}
+}
+
+func TestHandle_UnparseableLeavesPending(t *testing.T) {
+	f := newFakeStore()
+	out, err := newHandler(f, newFakeObjects(), &fakeConverter{}).Handle(context.Background(), `{"eventId": `)
+	if err != nil || out != OutcomeRetryable {
+		t.Fatalf("Handle() = (%v, %v), want (OutcomeRetryable, nil)", out, err)
+	}
+	if len(f.marked) != 0 || len(f.failures) != 0 {
+		t.Errorf("writes happened on unparseable input: marked=%v failures=%v", f.marked, f.failures)
+	}
+}
+
+func TestHandle_SchemaVersionRejected(t *testing.T) {
+	f := newFakeStore()
+	raw := strings.Replace(validRaw, `"schemaVersion": 1`, `"schemaVersion": 2`, 1)
+	out, err := newHandler(f, newFakeObjects(), &fakeConverter{}).Handle(context.Background(), raw)
+	if err != nil || out != OutcomeAck {
+		t.Fatalf("Handle() = (%v, %v), want (OutcomeAck, nil)", out, err)
+	}
+	if len(f.failures) != 1 || f.failures[0].Retryable {
+		t.Fatalf("failures = %+v, want one non-retryable", f.failures)
+	}
+	if f.failures[0].RawEvent != raw {
+		t.Error("failure row missing raw event")
+	}
+	if len(f.marked) != 0 {
+		t.Errorf("marked = %v, want none (rejected, not handled)", f.marked)
+	}
+}
+
+func TestHandle_UnknownEventType(t *testing.T) {
+	f := newFakeStore()
+	raw := strings.Replace(validRaw, "chapter.page.processing_requested", "chapter.page.deleted", 1)
+	out, err := newHandler(f, newFakeObjects(), &fakeConverter{}).Handle(context.Background(), raw)
+	if err != nil || out != OutcomeAck {
+		t.Fatalf("Handle() = (%v, %v), want (OutcomeAck, nil)", out, err)
+	}
+	if len(f.marked) != 1 {
+		t.Errorf("marked = %v, want processed-row for forward-compat skip", f.marked)
+	}
+	if len(f.failures) != 0 {
+		t.Errorf("failures = %v, want none", f.failures)
+	}
+}
+
+func TestHandle_OriginalMissingFailsPage(t *testing.T) {
+	f, o, c := newWorkingFixture("processing")
+	delete(o.objects, testOriginalKey)
+	out, err := newHandler(f, o, c).Handle(context.Background(), validRaw)
+	if err != nil || out != OutcomeAck {
+		t.Fatalf("Handle() = (%v, %v), want (OutcomeAck, nil)", out, err)
+	}
+	if len(f.failedCalls) != 1 || f.failedCalls[0].pageID != testPageID || f.failedCalls[0].importID != testImportID {
+		t.Fatalf("failedCalls = %+v, want page %s failed", f.failedCalls, testPageID)
+	}
+	if len(f.failures) != 1 || f.failures[0].Retryable || f.failures[0].RawEvent != validRaw {
+		t.Fatalf("failures = %+v, want one non-retryable with raw event", f.failures)
+	}
+	if len(f.marked) != 1 {
+		t.Errorf("marked = %v, want processed-row (failure is a handled outcome)", f.marked)
+	}
+	if len(f.readyCalls) != 0 {
+		t.Errorf("readyCalls = %v, want none", f.readyCalls)
+	}
+}
+
+func TestHandle_CorruptImageFailsPage(t *testing.T) {
+	f, o, c := newWorkingFixture("processing")
+	c.err = fmt.Errorf("%w: decode: vips broke", convert.ErrUnprocessable)
+	out, err := newHandler(f, o, c).Handle(context.Background(), validRaw)
+	if err != nil || out != OutcomeAck {
+		t.Fatalf("Handle() = (%v, %v), want (OutcomeAck, nil)", out, err)
+	}
+	if len(f.failedCalls) != 1 {
+		t.Fatalf("failedCalls = %+v, want one", f.failedCalls)
+	}
+	if !strings.Contains(f.failedCalls[0].errorMessage, "unprocessable image") {
+		t.Errorf("errorMessage = %q, want the cause recorded", f.failedCalls[0].errorMessage)
+	}
+	if len(f.failures) != 1 || len(f.marked) != 1 {
+		t.Errorf("failures = %v, marked = %v, want one each", f.failures, f.marked)
+	}
+}
+
+func TestHandle_TransientDownloadRetryable(t *testing.T) {
+	f, o, c := newWorkingFixture("processing")
+	o.downloadErr = errTransient
+	out, _ := newHandler(f, o, c).Handle(context.Background(), validRaw)
+	if out != OutcomeRetryable {
+		t.Fatalf("outcome = %v, want OutcomeRetryable", out)
+	}
+	if len(f.failedCalls) != 0 || len(f.failures) != 0 || len(f.marked) != 0 {
+		t.Errorf("durable writes on transient error: failed=%v failures=%v marked=%v",
+			f.failedCalls, f.failures, f.marked)
+	}
+}
+
+func TestHandle_UploadErrorRetryable(t *testing.T) {
+	f, o, c := newWorkingFixture("processing")
+	o.uploadErr = errTransient
+	out, _ := newHandler(f, o, c).Handle(context.Background(), validRaw)
+	if out != OutcomeRetryable {
+		t.Fatalf("outcome = %v, want OutcomeRetryable (retried upload overwrites same key)", out)
+	}
+	if len(f.readyCalls) != 0 || len(f.marked) != 0 {
+		t.Errorf("durable writes before upload succeeded: ready=%v marked=%v", f.readyCalls, f.marked)
+	}
+}
+
+func TestHandle_TransientErrorsRetryable(t *testing.T) {
+	cases := map[string]func(*fakeStore){
+		"IsProcessed fails":        func(f *fakeStore) { f.isProcessedErr = errTransient },
+		"LoadPage fails":           func(f *fakeStore) { f.loadPageErr = errTransient },
+		"MarkProcessed fails":      func(f *fakeStore) { f.markProcessedErr = errTransient },
+		"MarkPageProcessing fails": func(f *fakeStore) { f.markPageProcessingErr = errTransient },
+		"MarkPageReady fails":      func(f *fakeStore) { f.markPageReadyErr = errTransient },
+	}
+	for name, breakStore := range cases {
+		f, o, c := newWorkingFixture("processing")
+		breakStore(f)
+		out, _ := newHandler(f, o, c).Handle(context.Background(), validRaw)
+		if out != OutcomeRetryable {
+			t.Errorf("%s: outcome = %v, want OutcomeRetryable (no ack without durable write)", name, out)
+		}
+	}
+}
+
+func TestHandlePoison_MarksPageFailed(t *testing.T) {
+	f, o, c := newWorkingFixture("processing")
+	out, err := newHandler(f, o, c).HandlePoison(context.Background(), validRaw, 5)
+	if err != nil || out != OutcomeAck {
+		t.Fatalf("HandlePoison() = (%v, %v), want (OutcomeAck, nil)", out, err)
+	}
+	if len(f.failedCalls) != 1 || f.failedCalls[0].pageID != testPageID {
+		t.Fatalf("failedCalls = %+v, want page %s marked failed (contract step 2)", f.failedCalls, testPageID)
+	}
+	if len(f.failures) != 1 {
+		t.Fatalf("failures = %+v, want one", f.failures)
+	}
+	fail := f.failures[0]
+	if fail.Retryable || fail.RawEvent != validRaw {
+		t.Errorf("failure = %+v, want non-retryable with raw event", fail)
+	}
+	if fail.EventID == nil || *fail.EventID != testEventID {
+		t.Errorf("EventID = %v, want %s", fail.EventID, testEventID)
+	}
+	if fail.PageID == nil || *fail.PageID != testPageID {
+		t.Errorf("PageID = %v, want %s", fail.PageID, testPageID)
+	}
+	if len(f.marked) != 1 {
+		t.Errorf("marked = %v, want processed-row (poisoned event is resolved)", f.marked)
+	}
+}
+
+func TestHandlePoison_AlreadyProcessedAcksQuietly(t *testing.T) {
+	f, o, c := newWorkingFixture("processing")
+	f.processed[testEventID] = true
+	out, err := newHandler(f, o, c).HandlePoison(context.Background(), validRaw, 5)
+	if err != nil || out != OutcomeAck {
+		t.Fatalf("HandlePoison() = (%v, %v), want (OutcomeAck, nil)", out, err)
+	}
+	if len(f.failedCalls) != 0 || len(f.failures) != 0 {
+		t.Errorf("writes on already-processed event: failed=%v failures=%v (success-then-lost-ack)",
+			f.failedCalls, f.failures)
+	}
+}
+
+func TestHandlePoison_ReadyPageNotFailed(t *testing.T) {
+	f, o, c := newWorkingFixture("ready")
+	out, err := newHandler(f, o, c).HandlePoison(context.Background(), validRaw, 5)
+	if err != nil || out != OutcomeAck {
+		t.Fatalf("HandlePoison() = (%v, %v), want (OutcomeAck, nil)", out, err)
+	}
+	if len(f.failedCalls) != 0 {
+		t.Errorf("failedCalls = %+v, want none (`ready` stays terminal)", f.failedCalls)
+	}
+	if len(f.failures) != 1 {
+		t.Errorf("failures = %+v, want the audit row regardless", f.failures)
+	}
+}
+
+func TestHandlePoison_PageMissing(t *testing.T) {
+	f := newFakeStore() // no page seeded
+	out, err := newHandler(f, newFakeObjects(), &fakeConverter{}).HandlePoison(context.Background(), validRaw, 5)
+	if err != nil || out != OutcomeAck {
+		t.Fatalf("HandlePoison() = (%v, %v), want (OutcomeAck, nil)", out, err)
+	}
+	if len(f.failedCalls) != 0 {
+		t.Errorf("failedCalls = %+v, want none (stale event)", f.failedCalls)
+	}
+	if len(f.failures) != 1 || len(f.marked) != 1 {
+		t.Errorf("failures = %v, marked = %v, want one each", f.failures, f.marked)
+	}
+}
+
+func TestHandlePoison_UnparseableStillRecorded(t *testing.T) {
+	f := newFakeStore()
+	out, err := newHandler(f, newFakeObjects(), &fakeConverter{}).HandlePoison(context.Background(), "not json at all", 5)
+	if err != nil || out != OutcomeAck {
+		t.Fatalf("HandlePoison() = (%v, %v), want (OutcomeAck, nil)", out, err)
+	}
+	if len(f.failures) != 1 {
+		t.Fatalf("failures = %+v, want one", f.failures)
+	}
+	fail := f.failures[0]
+	if fail.EventID != nil || fail.PageID != nil {
+		t.Errorf("IDs = (%v, %v), want NULLs for unparseable input", fail.EventID, fail.PageID)
+	}
+	if fail.RawEvent != "not json at all" {
+		t.Error("failure row missing raw event")
+	}
+	if len(f.marked) != 0 {
+		t.Errorf("marked = %v, want none (no eventId to mark)", f.marked)
+	}
+}
+
+func TestHandlePoison_RecordFailureErrorRetryable(t *testing.T) {
+	f := newFakeStore()
+	f.recordFailureErr = errTransient
+	out, _ := newHandler(f, newFakeObjects(), &fakeConverter{}).HandlePoison(context.Background(), validRaw, 5)
+	if out != OutcomeRetryable {
+		t.Errorf("outcome = %v, want OutcomeRetryable (no ack without durable failure row)", out)
+	}
+}

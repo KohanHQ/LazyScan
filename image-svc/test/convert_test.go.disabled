@@ -1,0 +1,117 @@
+package convert
+
+import (
+	"bytes"
+	"errors"
+	"image"
+	"image/color"
+	"image/gif"
+	"image/jpeg"
+	"image/png"
+	"io"
+	"log/slog"
+	"os"
+	"testing"
+
+	"github.com/davidbyttow/govips/v2/vips"
+)
+
+// Needs libvips installed locally (brew install vips) — govips is cgo.
+func TestMain(m *testing.M) {
+	if err := Startup(slog.New(slog.NewTextHandler(io.Discard, nil))); err != nil {
+		panic(err)
+	}
+	code := m.Run()
+	Shutdown()
+	os.Exit(code)
+}
+
+func testImage(w, h int) *image.RGBA {
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	for y := range h {
+		for x := range w {
+			img.Set(x, y, color.RGBA{R: uint8(x % 256), G: uint8(y % 256), B: 128, A: 255})
+		}
+	}
+	return img
+}
+
+func pngBytes(t *testing.T, w, h int) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, testImage(w, h)); err != nil {
+		t.Fatalf("encode png: %v", err)
+	}
+	return buf.Bytes()
+}
+
+func jpegBytes(t *testing.T, w, h int) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, testImage(w, h), &jpeg.Options{Quality: 90}); err != nil {
+		t.Fatalf("encode jpeg: %v", err)
+	}
+	return buf.Bytes()
+}
+
+func TestConvert_DownscalesInside(t *testing.T) {
+	// 2160x4000 exceeds both bounds; fit-inside scale is min(0.5, 0.48).
+	res, err := New().Convert(pngBytes(t, 2160, 4000))
+	if err != nil {
+		t.Fatalf("Convert() error = %v", err)
+	}
+	if res.Width > 1080 || res.Height > 1920 {
+		t.Errorf("dimensions = %dx%d, want inside 1080x1920", res.Width, res.Height)
+	}
+	if res.Height < 1919 {
+		t.Errorf("Height = %d, want the binding dimension at ~1920 (aspect preserved)", res.Height)
+	}
+}
+
+func TestConvert_NeverEnlarges(t *testing.T) {
+	res, err := New().Convert(jpegBytes(t, 100, 150))
+	if err != nil {
+		t.Fatalf("Convert() error = %v", err)
+	}
+	if res.Width != 100 || res.Height != 150 {
+		t.Errorf("dimensions = %dx%d, want 100x150 untouched (withoutEnlargement)", res.Width, res.Height)
+	}
+}
+
+func TestConvert_OutputIsWebP(t *testing.T) {
+	res, err := New().Convert(pngBytes(t, 200, 300))
+	if err != nil {
+		t.Fatalf("Convert() error = %v", err)
+	}
+	if got := vips.DetermineImageType(res.WebP); got != vips.ImageTypeWEBP {
+		t.Errorf("output type = %v, want WebP", got)
+	}
+	if len(res.WebP) == 0 {
+		t.Error("empty output buffer")
+	}
+}
+
+func TestConvert_RejectsOversizeInput(t *testing.T) {
+	_, err := New().Convert(make([]byte, MaxInputBytes+1))
+	if !errors.Is(err, ErrUnprocessable) {
+		t.Errorf("error = %v, want ErrUnprocessable for input over 10MB", err)
+	}
+}
+
+func TestConvert_RejectsGarbage(t *testing.T) {
+	_, err := New().Convert([]byte("definitely not an image"))
+	if !errors.Is(err, ErrUnprocessable) {
+		t.Errorf("error = %v, want ErrUnprocessable for non-image input", err)
+	}
+}
+
+func TestConvert_RejectsUnsupportedFormat(t *testing.T) {
+	var buf bytes.Buffer
+	if err := gif.Encode(&buf, testImage(50, 50), nil); err != nil {
+		t.Fatalf("encode gif: %v", err)
+	}
+	_, err := New().Convert(buf.Bytes())
+	if !errors.Is(err, ErrUnprocessable) {
+		t.Errorf("error = %v, want ErrUnprocessable for GIF (JPEG/PNG/WebP only)", err)
+	}
+}
