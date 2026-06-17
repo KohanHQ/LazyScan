@@ -6,6 +6,7 @@ RUN bun install --frozen-lockfile
 
 COPY index.html tsconfig.json vite.config.ts ./
 COPY public ./public
+COPY assets ./assets
 COPY src ./src
 
 RUN bun run build
@@ -18,6 +19,7 @@ RUN bun install --frozen-lockfile
 
 COPY index.html tsconfig.json vite.config.ts ./
 COPY public ./public
+COPY assets ./assets
 COPY src ./src
 
 EXPOSE 5173
