@@ -62,15 +62,20 @@ export function createApp() {
         }
       })
 
-      .use(authHandler)
-      .use(profileHandler)
-      .use(mangaHandler)
-      .use(uploadHandler)
-      .use(chapterHandler)
-      .use(readerHandler)
-      .use(libraryHandler)
-      .use(readingStatusHandler)
-      .use(adminHandler)
+      // Business routes are versioned under /api/v1 (single origin; nginx proxies
+      // /api → here). Ops endpoints (/health, /metrics) stay at root, unversioned.
+      .use(
+        new Elysia({ prefix: "/api/v1" })
+          .use(authHandler)
+          .use(profileHandler)
+          .use(mangaHandler)
+          .use(uploadHandler)
+          .use(chapterHandler)
+          .use(readerHandler)
+          .use(libraryHandler)
+          .use(readingStatusHandler)
+          .use(adminHandler),
+      )
 
       .get("/health", ({ config }) =>
         success({

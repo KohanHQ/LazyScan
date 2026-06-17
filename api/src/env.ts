@@ -36,6 +36,12 @@ export const envSchema = z.object({
     .enum(["true", "false"])
     .default("true")
     .transform((val) => val === "true"),
+  // Hard storage byte cap (lite self-host): chapter-import admission rejects 507
+  // when projected usage exceeds it. 8 GiB default (under R2's free 10 GB).
+  STORAGE_QUOTA_BYTES: z.coerce.number().int().positive().default(8_589_934_592),
+  // Sync image worker (ex-Kiln) base URL. The API POSTs avatar/cover bytes to
+  // `{IMAGE_SVC_URL}/convert` (replaces the inline `sharp` dependency).
+  IMAGE_SVC_URL: z.string().url().default("http://image-svc:8001"),
   REDIS_URL: z.string().url().default("redis://localhost:6379"),
   APP_URL: z.string().url().default("http://localhost:3000"),
   ENABLE_RATE_LIMIT: z

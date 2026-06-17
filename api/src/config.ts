@@ -90,6 +90,14 @@ export interface AppConfig {
     enabled: boolean;
     intervalMs: number;
   };
+
+  // Sync image worker (ex-Kiln): avatars/covers POST to `${url}/convert`.
+  imageSvc: {
+    url: string;
+  };
+
+  // Hard storage byte cap enforced at chapter-import admission (507 over cap).
+  storageQuotaBytes: number;
 }
 
 export function createConfig(env: Env): AppConfig {
@@ -167,6 +175,12 @@ export function createConfig(env: Env): AppConfig {
       enabled: env.ENABLE_STORAGE_PRUNE,
       intervalMs: env.STORAGE_PRUNE_INTERVAL_MS,
     },
+
+    imageSvc: {
+      url: env.IMAGE_SVC_URL,
+    },
+
+    storageQuotaBytes: env.STORAGE_QUOTA_BYTES,
   };
 }
 

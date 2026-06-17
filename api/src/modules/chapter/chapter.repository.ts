@@ -287,6 +287,17 @@ export async function findPagesByChapterId(chapterId: UUID): Promise<ChapterPage
   return rows.map(mapPage);
 }
 
+// Total stored bytes of processed pages — the storage-quota usage figure. Only
+// 'ready' pages carry size_bytes, so staged/in-flight pages are uncounted.
+export async function sumReadyPageBytes(): Promise<number> {
+  const rows = await db`
+    SELECT COALESCE(SUM(size_bytes), 0)::bigint AS bytes
+    FROM chapter_pages
+    WHERE status = 'ready'
+  `;
+  return Number(rows[0].bytes);
+}
+
 // Reader-visible chapters: processed (status 'ready') AND published by the owner.
 export async function findReadyChaptersByMangaId(mangaId: UUID): Promise<Chapter[]> {
   const rows = await select("chapters", CHAPTER_COLUMNS)

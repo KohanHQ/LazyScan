@@ -45,3 +45,25 @@ Format per finding:
   is clean (a real `cfg.Addr`/`cfg.LogFormat`/`health.NewServer` reference
   could not compile). No actionable issue against the real diff.
 - status: resolved (→ R-002)
+
+## F-003 image-svc /convert response JSON parsed without error handling
+- date: 2026-06-17
+- source: CodeRabbit CLI (`coderabbit review --agent -t uncommitted`), Phase 4 API
+- severity: high (reported critical)
+- location: api/src/shared/upload/image.ts:116
+- problem: `processImageBuffer` called `await response.json()` on the image-svc
+  `/convert` 200 with no guard. A non-JSON/truncated body (proxy error page,
+  partial write) throws a raw error that bubbles to the generic 500 handler
+  instead of a typed upstream-failure response.
+- status: resolved (→ R-003)
+
+## F-004 width/height defaulted to 0 masks malformed convert results
+- date: 2026-06-17
+- source: CodeRabbit CLI (`coderabbit review --agent -t uncommitted`), Phase 4 API
+- severity: low (reported minor)
+- location: api/src/shared/upload/image.ts:126
+- problem: `width: result.width || 0` / `height: result.height || 0` silently
+  stored 0 dimensions when a 200 response lacked them. Mirrored the original
+  `sharp` fallback, but in the HTTP path a dimensionless 200 is a real anomaly
+  (image-svc always returns computed dims) that should surface, not persist.
+- status: resolved (→ R-004)

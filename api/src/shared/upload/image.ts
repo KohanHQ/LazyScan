@@ -1,5 +1,14 @@
-import sharp from "sharp";
-import { badRequest } from "@/shared/http/error";
+import { badRequest, AppError } from "@/shared/http/error";
+import { envSchema } from "@/env";
+import { createConfig, type AppConfig } from "@/config";
+
+// image-svc (ex-Kiln) URL, resolved lazily + memoized so the size-limit guard
+// below stays usable without a fully-populated env (e.g. the unit test).
+let cachedConfig: AppConfig | undefined;
+function imageSvcUrl(): string {
+  cachedConfig ??= createConfig(envSchema.parse(process.env));
+  return cachedConfig.imageSvc.url;
+}
 
 export interface ImageProcessingOptions {
   maxWidth?: number;
@@ -66,54 +75,84 @@ export async function processImageBuffer(
     });
   }
 
-  let image = sharp(buffer).rotate();
-  const metadata = await image.metadata();
-
-  if (!metadata.width || !metadata.height) {
-    throw badRequest("Invalid image file", {
-      code: "INVALID_IMAGE",
-    });
-  }
-
   const maxWidth = options.maxWidth || VERTICAL_READER_IMAGE_OPTIONS.maxWidth;
   const maxHeight = options.maxHeight || VERTICAL_READER_IMAGE_OPTIONS.maxHeight;
+  const quality = options.quality || VERTICAL_READER_IMAGE_OPTIONS.quality;
 
-  if (metadata.width > maxWidth || metadata.height > maxHeight) {
-    image = image.resize(maxWidth, maxHeight, {
-      fit: "inside",
-      withoutEnlargement: true,
+  // Delegate decode/rotate/fit/encode to image-svc (ex-Kiln) over HTTP; it emits
+  // WebP regardless of the requested format, matching every caller's profile.
+  let response: Response;
+  try {
+    response = await fetch(
+      `${imageSvcUrl()}/convert?w=${maxWidth}&h=${maxHeight}&q=${quality}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/octet-stream" },
+        body: new Uint8Array(buffer),
+      },
+    );
+  } catch (cause) {
+    throw new AppError({
+      code: "IMAGE_PROCESSING_UNAVAILABLE",
+      message: "Image processing service is unavailable",
+      status: 502,
+      details: { cause: cause instanceof Error ? cause.message : String(cause) },
     });
   }
 
-  const format = options.format || VERTICAL_READER_IMAGE_OPTIONS.format;
-  const quality = options.quality || VERTICAL_READER_IMAGE_OPTIONS.quality;
-
-  let processedBuffer: Buffer;
-  let contentType: string;
-
-  switch (format) {
-    case "jpeg":
-      processedBuffer = await image.jpeg({ quality }).toBuffer();
-      contentType = "image/jpeg";
-      break;
-    case "png":
-      processedBuffer = await image.png({ quality }).toBuffer();
-      contentType = "image/png";
-      break;
-    case "webp":
-    default:
-      processedBuffer = await image.webp({ quality }).toBuffer();
-      contentType = "image/webp";
-      break;
+  // image-svc returns 422 for an undecodable image (the old null-metadata case).
+  if (response.status === 422) {
+    throw badRequest("Invalid image file", { code: "INVALID_IMAGE" });
+  }
+  if (!response.ok) {
+    throw new AppError({
+      code: "IMAGE_PROCESSING_FAILED",
+      message: "Image processing failed",
+      status: 502,
+      details: { status: response.status },
+    });
   }
 
-  const processedMetadata = await sharp(processedBuffer).metadata();
+  let result: { webp: string; width: number; height: number };
+  try {
+    result = (await response.json()) as {
+      webp: string;
+      width: number;
+      height: number;
+    };
+  } catch (cause) {
+    throw new AppError({
+      code: "IMAGE_PROCESSING_FAILED",
+      message: "Image processing returned an unreadable response",
+      status: 502,
+      details: { cause: cause instanceof Error ? cause.message : String(cause) },
+    });
+  }
+
+  // A 200 must carry the encoded image and real dimensions; surface a malformed
+  // payload as 502 rather than silently storing empty bytes or zero dimensions.
+  if (
+    !result.webp ||
+    !Number.isFinite(result.width) ||
+    !Number.isFinite(result.height) ||
+    result.width <= 0 ||
+    result.height <= 0
+  ) {
+    throw new AppError({
+      code: "IMAGE_PROCESSING_FAILED",
+      message: "Image processing returned an invalid result",
+      status: 502,
+      details: { width: result.width, height: result.height },
+    });
+  }
+
+  const processedBuffer = Buffer.from(result.webp, "base64");
 
   return {
     buffer: processedBuffer,
-    contentType,
-    width: processedMetadata.width || 0,
-    height: processedMetadata.height || 0,
+    contentType: "image/webp",
+    width: result.width,
+    height: result.height,
     size: processedBuffer.length,
   };
 }

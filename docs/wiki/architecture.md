@@ -26,6 +26,8 @@ containers: **postgres, redis, image-svc, mail-svc, api, web**.
 
 - **api** (Bun/Elysia) — REST API. Owns DB migrations. Writes the outbox; an
   in-process dispatcher (`startOutboxDispatcher()`) drains it to Redis streams.
+  Business routes are mounted under `/api/v1`; `/health` + `/metrics` stay at
+  root. Has no inline image lib — avatars/covers convert via image-svc `/convert`.
 - **web** (nginx) — serves the built SPA, proxies `/api` to the API (single
   origin, no CORS). Page uploads go browser → R2 directly via presigned PUT.
 - **image-svc** (Go, ex-Kiln) — consumes `events:chapter-page` (durable bulk

@@ -174,3 +174,15 @@ export function conflict(
     details: input?.details,
   });
 }
+
+export function insufficientStorage(
+  message = "Insufficient storage",
+  input?: { code?: ErrorCode; details?: ErrorDetails },
+): AppError {
+  return new AppError({
+    code: input?.code ?? "INSUFFICIENT_STORAGE",
+    message,
+    status: 507,
+    details: input?.details,
+  });
+}

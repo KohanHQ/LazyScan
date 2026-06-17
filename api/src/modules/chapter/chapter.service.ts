@@ -17,7 +17,7 @@ import {
   UpdateChapterInput,
 } from "@/modules/chapter/chapter.model";
 import { assertUuid } from "@/shared/identity/uuid";
-import { badRequest, notFound } from "@/shared/http/error";
+import { badRequest, insufficientStorage, notFound } from "@/shared/http/error";
 import { logError, logInfo, logWarn } from "@/shared/utility/logger";
 import { withTransaction } from "@/shared/database/transaction";
 import { createStorageService, StorageService } from "@/shared/storage";
@@ -190,6 +190,21 @@ export async function createChapterImport(
   const manga = await mangaService.assertCanManageMangaById(mangaId, user);
 
   const sortedFiles = sortFiles(input.files);
+
+  // Storage hardcap: reject before staging when projected usage exceeds the
+  // quota. Usage counts only 'ready' pages, so this undercounts (see repo note).
+  const incomingBytes = sortedFiles.reduce(
+    (sum, file) => sum + (file.sizeBytes ?? 0),
+    0,
+  );
+  const usedBytes = await repo.sumReadyPageBytes();
+  if (usedBytes + incomingBytes > config.storageQuotaBytes) {
+    throw insufficientStorage("Storage quota exceeded", {
+      code: "STORAGE_QUOTA_EXCEEDED",
+      details: { quotaBytes: config.storageQuotaBytes, usedBytes, incomingBytes },
+    });
+  }
+
   const storage = getStorage();
   const expiresInSeconds = 15 * 60;
   const expiresAt = new Date(

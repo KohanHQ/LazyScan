@@ -34,6 +34,10 @@ type RequestOptions = Omit<RequestInit, "body"> & {
   body?: BodyInit | Record<string, unknown>;
 };
 
+// Versioned API mount (nginx proxies /api → backend). Every module passes a
+// leading-slash path (e.g. "/auth/me"); this prefixes them to "/api/v1/...".
+const API_BASE = "/api/v1";
+
 export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {}
@@ -46,7 +50,7 @@ export async function apiRequest<T>(
     body = JSON.stringify(body);
   }
 
-  const response = await fetch(path, {
+  const response = await fetch(API_BASE + path, {
     ...options,
     body: body as BodyInit | undefined,
     headers,

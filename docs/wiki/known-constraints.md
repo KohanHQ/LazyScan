@@ -20,9 +20,20 @@ live in the module docs — [`modules/image-svc.md`](modules/image-svc.md),
 - **Storage is backend-agnostic; R2 by env.** API and image-svc share one
   `STORAGE_*` S3 client. R2 needs no code change — `region=auto`,
   `forcePathStyle=true`, R2 endpoint. Pages/covers served directly from R2.
-- **8 GiB storage cap** (Phase 4) is a soft gate at chapter-import admission,
-  computed from `SUM(size_bytes) WHERE status='ready'`. It undercounts staged +
-  in-flight originals; the 2 GB margin (8 of R2's free 10) absorbs it.
+  Provider is chosen by `STORAGE_PROVIDER`: `s3`/`minio` read the generic
+  `STORAGE_*` vars; `r2` (the **default**) reads `CLOUDFLARE_*`. The bundled
+  `.env.example`/compose use `STORAGE_*`, so the R2 deploy **must set
+  `STORAGE_PROVIDER=s3`** (else storage reports not-configured). Phase 5 deploy.
+- **API has no inline image lib** (Phase 4 dropped `sharp`). Avatars + covers
+  convert synchronously via image-svc `POST {IMAGE_SVC_URL}/convert` (→ webp);
+  image-svc down → `502` on those uploads. Chapter pages stay async (outbox).
+- **8 GiB storage cap** (Phase 4) gates chapter-import admission: projected
+  `SUM(size_bytes) WHERE status='ready'` + declared incoming `> STORAGE_QUOTA_BYTES`
+  → `507`. It undercounts staged + in-flight originals; the 2 GB margin (8 of
+  R2's free 10) absorbs it, and `ENABLE_STORAGE_PRUNE=true` reclaims staged.
+- **Business routes are versioned under `/api/v1`** (Phase 4); ops endpoints
+  (`/health`, `/metrics`) stay at root, unversioned. nginx proxies the `/api`
+  prefix; `/metrics` is internal-only (never the public web entrypoint).
 
 ## Status enums (DB CHECK-constrained — exact strings)
 

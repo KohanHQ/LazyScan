@@ -54,6 +54,9 @@ function configureTestEnv(databaseUrl: string) {
   process.env.REDIS_URL = "redis://localhost:6379";
   process.env.ENABLE_RATE_LIMIT = "false";
   process.env.ENABLE_CACHE = "false";
+  // Tiny storage cap so a single declared page projects over it; exercises the
+  // 507 admission gate without seeding gigabytes of ready pages.
+  process.env.STORAGE_QUOTA_BYTES = "1000";
   // Hermetic storage: bun test auto-loads api/.env, so a developer's real
   // CLOUDFLARE_*/STORAGE_* credentials would otherwise make storage
   // "configured" and let upload paths reach sharp/real object storage. Tests
@@ -93,6 +96,14 @@ async function resetDatabase(db: Sql<{}>) {
   await db`DROP FUNCTION IF EXISTS update_updated_at_column CASCADE`;
 }
 
+// Business routes are mounted under /api/v1; ops endpoints stay at root.
+const API_BASE = "/api/v1";
+function withBase(path: string): string {
+  return path === "/health" || path.startsWith("/metrics")
+    ? path
+    : API_BASE + path;
+}
+
 function requestJson(
   method: string,
   path: string,
@@ -107,7 +118,7 @@ function requestJson(
     headers.set("cookie", cookie);
   }
 
-  return new Request(`http://localhost${path}`, {
+  return new Request(`http://localhost${withBase(path)}`, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -468,7 +479,7 @@ describe("API smoke baseline", () => {
         }),
       );
       const response = await ctx.app.handle(
-        new Request("http://localhost/upload", {
+        new Request("http://localhost/api/v1/upload", {
           method: "POST",
           headers: { cookie },
           body: form,
@@ -1742,5 +1753,45 @@ describe("reading status", () => {
     // The list and per-manga routes require auth.
     const anonList = await send("GET", "/reading-status/reading");
     expect(anonList.response.status).toBe(401);
+  });
+});
+
+// Storage hardcap: chapter-import admission rejects with 507 when projected
+// usage (ready bytes + declared incoming) exceeds STORAGE_QUOTA_BYTES.
+describe("storage quota gate", () => {
+  test("rejects an over-cap chapter import with 507 before staging", async () => {
+    const unique = Date.now();
+    const cookie = await registerVerified(
+      `quota-${unique}@example.test`,
+      "Correct-password-123!",
+    );
+
+    const createdManga = await send(
+      "POST",
+      "/manga",
+      { title: "Quota Manga", slug: `quota-manga-${unique}`, status: "ongoing" },
+      cookie,
+    );
+    const manga = expectSuccess<{ id: string }>(createdManga.json);
+
+    // The test env sets a tiny STORAGE_QUOTA_BYTES, so one declared 10MB page
+    // already projects over the cap — admission rejects before any staging.
+    const overCap = await send(
+      "POST",
+      `/manga/${manga.id}/chapter`,
+      {
+        title: "Over Cap Chapter",
+        files: [
+          {
+            filename: "001.jpg",
+            contentType: "image/jpeg",
+            sizeBytes: 10 * 1024 * 1024,
+          },
+        ],
+      },
+      cookie,
+    );
+    expect(overCap.response.status).toBe(507);
+    expect(overCap.json.error?.code).toBe("STORAGE_QUOTA_EXCEEDED");
   });
 });

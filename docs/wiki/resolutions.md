@@ -36,3 +36,24 @@ Format per resolution:
   would resolve the pre-image confusion (deferred — diff is verified correct).
 - constraints honored: no code touched; preserved existing behavior; no
   speculative fix applied to a false positive.
+
+## R-003 Guard the convert response parse  (resolves F-003)
+- date: 2026-06-17
+- change: Wrapped `response.json()` in try/catch; a parse failure now throws
+  `AppError 502 IMAGE_PROCESSING_FAILED` with the cause, matching the existing
+  unreachable / non-ok 502 paths in the same function.
+- files: api/src/shared/upload/image.ts
+- verification: `bun run typecheck` clean; `bun run test` 17/17 green; re-review
+  `coderabbit review --agent -t uncommitted` → 0 findings.
+- constraints honored: localized to the new HTTP block; no DTO/contract/signature
+  change; no unrelated cleanup.
+
+## R-004 Validate convert dimensions instead of defaulting to 0  (resolves F-004)
+- date: 2026-06-17
+- change: Reject a 200 missing `webp` or non-positive/non-finite `width`+`height`
+  with `AppError 502 IMAGE_PROCESSING_FAILED`; return the real dims (dropped the
+  `|| 0` fallback).
+- files: api/src/shared/upload/image.ts
+- verification: same run as R-003 (typecheck + 17/17 tests + clean re-review).
+- constraints honored: user-approved deviation from the original `|| 0` (surfaces
+  a real upstream anomaly); confined to the convert path, no contract change.
