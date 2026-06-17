@@ -9,13 +9,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"time"
 
-	"github.com/LazyScan/Herald/internal/mailer"
-	"github.com/LazyScan/Herald/internal/store"
+	"github.com/latoulicious/lazyscan/mail-svc/internal/mailer"
+	"github.com/latoulicious/lazyscan/mail-svc/internal/store"
 )
 
-// EventTypeVerificationRequested is the only event type Herald handles in v1.
+// EventTypeVerificationRequested is the only event type mail-svc handles in v1.
 const EventTypeVerificationRequested = "auth.email.verification_requested"
 
 // Store is the narrow Postgres surface the handler needs (fakeable in tests).
@@ -24,26 +23,6 @@ type Store interface {
 	MarkProcessed(ctx context.Context, eventID, eventType string) error
 	RecordFailure(ctx context.Context, f store.Failure) error
 }
-
-// Observer receives durable-outcome notifications (nil-safe seam; the
-// metrics package implements it). Retryable attempts are not reported —
-// the entry stays pending and the stream gauges carry that signal.
-type Observer interface {
-	// EventProcessed records one event handled to a durable outcome
-	// (outcomeOK, outcomeDedup, or outcomeFailed) and how long it took.
-	EventProcessed(eventType, outcome string, seconds float64)
-	// Poison records one entry poisoned at the delivery threshold.
-	Poison()
-}
-
-// Outcome label values for Observer.EventProcessed: dedup is an
-// idempotency skip, failed is a durable failure, ok is everything else
-// durably acked.
-const (
-	outcomeOK     = "ok"
-	outcomeDedup  = "dedup"
-	outcomeFailed = "failed"
-)
 
 // Outcome tells the consumer what to do with the stream entry. The zero value
 // is deliberately OutcomeRetryable: a code path that forgets to decide leaves
@@ -63,7 +42,6 @@ const (
 type Handler struct {
 	store Store
 	mail  mailer.Mailer
-	obs   Observer
 	log   *slog.Logger
 }
 
@@ -72,26 +50,9 @@ func New(st Store, m mailer.Mailer, log *slog.Logger) *Handler {
 	return &Handler{store: st, mail: m, log: log}
 }
 
-// SetObserver wires the metrics seam; call before the consumer starts. A
-// nil observer keeps the handler silent (tests, rollback).
-func (h *Handler) SetObserver(o Observer) {
-	h.obs = o
-}
-
-// observe reports a durable outcome to the observer, if one is wired.
-// Observation never alters the returned Outcome — ack-after-durable-outcome
-// stays untouched.
-func (h *Handler) observe(eventType, outcome string, start time.Time) {
-	if h.obs == nil {
-		return
-	}
-	h.obs.EventProcessed(eventType, outcome, time.Since(start).Seconds())
-}
-
 // Handle processes one raw envelope (the stream entry's `event` field value).
 // It returns OutcomeAck only after the durable outcome is recorded.
 func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
-	start := time.Now()
 	env, pl, err := parseEnvelope(raw)
 	if err != nil {
 		// Unparseable is poison, but below the delivery threshold the entry
@@ -118,20 +79,18 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 		}
 		h.log.Warn("rejected event: unsupported schemaVersion",
 			"eventId", env.EventID, "schemaVersion", env.SchemaVersion)
-		h.observe(env.EventType, outcomeFailed, start)
 		return OutcomeAck, nil
 	}
 
 	if env.EventType != EventTypeVerificationRequested {
 		// Forward-compat: the stream may carry new auth.email.* event types
-		// before Herald learns them (consumers dispatch on eventType). Record
+		// before mail-svc learns them (consumers dispatch on eventType). Record
 		// processed so redelivery no-ops; no failure row — this is not an
 		// error.
 		if err := h.store.MarkProcessed(ctx, env.EventID, env.EventType); err != nil {
 			return OutcomeRetryable, err
 		}
 		h.log.Warn("ignoring unknown eventType", "eventId", env.EventID, "eventType", env.EventType)
-		h.observe(env.EventType, outcomeOK, start)
 		return OutcomeAck, nil
 	}
 
@@ -143,7 +102,6 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 	}
 	if done {
 		log.Info("duplicate delivery, already processed")
-		h.observe(env.EventType, outcomeDedup, start)
 		return OutcomeAck, nil
 	}
 
@@ -152,7 +110,7 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 			// SMTP permanently rejected the message — redelivery cannot fix
 			// it. Failure row + processed row, then ack: the event was
 			// handled, its outcome is failure (failure taxonomy).
-			return h.failSend(ctx, env, pl, raw, err, start, log)
+			return h.failSend(ctx, env, pl, raw, err, log)
 		}
 		// Transient send failure: leave pending, redelivery retries.
 		log.Warn("send failed, leaving pending", "error", err)
@@ -165,7 +123,6 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 		return OutcomeRetryable, err
 	}
 	log.Info("verification email handled", "email", pl.Email)
-	h.observe(env.EventType, outcomeOK, start)
 	return OutcomeAck, nil
 }
 
@@ -173,7 +130,7 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 // processed-events row — the event was handled, its outcome is failure, so
 // duplicate deliveries dedup instead of re-failing. Any error here leaves the
 // entry pending; every step is idempotent on redelivery.
-func (h *Handler) failSend(ctx context.Context, env Envelope, pl Payload, raw string, cause error, start time.Time, log *slog.Logger) (Outcome, error) {
+func (h *Handler) failSend(ctx context.Context, env Envelope, pl Payload, raw string, cause error, log *slog.Logger) (Outcome, error) {
 	err := h.store.RecordFailure(ctx, store.Failure{
 		EventID:      &env.EventID,
 		UserID:       uuidOrNil(pl.UserID),
@@ -188,7 +145,6 @@ func (h *Handler) failSend(ctx context.Context, env Envelope, pl Payload, raw st
 		return OutcomeRetryable, err
 	}
 	log.Warn("send failed, non-retryable", "error", cause)
-	h.observe(env.EventType, outcomeFailed, start)
 	return OutcomeAck, nil
 }
 
@@ -196,7 +152,6 @@ func (h *Handler) failSend(ctx context.Context, env Envelope, pl Payload, raw st
 // reached the max (contract §Poison messages): failure row with the raw
 // message, then ack.
 func (h *Handler) HandlePoison(ctx context.Context, raw string, deliveries int64) (Outcome, error) {
-	start := time.Now()
 	env, pl, parseErr := parseEnvelope(raw)
 
 	msg := fmt.Sprintf("max deliveries reached (%d)", deliveries)
@@ -214,7 +169,6 @@ func (h *Handler) HandlePoison(ctx context.Context, raw string, deliveries int64
 		if done {
 			h.log.Info("poison threshold on already-processed event, acking",
 				"eventId", env.EventID, "deliveries", deliveries)
-			h.observe(env.EventType, outcomeDedup, start)
 			return OutcomeAck, nil
 		}
 	}
@@ -238,10 +192,6 @@ func (h *Handler) HandlePoison(ctx context.Context, raw string, deliveries int64
 	}
 	h.log.Warn("poison message recorded, acked",
 		"eventId", env.EventID, "userId", pl.UserID, "deliveries", deliveries)
-	h.observe(env.EventType, outcomeFailed, start)
-	if h.obs != nil {
-		h.obs.Poison()
-	}
 	return OutcomeAck, nil
 }
 

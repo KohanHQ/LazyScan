@@ -1,6 +1,5 @@
-# Build context: this repo (the stack compose uses build.context: ./Herald
-# from H6). Aegis pattern: pure-Go static build, no cgo, no web stage —
-# Herald is never web-facing.
+# Build context: mail-svc/ (compose build: ./mail-svc). Pure-Go, no cgo —
+# mail-svc only consumes Redis + sends SMTP, never web-facing beyond /health.
 
 FROM golang:1.26-alpine AS go-build
 WORKDIR /src
@@ -11,18 +10,18 @@ RUN go mod download
 COPY cmd ./cmd
 COPY internal ./internal
 
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/herald ./cmd/herald
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/mail-svc ./cmd/mail-svc
 
 FROM alpine:3.23
 
-RUN adduser -D -H herald
+RUN apk add --no-cache wget && adduser -D -H app
 
-COPY --from=go-build /out/herald /usr/local/bin/herald
+COPY --from=go-build /out/mail-svc /usr/local/bin/mail-svc
 
-USER herald
-EXPOSE 8086
+USER app
+EXPOSE 8002
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:8086/healthz >/dev/null || exit 1
+  CMD wget -qO- http://127.0.0.1:8002/health >/dev/null || exit 1
 
-CMD ["herald"]
+CMD ["mail-svc"]

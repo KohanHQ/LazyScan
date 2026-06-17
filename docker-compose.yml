@@ -46,6 +46,7 @@ services:
       SMTP_USERNAME: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM}
+      SMTP_SSL: ${SMTP_SSL:-false}              # implicit TLS (SMTPS, port 465); mutually exclusive with STARTTLS
       SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
     depends_on:
       postgres: { condition: service_healthy }

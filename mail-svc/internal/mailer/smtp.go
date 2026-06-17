@@ -16,6 +16,7 @@ type SMTPOptions struct {
 	From     string
 	Username string // enables SMTP auth when non-empty
 	Password string
+	SSL      bool // implicit TLS on connect (SMTPS, port 465); mutually exclusive with StartTLS
 	StartTLS bool // mandatory STARTTLS when true, plaintext when false (dev Mailpit)
 }
 
@@ -37,6 +38,11 @@ func NewSMTP(opts SMTPOptions) (*SMTP, error) {
 	clientOpts := []mail.Option{
 		mail.WithPort(opts.Port),
 		mail.WithTLSPolicy(policy),
+	}
+	if opts.SSL {
+		// Implicit TLS (SMTPS, port 465): TLS from the first byte, not a
+		// STARTTLS upgrade. Config bars SSL+StartTLS, so policy stays NoTLS.
+		clientOpts = append(clientOpts, mail.WithSSL())
 	}
 	if opts.Username != "" {
 		clientOpts = append(clientOpts,

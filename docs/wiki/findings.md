@@ -28,3 +28,20 @@ Format per finding:
   original Kiln Dockerfile relied on. Resolved anyway (R-001) by making the
   dependency explicit rather than implicit on BusyBox.
 - status: resolved (→ R-001)
+
+## F-002 Stale compile-error findings from the cmd rename (×4)
+- date: 2026-06-17
+- source: CodeRabbit CLI (`coderabbit review --agent -t uncommitted`), Phase 3 mail-svc strip
+- severity: low (3 reported critical + 1 minor; all stale — see note)
+- location: mail-svc/cmd/mail-svc/main.go, mail-svc/go.mod
+- problem: The review flagged four "compile errors" in the new main.go —
+  (a) `cfg.Addr` + `health.NewServer` at L84, (b) old `internal/health` /
+  `internal/metrics` imports + old module path, (c) `cfg.LogFormat` at L40,
+  (d) error prefix still `"herald:"` near L29.
+- note: All four are verified false positives. The `git mv cmd/herald →
+  cmd/mail-svc` rename made CodeRabbit diff the **pre-image** (the old
+  herald main.go); it flagged removed code as if current. Grep for every
+  cited symbol in the actual main.go → none present, and `go build ./...`
+  is clean (a real `cfg.Addr`/`cfg.LogFormat`/`health.NewServer` reference
+  could not compile). No actionable issue against the real diff.
+- status: resolved (→ R-002)

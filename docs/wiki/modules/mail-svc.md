@@ -1,13 +1,15 @@
 # Module: mail-svc (ex-Herald)
 
 > Salvaged from Herald `docs/wiki/` at Phase 1 scaffold — folded architecture +
-> event-contract into one module doc (Herald had no known-constraints doc).
-> Reflects the **pre-strip** state of the code as copied. Phase 3 (plan §6)
-> strips metrics/OTel/log-framework and must update this doc to match.
+> event-contract into one module doc. **Post-strip (Phase 3, plan §6):**
+> Prometheus metrics, the metrics/health HTTP framework, and the JSON-log
+> framework are removed; module path is `github.com/latoulicious/lazyscan/mail-svc`,
+> env prefix `HERALD_*` → `MAIL_SVC_*`, logging is stdlib `slog` text.
+> The consumer/mailer/processor/store **behavior** is unchanged.
 > Originals: `LazyScan-Stack/Herald/docs/wiki/`.
 >
 > SECURITY: the OTP event payload carries the **plaintext code** — never log it
-> (see Event Contract below). This rule is load-bearing; preserve it in Phase 3.
+> (see Event Contract below). This rule is load-bearing and is preserved.
 
 ---
 
@@ -36,30 +38,22 @@ POST /auth/register
 ## Packages
 
 ```txt
-cmd/herald/        wiring + graceful drain-then-close shutdown
-internal/config/   env parsing (HERALD_*, DATABASE_URL, REDIS_URL)
-internal/consumer/ events:email / herald group — Kiln's XREADGROUP/
-                   XAUTOCLAIM/poison/ack lifecycle, ported; ~10s
-                   XPENDING poll feeds the stream gauges
-                   (StreamObserver seam, O3)
+cmd/mail-svc/      wiring + graceful drain-then-close shutdown;
+                   inline GET /health → 200 on MAIL_SVC_PORT (8002)
+internal/config/   env parsing (MAIL_SVC_*, DATABASE_URL, REDIS_URL,
+                   SMTP_*) — SMTP_SSL and SMTP_STARTTLS mutually exclusive
+internal/consumer/ events:email / herald group — XREADGROUP/
+                   XAUTOCLAIM/poison/ack-after-durable lifecycle
 internal/processor/ envelope parse (incl. double-encode guard) ->
                    schemaVersion check -> dedup -> send ->
-                   MarkProcessed -> ack; never logs the code;
-                   reports durable outcomes (ok|dedup|failed)
-                   through the Observer seam (O3)
-internal/metrics/  Prometheus registry + every herald_* metric
-                   (observability plan O3); the only client_golang
-                   importer; type label clamped to known event types
+                   MarkProcessed -> ack; never logs the code
 internal/mailer/   Mailer interface + ErrPermanent sentinel + go-mail
                    SMTP impl (multipart plain-text + HTML template;
-                   5xx = permanent, else transient; debug logging
-                   never enabled — it dumps the body and the code)
-                   + Log impl kept as the rollback target
+                   SMTPS/STARTTLS/plaintext; 5xx = permanent, else
+                   transient; debug logging never enabled — it dumps
+                   the body and the code) + Log impl (rollback target)
 internal/store/    IsProcessed / MarkProcessed / RecordFailure over
                    herald_processed_events / herald_failures
-internal/health/   /healthz on :8086 (Aegis 8080, Kiln 8085) +
-                   /metrics on the same internal mux when wired
-                   (O3; port unpublished in compose)
 ```
 
 Policy lives in the processor; the consumer only moves messages and obeys
@@ -67,31 +61,28 @@ the returned `Outcome`. The zero value is `OutcomeRetryable` — a code path
 that forgets to decide leaves the message pending, never acks unhandled
 work.
 
-## Metrics (observability plan O3)
+## Observability (stripped in Phase 3)
 
-`/metrics` joins the healthz mux on `HERALD_ADDR` (`:8086`, unpublished in
-compose — Prometheus scrapes over the compose network; Grafana is the only
-human-facing surface). All `herald_*`, same shape as Kiln's:
+The Prometheus `herald_*` metrics, the `/metrics` endpoint, and the
+`processor.Observer` / `consumer.StreamObserver` seams are **removed** —
+along with the `prometheus/client_golang` dependency. The only HTTP surface
+left is `GET /health` → 200 on `MAIL_SVC_PORT` (8002), used by the compose
+healthcheck. Operational signal is `slog` text on stdout (the code is never
+logged). The processor's durable-outcome semantics (sent, dedup, failure,
+poison) are unchanged; only their metric emission is gone.
 
-| Metric | Type | Labels |
-|---|---|---|
-| `herald_events_processed_total` | counter | `type`, `outcome` (`ok`\|`dedup`\|`failed`) |
-| `herald_event_processing_duration_seconds` | histogram | `type` |
-| `herald_stream_pending` | gauge | — (XPENDING count, ~10s poll) |
-| `herald_stream_oldest_pending_seconds` | gauge | — (age of oldest pending entry, from its stream ID) |
-| `herald_poison_total` | counter | — |
+## TLS transport (Phase 3)
 
-Outcome mapping: `dedup` = idempotency skip (IsProcessed hit, poison
-threshold on already-processed); `failed` = durable failure (schemaVersion
-reject, permanent SMTP reject, poison recorded); `ok` = everything else
-durably acked (sent, unknown-eventType skip). Retryable attempts are not
-counted — the entry stays pending and the stream gauges carry that signal.
-The `type` label is clamped to the known event types (`other` otherwise).
-Metrics carry no payload data — the never-log-the-code rule holds. The
-seams (`processor.Observer`, `consumer.StreamObserver`) are nil-safe:
-unwired (tests, rollback) means no metrics, zero behavior change.
-Dependency: `github.com/prometheus/client_golang v1.23.2` (Aegis pin,
-dep-per-phase — O3 is its phase).
+The mailer supports three transports, set by env (`SMTP_SSL` and
+`SMTP_STARTTLS` are mutually exclusive — config rejects both true):
+
+| Want | `SMTP_SSL` | `SMTP_STARTTLS` | Typical port |
+|---|---|---|---|
+| SMTPS / implicit TLS (Sumopod) | `true` | `false` | 465 |
+| STARTTLS upgrade | `false` | `true` | 587 |
+| plaintext (dev Mailpit) | `false` | `false` | 1025 |
+
+`.env.example` ships the Sumopod SMTPS profile (`smtp.sumopod.com`, 465).
 
 ## Bookkeeping tables
 
@@ -116,12 +107,12 @@ Full table: `../../LazyScan/docs/wiki/herald-otp-plan.md §Phases`.
 | H6 | Compose: mailpit + herald — registration flow becomes whole | done 2026-06-06 |
 | **H7** | Web verify UX + wiki updates (LazyScan side) | done 2026-06-06 |
 
-Herald runs in the Atelier stack compose
-(`/Users/konnco/Atelier/docker-compose.yml`, unversioned — repos carry only
-Dockerfiles) alongside `mailpit` (`axllent/mailpit:v1.30.1`, UI
-http://localhost:8025, SMTP :1025, `/mailpit readyz` healthcheck). Herald
-depends on api healthy (migration 023 runs at api boot), postgres, redis,
-and mailpit healthy; `SMTP_HOST=mailpit`, `SMTP_STARTTLS=false`.
+In the LazyScan-lite compose (`docker-compose.yml`), mail-svc builds from
+`./mail-svc` and depends on postgres healthy (migration 023 runs at api boot)
+and redis started. No published port (consumer-only; `/health` is internal to
+the healthcheck). Production SMTP comes from `.env` (Sumopod SMTPS profile by
+default). For a local Mailpit run instead: `SMTP_HOST=mailpit`, `SMTP_PORT=1025`,
+`SMTP_SSL=false`, `SMTP_STARTTLS=false`.
 
 
 ---

@@ -1,6 +1,5 @@
-// Package config parses Herald's environment variables: pipeline connections
-// (Postgres, Redis), SMTP delivery, and consumer tunables (see
-// docs/wiki/running.md).
+// Package config parses mail-svc's environment: pipeline connections
+// (Postgres, Redis), SMTP delivery, and consumer tunables.
 package config
 
 import (
@@ -9,10 +8,9 @@ import (
 	"time"
 )
 
-// Config is the resolved Herald runtime configuration.
+// Config is the resolved mail-svc runtime configuration.
 type Config struct {
-	Addr      string
-	LogFormat string // "text" or "json"
+	Port string // HTTP listen port for GET /health (MAIL_SVC_PORT)
 
 	DatabaseURL string
 	RedisURL    string
@@ -22,6 +20,7 @@ type Config struct {
 	SMTPFrom     string
 	SMTPUsername string // optional; must be set together with SMTPPassword
 	SMTPPassword string
+	SMTPSSL      bool // implicit TLS on connect (SMTPS, port 465); mutually exclusive with SMTPStartTLS
 	SMTPStartTLS bool // mandatory STARTTLS when true, plaintext when false (dev Mailpit)
 
 	ClaimIdle     time.Duration // XAUTOCLAIM min-idle before reclaiming a pending entry
@@ -30,9 +29,9 @@ type Config struct {
 }
 
 const (
-	defaultAddr          = ":8086"
-	defaultLogFormat     = "text"
-	defaultStartTLS      = true // secure default; dev/compose sets SMTP_STARTTLS=false explicitly
+	defaultPort          = "8002"
+	defaultSSL           = false // implicit TLS off by default; SMTPS hosts (port 465) set SMTP_SSL=true
+	defaultStartTLS      = true  // secure default; dev/compose sets SMTP_STARTTLS=false explicitly
 	defaultClaimIdle     = 60 * time.Second
 	defaultMaxDeliveries = 5
 	defaultConcurrency   = 1 // sequential sends; no legacy-parity reason to go higher
@@ -43,8 +42,7 @@ const (
 // SMTP_HOST/PORT/FROM have no defaults and must be set.
 func Load(getenv func(string) string) (*Config, error) {
 	cfg := &Config{
-		Addr:         envOr(getenv, "HERALD_ADDR", defaultAddr),
-		LogFormat:    envOr(getenv, "HERALD_LOG_FORMAT", defaultLogFormat),
+		Port:         envOr(getenv, "MAIL_SVC_PORT", defaultPort),
 		DatabaseURL:  getenv("DATABASE_URL"),
 		RedisURL:     getenv("REDIS_URL"),
 		SMTPHost:     getenv("SMTP_HOST"),
@@ -53,8 +51,8 @@ func Load(getenv func(string) string) (*Config, error) {
 		SMTPPassword: getenv("SMTP_PASSWORD"),
 	}
 
-	if cfg.LogFormat != "text" && cfg.LogFormat != "json" {
-		return nil, fmt.Errorf("HERALD_LOG_FORMAT %q: must be text or json", cfg.LogFormat)
+	if _, err := strconv.Atoi(cfg.Port); err != nil {
+		return nil, fmt.Errorf("MAIL_SVC_PORT %q: must be a port number", cfg.Port)
 	}
 	if cfg.DatabaseURL == "" {
 		return nil, fmt.Errorf("DATABASE_URL: required")
@@ -79,6 +77,13 @@ func Load(getenv func(string) string) (*Config, error) {
 	}
 	cfg.SMTPPort = p
 
+	ssl := envOr(getenv, "SMTP_SSL", strconv.FormatBool(defaultSSL))
+	useSSL, err := strconv.ParseBool(ssl)
+	if err != nil {
+		return nil, fmt.Errorf("SMTP_SSL %q: must be a boolean", ssl)
+	}
+	cfg.SMTPSSL = useSSL
+
 	startTLS := envOr(getenv, "SMTP_STARTTLS", strconv.FormatBool(defaultStartTLS))
 	tls, err := strconv.ParseBool(startTLS)
 	if err != nil {
@@ -86,24 +91,30 @@ func Load(getenv func(string) string) (*Config, error) {
 	}
 	cfg.SMTPStartTLS = tls
 
-	claimIdle := envOr(getenv, "HERALD_CONSUMER_CLAIM_IDLE", defaultClaimIdle.String())
+	// Implicit TLS (SMTPS, port 465) and STARTTLS (port 587) are different
+	// transports — enabling both is a config mistake, not a stacking policy.
+	if cfg.SMTPSSL && cfg.SMTPStartTLS {
+		return nil, fmt.Errorf("SMTP_SSL and SMTP_STARTTLS: mutually exclusive (set SMTP_STARTTLS=false for SMTPS)")
+	}
+
+	claimIdle := envOr(getenv, "MAIL_SVC_CONSUMER_CLAIM_IDLE", defaultClaimIdle.String())
 	d, err := time.ParseDuration(claimIdle)
 	if err != nil || d <= 0 {
-		return nil, fmt.Errorf("HERALD_CONSUMER_CLAIM_IDLE %q: must be a positive duration", claimIdle)
+		return nil, fmt.Errorf("MAIL_SVC_CONSUMER_CLAIM_IDLE %q: must be a positive duration", claimIdle)
 	}
 	cfg.ClaimIdle = d
 
-	maxDeliveries := envOr(getenv, "HERALD_CONSUMER_MAX_DELIVERIES", strconv.Itoa(defaultMaxDeliveries))
+	maxDeliveries := envOr(getenv, "MAIL_SVC_CONSUMER_MAX_DELIVERIES", strconv.Itoa(defaultMaxDeliveries))
 	n, err := strconv.Atoi(maxDeliveries)
 	if err != nil || n < 1 {
-		return nil, fmt.Errorf("HERALD_CONSUMER_MAX_DELIVERIES %q: must be a positive integer", maxDeliveries)
+		return nil, fmt.Errorf("MAIL_SVC_CONSUMER_MAX_DELIVERIES %q: must be a positive integer", maxDeliveries)
 	}
 	cfg.MaxDeliveries = n
 
-	concurrency := envOr(getenv, "HERALD_CONSUMER_CONCURRENCY", strconv.Itoa(defaultConcurrency))
+	concurrency := envOr(getenv, "MAIL_SVC_CONSUMER_CONCURRENCY", strconv.Itoa(defaultConcurrency))
 	w, err := strconv.Atoi(concurrency)
 	if err != nil || w < 1 {
-		return nil, fmt.Errorf("HERALD_CONSUMER_CONCURRENCY %q: must be a positive integer", concurrency)
+		return nil, fmt.Errorf("MAIL_SVC_CONSUMER_CONCURRENCY %q: must be a positive integer", concurrency)
 	}
 	cfg.Concurrency = w
 

@@ -94,6 +94,18 @@ func TestSendMalformedRecipientIsPermanent(t *testing.T) {
 	}
 }
 
+func TestNewSMTPWithSSL(t *testing.T) {
+	// Implicit-TLS (SMTPS, port 465) wiring: NewSMTP holds no connection, so
+	// this validates option assembly only — no dial happens.
+	s, err := NewSMTP(SMTPOptions{Host: "smtp.example.com", Port: 465, From: "no-reply@lazyscan.local", SSL: true})
+	if err != nil {
+		t.Fatalf("NewSMTP SSL: %v", err)
+	}
+	if s == nil {
+		t.Fatal("NewSMTP SSL returned nil client")
+	}
+}
+
 // fakeSMTP runs a minimal single-connection SMTP conversation that answers
 // RCPT TO with rcptCode, so go-mail produces a real *SendError carrying a
 // server response code (not constructible from outside the package).

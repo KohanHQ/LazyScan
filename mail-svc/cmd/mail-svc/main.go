@@ -13,20 +13,18 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/LazyScan/Herald/internal/config"
-	"github.com/LazyScan/Herald/internal/consumer"
-	"github.com/LazyScan/Herald/internal/health"
-	"github.com/LazyScan/Herald/internal/mailer"
-	"github.com/LazyScan/Herald/internal/metrics"
-	"github.com/LazyScan/Herald/internal/processor"
-	"github.com/LazyScan/Herald/internal/store"
+	"github.com/latoulicious/lazyscan/mail-svc/internal/config"
+	"github.com/latoulicious/lazyscan/mail-svc/internal/consumer"
+	"github.com/latoulicious/lazyscan/mail-svc/internal/mailer"
+	"github.com/latoulicious/lazyscan/mail-svc/internal/processor"
+	"github.com/latoulicious/lazyscan/mail-svc/internal/store"
 )
 
 const shutdownTimeout = 10 * time.Second
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, "herald:", err)
+		fmt.Fprintln(os.Stderr, "mail-svc:", err)
 		os.Exit(1)
 	}
 }
@@ -37,7 +35,7 @@ func run() error {
 		return err
 	}
 
-	logger := newLogger(cfg.LogFormat)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -65,27 +63,29 @@ func run() error {
 		From:     cfg.SMTPFrom,
 		Username: cfg.SMTPUsername,
 		Password: cfg.SMTPPassword,
+		SSL:      cfg.SMTPSSL,
 		StartTLS: cfg.SMTPStartTLS,
 	})
 	if err != nil {
 		return err
 	}
 
-	m := metrics.New()
-
 	handler := processor.New(st, mail, logger)
-	handler.SetObserver(m)
 	cons := consumer.New(rdb, handler, cfg.ClaimIdle, cfg.MaxDeliveries, cfg.Concurrency, logger)
-	cons.SetStreamObserver(m)
 	if err := cons.EnsureGroup(ctx); err != nil {
 		return err
 	}
 
-	srv := health.NewServer(cfg.Addr, m.Handler())
+	srv := &http.Server{
+		Addr:              ":" + cfg.Port,
+		Handler:           newMux(),
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
 
 	serveErr := make(chan error, 1)
 	go func() {
-		logger.Info("herald listening", "addr", cfg.Addr)
+		logger.Info("mail-svc listening", "addr", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serveErr <- err
 		}
@@ -103,12 +103,10 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("consumer: %w", err)
 		}
-		// nil only happens on ctx cancel — consumer already drained.
+		// nil only on ctx cancel — consumer already drained.
 	case <-ctx.Done():
-		// Drain the consumer before anything else: Run waits for its current
-		// batch before returning, so once it does there is no in-flight
-		// message and closing the Redis client and the pool (deferred) cannot
-		// race an XACK or a durable write.
+		// Drain the consumer first so closing redis/pool can't race an in-flight
+		// XACK or durable write (Run returns only after its batch finishes).
 		select {
 		case <-consumerErr:
 		case <-time.After(shutdownTimeout):
@@ -117,7 +115,6 @@ func run() error {
 	}
 
 	logger.Info("shutting down", "timeout", shutdownTimeout)
-
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
@@ -127,9 +124,12 @@ func run() error {
 	return nil
 }
 
-func newLogger(format string) *slog.Logger {
-	if format == "json" {
-		return slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	}
-	return slog.New(slog.NewTextHandler(os.Stdout, nil))
+// newMux serves the liveness surface only: GET /health → 200. mail-svc has no
+// sync request path — verification emails flow through the Redis consumer.
+func newMux() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	return mux
 }
