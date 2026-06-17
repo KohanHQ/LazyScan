@@ -63,6 +63,7 @@ services:
     environment:
       DATABASE_URL: postgres://lazyscan:${POSTGRES_PASSWORD}@postgres:5432/lazyscan
       REDIS_URL: redis://redis:6379
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-s3}   # s3 profile reads STORAGE_*; default r2 reads CLOUDFLARE_* (unset here)
       STORAGE_ENDPOINT: ${STORAGE_ENDPOINT}
       STORAGE_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY_ID}
       STORAGE_SECRET_ACCESS_KEY: ${STORAGE_SECRET_ACCESS_KEY}

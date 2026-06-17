@@ -21,35 +21,9 @@ export default defineConfig(({ mode }) => {
         interval: 300,
       },
       proxy: {
-        "/auth": {
-          target: apiProxyTarget,
-          changeOrigin: true,
-        },
-        "/manga": {
-          target: apiProxyTarget,
-          changeOrigin: true,
-        },
-        "/profile": {
-          target: apiProxyTarget,
-          changeOrigin: true,
-        },
-        "/reader": {
-          target: apiProxyTarget,
-          changeOrigin: true,
-        },
-        "/library": {
-          target: apiProxyTarget,
-          changeOrigin: true,
-        },
-        "/reading-status": {
-          target: apiProxyTarget,
-          changeOrigin: true,
-        },
-        "/upload": {
-          target: apiProxyTarget,
-          changeOrigin: true,
-        },
-        "/admin": {
+        // Single-origin: all business routes live under /api/v1 (mirrors nginx
+        // in prod); /health stays at root. Client base is /api/v1.
+        "/api": {
           target: apiProxyTarget,
           changeOrigin: true,
         },
