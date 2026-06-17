@@ -9,8 +9,8 @@ func stubEnv(values map[string]string) func(string) string {
 	return func(key string) string { return values[key] }
 }
 
-// requiredEnv is the minimal valid environment: pipeline connections
-// mandatory since F4, the storage profile since F5.
+// requiredEnv is the minimal valid environment: pipeline connections and the
+// storage profile have no defaults.
 func requiredEnv() map[string]string {
 	return map[string]string{
 		"DATABASE_URL":              "postgresql://lazyscan:lazyscan@localhost:5432/lazyscan",
@@ -29,11 +29,8 @@ func TestLoad_Defaults(t *testing.T) {
 		t.Fatalf("Load() error = %v", err)
 	}
 
-	if cfg.Addr != ":8085" {
-		t.Errorf("Addr = %q, want :8085", cfg.Addr)
-	}
-	if cfg.LogFormat != "text" {
-		t.Errorf("LogFormat = %q, want text", cfg.LogFormat)
+	if cfg.Port != "8001" {
+		t.Errorf("Port = %q, want 8001", cfg.Port)
 	}
 	if cfg.ClaimIdle != 60*time.Second {
 		t.Errorf("ClaimIdle = %v, want 60s", cfg.ClaimIdle)
@@ -54,22 +51,18 @@ func TestLoad_Defaults(t *testing.T) {
 
 func TestLoad_CustomValues(t *testing.T) {
 	env := requiredEnv()
-	env["KILN_ADDR"] = ":9999"
-	env["KILN_LOG_FORMAT"] = "json"
-	env["KILN_CONSUMER_CLAIM_IDLE"] = "5s"
-	env["KILN_CONSUMER_MAX_DELIVERIES"] = "3"
-	env["KILN_CONSUMER_CONCURRENCY"] = "4"
+	env["IMAGE_SVC_PORT"] = "9999"
+	env["IMAGE_SVC_CONSUMER_CLAIM_IDLE"] = "5s"
+	env["IMAGE_SVC_CONSUMER_MAX_DELIVERIES"] = "3"
+	env["IMAGE_SVC_CONSUMER_CONCURRENCY"] = "4"
 
 	cfg, err := Load(stubEnv(env))
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
 
-	if cfg.Addr != ":9999" {
-		t.Errorf("Addr = %q, want :9999", cfg.Addr)
-	}
-	if cfg.LogFormat != "json" {
-		t.Errorf("LogFormat = %q, want json", cfg.LogFormat)
+	if cfg.Port != "9999" {
+		t.Errorf("Port = %q, want 9999", cfg.Port)
 	}
 	if cfg.DatabaseURL != env["DATABASE_URL"] {
 		t.Errorf("DatabaseURL = %q, want %q", cfg.DatabaseURL, env["DATABASE_URL"])
@@ -88,11 +81,11 @@ func TestLoad_CustomValues(t *testing.T) {
 	}
 }
 
-func TestLoad_InvalidLogFormat(t *testing.T) {
+func TestLoad_InvalidPort(t *testing.T) {
 	env := requiredEnv()
-	env["KILN_LOG_FORMAT"] = "xml"
+	env["IMAGE_SVC_PORT"] = "not-a-port"
 	if _, err := Load(stubEnv(env)); err == nil {
-		t.Error("Load() = nil error, want error for unknown log format")
+		t.Error("Load() = nil error, want error for non-numeric IMAGE_SVC_PORT")
 	}
 }
 
@@ -137,14 +130,14 @@ func TestLoad_InvalidPathStyle(t *testing.T) {
 
 func TestLoad_InvalidTunables(t *testing.T) {
 	cases := map[string]map[string]string{
-		"claim idle not a duration": {"KILN_CONSUMER_CLAIM_IDLE": "sixty"},
-		"claim idle zero":           {"KILN_CONSUMER_CLAIM_IDLE": "0s"},
-		"claim idle negative":       {"KILN_CONSUMER_CLAIM_IDLE": "-5s"},
-		"max deliveries not an int": {"KILN_CONSUMER_MAX_DELIVERIES": "five"},
-		"max deliveries zero":       {"KILN_CONSUMER_MAX_DELIVERIES": "0"},
-		"concurrency not an int":    {"KILN_CONSUMER_CONCURRENCY": "two"},
-		"concurrency zero":          {"KILN_CONSUMER_CONCURRENCY": "0"},
-		"concurrency negative":      {"KILN_CONSUMER_CONCURRENCY": "-1"},
+		"claim idle not a duration": {"IMAGE_SVC_CONSUMER_CLAIM_IDLE": "sixty"},
+		"claim idle zero":           {"IMAGE_SVC_CONSUMER_CLAIM_IDLE": "0s"},
+		"claim idle negative":       {"IMAGE_SVC_CONSUMER_CLAIM_IDLE": "-5s"},
+		"max deliveries not an int": {"IMAGE_SVC_CONSUMER_MAX_DELIVERIES": "five"},
+		"max deliveries zero":       {"IMAGE_SVC_CONSUMER_MAX_DELIVERIES": "0"},
+		"concurrency not an int":    {"IMAGE_SVC_CONSUMER_CONCURRENCY": "two"},
+		"concurrency zero":          {"IMAGE_SVC_CONSUMER_CONCURRENCY": "0"},
+		"concurrency negative":      {"IMAGE_SVC_CONSUMER_CONCURRENCY": "-1"},
 	}
 	for name, overrides := range cases {
 		env := requiredEnv()

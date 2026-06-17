@@ -56,7 +56,7 @@ func jpegBytes(t *testing.T, w, h int) []byte {
 
 func TestConvert_DownscalesInside(t *testing.T) {
 	// 2160x4000 exceeds both bounds; fit-inside scale is min(0.5, 0.48).
-	res, err := New().Convert(pngBytes(t, 2160, 4000))
+	res, err := New().Convert(pngBytes(t, 2160, 4000), Default())
 	if err != nil {
 		t.Fatalf("Convert() error = %v", err)
 	}
@@ -69,7 +69,7 @@ func TestConvert_DownscalesInside(t *testing.T) {
 }
 
 func TestConvert_NeverEnlarges(t *testing.T) {
-	res, err := New().Convert(jpegBytes(t, 100, 150))
+	res, err := New().Convert(jpegBytes(t, 100, 150), Default())
 	if err != nil {
 		t.Fatalf("Convert() error = %v", err)
 	}
@@ -78,8 +78,19 @@ func TestConvert_NeverEnlarges(t *testing.T) {
 	}
 }
 
+func TestConvert_OptionsOverrideFitInside(t *testing.T) {
+	// HTTP path overrides (e.g. 512x512 avatars): same fit-inside rule, smaller box.
+	res, err := New().Convert(pngBytes(t, 2000, 2000), Options{MaxWidth: 512, MaxHeight: 512, Quality: 80})
+	if err != nil {
+		t.Fatalf("Convert() error = %v", err)
+	}
+	if res.Width > 512 || res.Height > 512 {
+		t.Errorf("dimensions = %dx%d, want inside 512x512", res.Width, res.Height)
+	}
+}
+
 func TestConvert_OutputIsWebP(t *testing.T) {
-	res, err := New().Convert(pngBytes(t, 200, 300))
+	res, err := New().Convert(pngBytes(t, 200, 300), Default())
 	if err != nil {
 		t.Fatalf("Convert() error = %v", err)
 	}
@@ -92,14 +103,14 @@ func TestConvert_OutputIsWebP(t *testing.T) {
 }
 
 func TestConvert_RejectsOversizeInput(t *testing.T) {
-	_, err := New().Convert(make([]byte, MaxInputBytes+1))
+	_, err := New().Convert(make([]byte, MaxInputBytes+1), Default())
 	if !errors.Is(err, ErrUnprocessable) {
 		t.Errorf("error = %v, want ErrUnprocessable for input over 10MB", err)
 	}
 }
 
 func TestConvert_RejectsGarbage(t *testing.T) {
-	_, err := New().Convert([]byte("definitely not an image"))
+	_, err := New().Convert([]byte("definitely not an image"), Default())
 	if !errors.Is(err, ErrUnprocessable) {
 		t.Errorf("error = %v, want ErrUnprocessable for non-image input", err)
 	}
@@ -110,7 +121,7 @@ func TestConvert_RejectsUnsupportedFormat(t *testing.T) {
 	if err := gif.Encode(&buf, testImage(50, 50), nil); err != nil {
 		t.Fatalf("encode gif: %v", err)
 	}
-	_, err := New().Convert(buf.Bytes())
+	_, err := New().Convert(buf.Bytes(), Default())
 	if !errors.Is(err, ErrUnprocessable) {
 		t.Errorf("error = %v, want ErrUnprocessable for GIF (JPEG/PNG/WebP only)", err)
 	}

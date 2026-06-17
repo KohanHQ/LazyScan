@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/LazyScan/Kiln/internal/convert"
-	"github.com/LazyScan/Kiln/internal/storage"
-	"github.com/LazyScan/Kiln/internal/store"
+	"github.com/latoulicious/lazyscan/image-svc/internal/convert"
+	"github.com/latoulicious/lazyscan/image-svc/internal/storage"
+	"github.com/latoulicious/lazyscan/image-svc/internal/store"
 )
 
 var errTransient = errors.New("connection refused")
@@ -147,7 +147,7 @@ type fakeConverter struct {
 	err    error
 }
 
-func (f *fakeConverter) Convert(_ []byte) (convert.Result, error) {
+func (f *fakeConverter) Convert(_ []byte, _ convert.Options) (convert.Result, error) {
 	if f.err != nil {
 		return convert.Result{}, f.err
 	}

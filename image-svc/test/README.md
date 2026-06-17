@@ -9,7 +9,6 @@ it **back into its package directory** and strip `.disabled`:
 
 ```sh
 mv test/config_test.go.disabled internal/config/config_test.go
-mv test/health_test.go.disabled internal/health/health_test.go
 mv test/envelope_test.go.disabled internal/processor/envelope_test.go
 mv test/processor_test.go.disabled internal/processor/processor_test.go
 mv test/convert_test.go.disabled internal/convert/convert_test.go

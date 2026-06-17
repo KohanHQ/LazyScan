@@ -1,10 +1,11 @@
 # Module: image-svc (ex-Kiln)
 
-> Salvaged from Kiln `docs/wiki/` at Phase 1 scaffold — folded architecture +
-> event-contract + known-constraints into one module doc. Reflects the
-> **pre-strip** state of the code as copied. Phase 2 (plan §5) strips
-> metrics/OTel/log-framework + repoints R2 + adds HTTP `/convert`, and must
-> update this doc to match. Originals: `LazyScan-Stack/Kiln/docs/wiki/`.
+> Salvaged from Kiln at Phase 1; **stripped to image-svc at Phase 2**
+> (2026-06-17): removed Prometheus/metrics + the metrics/health HTTP
+> framework, trimmed config, renamed module path + `KILN_*` env → `IMAGE_SVC_*`,
+> generalized `convert` to `Options`, added sync `POST /convert` + `GET /health`.
+> The OTel/JSON-log "fat" the plan named was never in the code (slog text
+> already). The event contract + known constraints below are unchanged.
 
 ---
 
@@ -40,51 +41,42 @@ Full contract: `event-contract.md`. Inherited invariants:
 
 ## Packages
 
-Current (F7 — Kiln code unchanged since F6; F7 was LazyScan-side removal):
+Post-strip (Phase 2). Consumer/store/storage/convert behavior is the proven
+Kiln core — `store.go`, `storage.go`, `envelope.go` are byte-identical to
+the original; only import paths + the metrics seams changed elsewhere.
 
 ```txt
-cmd/kiln             wiring: config -> logger -> store -> redis -> storage -> vips startup -> consumer + health server, signal-driven graceful shutdown (consumer drains first)
-internal/config      env parsing + validation (Load takes a getenv func for tests); DATABASE_URL/REDIS_URL/STORAGE_* required, KILN_CONSUMER_* tunables
-internal/health      /healthz liveness endpoint (compose-healthcheck parity with Aegis) + /metrics on the same internal mux when wired (O3; port unpublished in compose)
-internal/metrics     Prometheus registry + every kiln_* metric (observability plan O3); the only client_golang importer — processor/consumer feed it through nil-safe seams; type label clamped to known event types
-internal/consumer    Redis Streams group consumer: XREADGROUP/XAUTOCLAIM/XPENDING/XACK lifecycle, poison threshold detection; entries within a batch handled concurrently (KILN_CONSUMER_CONCURRENCY, F6); policy-free — obeys the processor's Outcome; ~10s XPENDING poll feeds the stream gauges (StreamObserver seam)
-internal/processor   per-message pipeline: envelope parse -> dedup -> load page -> download -> convert -> upload -> page ready/failed + aggregate refresh -> processed-event; reports durable outcomes (ok|dedup|failed) through the Observer seam
-internal/storage     S3-compatible object client (minio-go): download original, upload converted page; NoSuchKey -> ErrObjectNotFound (non-retryable)
-internal/convert     image pipeline (govips/libvips — the engine sharp wraps): EXIF auto-rotate, fit inside 1080x1920, never enlarge, WebP q88, input <= 10MB; all errors ErrUnprocessable (non-retryable)
-internal/store       pgx access: page reads, page status writes + derived aggregate refresh (one tx, import row locked first to serialize per-import refreshes — F6), processed-events, failure rows
+cmd/image-svc        wiring: config -> slog text -> store -> redis -> storage -> vips startup -> consumer (goroutine) + HTTP server (POST /convert, GET /health); signal-driven graceful shutdown drains the consumer first
+internal/config      env parsing + validation (Load takes a getenv func for tests); DATABASE_URL/REDIS_URL/STORAGE_* required, IMAGE_SVC_PORT + IMAGE_SVC_CONSUMER_* tunables
+internal/consumer    Redis Streams group consumer: XREADGROUP/XAUTOCLAIM/XPENDING/XACK lifecycle, poison threshold; entries within a batch handled concurrently (IMAGE_SVC_CONSUMER_CONCURRENCY); policy-free — obeys the processor's Outcome
+internal/processor   per-message pipeline: envelope parse -> dedup -> load page -> download -> convert -> upload -> page ready/failed + aggregate refresh -> processed-event; reports the durable Outcome to the consumer
+internal/storage     S3-compatible object client (minio-go): download original, upload converted page; NoSuchKey -> ErrObjectNotFound (non-retryable). R2 by env — no code change
+internal/convert     image pipeline (govips/libvips — the engine sharp wraps): EXIF auto-rotate, fit inside Options bounds, never enlarge, WebP at Options.Quality, input <= 10MB; all errors ErrUnprocessable (non-retryable). Default() = page profile (1080x1920, q88)
+internal/store       pgx access: page reads, page status writes + derived aggregate refresh (one tx, import row locked first to serialize per-import refreshes), processed-events, failure rows
 ```
 
-Dependencies: `github.com/redis/go-redis/v9`, `github.com/jackc/pgx/v5`
-(F4); `github.com/minio/minio-go/v7`, `github.com/davidbyttow/govips/v2`
-(F5 — govips is cgo, so the Docker build is `CGO_ENABLED=1` with
-`vips-dev`/`vips` apk packages and local builds need `brew install vips`);
-`github.com/prometheus/client_golang` (observability plan O3, Aegis pin
-v1.23.2, confined to `internal/metrics`).
+Dependencies: `github.com/redis/go-redis/v9`, `github.com/jackc/pgx/v5`,
+`github.com/minio/minio-go/v7`, `github.com/davidbyttow/govips/v2` (govips is
+cgo, so the Docker build is `CGO_ENABLED=1` with `vips-dev`/`vips` apk
+packages and local builds need `brew install vips`). Prometheus was removed
+at Phase 2.
 
-## Metrics (observability plan O3)
+## Sync HTTP (Phase 2)
 
-`/metrics` joins the healthz mux on `KILN_ADDR` (`:8085`, unpublished in
-compose — Prometheus scrapes over the compose network; Grafana is the only
-human-facing surface). All `kiln_*`:
+One service, two entry points — the Redis consumer (durable chapter pages)
+and a small HTTP server (`IMAGE_SVC_PORT`, default 8001) that lets the API
+drop `sharp`:
 
-| Metric | Type | Labels |
-|---|---|---|
-| `kiln_events_processed_total` | counter | `type`, `outcome` (`ok`\|`dedup`\|`failed`) |
-| `kiln_event_processing_duration_seconds` | histogram | `type` |
-| `kiln_stream_pending` | gauge | — (XPENDING count, ~10s poll) |
-| `kiln_stream_oldest_pending_seconds` | gauge | — (age of oldest pending entry, from its stream ID) |
-| `kiln_poison_total` | counter | — |
+- `POST /convert` — raw image bytes in the body; `?w=&h=&q=` override the
+  page profile (`convert.Default()`). Returns `{"webp":<base64>,"width","height"}`.
+  Bad override → 400; `ErrUnprocessable` (bad format/oversize/corrupt) → 422.
+- `GET /health` → 200 (compose healthcheck).
 
-Outcome mapping: `dedup` = idempotency skip (IsProcessed hit,
-ready-terminal, poison threshold on already-processed); `failed` = durable
-failure (schemaVersion reject, non-retryable page failure, poison
-recorded); `ok` = everything else durably acked (success, unknown-eventType
-skip, page-row-missing skip). Retryable attempts are not counted — the
-entry stays pending and the stream gauges carry that signal. The `type`
-label is clamped to the known event types (`other` otherwise) — cardinality
-discipline against producer-controlled values. The seams
-(`processor.Observer`, `consumer.StreamObserver`) are nil-safe: unwired
-(tests, rollback) means no metrics, zero behavior change.
+## Observability (stripped at Phase 2)
+
+The Prometheus `kiln_*` metrics, the `/metrics` endpoint, and the
+processor/consumer observer seams were removed. Liveness is now a plain
+`GET /health`. OTel was never present in the code despite the plan naming it.
 
 ## Phases (Forge plan F0–F7)
 
@@ -105,10 +97,10 @@ redeploy (see `event-contract.md` §Rollback).
 
 ## Current Behavior (F7 — Kiln is the only chapter-page backend)
 
-`go run ./cmd/kiln` (DATABASE_URL + REDIS_URL + STORAGE_* required)
+`go run ./cmd/image-svc` (DATABASE_URL + REDIS_URL + STORAGE_* required)
 connects Postgres, Redis, and S3-compatible storage, ensures the `kiln`
 consumer group, and consumes `events:chapter-page` — entries within one
-read/claim batch run concurrently (`KILN_CONSUMER_CONCURRENCY`, default 2
+read/claim batch run concurrently (`IMAGE_SVC_CONSUMER_CONCURRENCY`, default 2
 for parity with the removed BullMQ worker); per-import aggregate refreshes
 are serialized by locking the import row first (lost-update fix). Per
 entry: parse envelope
@@ -121,12 +113,12 @@ processed-events row → XACK. Non-retryable failures (original missing,
 unsupported/corrupt/oversize image) mark the page `failed` + refresh
 aggregates + failure row + processed-events + ack; transient failures
 leave the entry pending for redelivery/reclaim. Poison entries at
-`KILN_CONSUMER_MAX_DELIVERIES` now also mark the page `failed` (the F4
+`IMAGE_SVC_CONSUMER_MAX_DELIVERIES` now also mark the page `failed` (the F4
 deviation is closed). Every completed/retried import produces outbox
 events unconditionally — F7 removed LazyScan's `CHAPTER_WORKER_BACKEND`
 flag along with the whole BullMQ path (enqueue, worker entrypoint, compose
 service, dependency). SIGINT/SIGTERM drains the consumer (waits for the
-in-flight batch) before shutting the health server down (10s timeout).
+in-flight batch) before shutting the HTTP server down (10s timeout).
 
 
 ---
@@ -446,8 +438,9 @@ One Redis serves two tenants (three until F7):
   `github.com/LazyScan/Kiln` (2026-06-04).
 - Proposed tunables pending real measurements: XAUTOCLAIM min-idle 60s and
   max deliveries 5 shipped at F4 as env-tunable defaults
-  (`KILN_CONSUMER_CLAIM_IDLE`, `KILN_CONSUMER_MAX_DELIVERIES`); consumer
-  concurrency resolved at F6 (2026-06-05): `KILN_CONSUMER_CONCURRENCY`,
+  (`KILN_CONSUMER_CLAIM_IDLE`, `KILN_CONSUMER_MAX_DELIVERIES` — `IMAGE_SVC_*`
+  since Phase 2); consumer concurrency resolved at F6 (2026-06-05):
+  `KILN_CONSUMER_CONCURRENCY` → `IMAGE_SVC_CONSUMER_CONCURRENCY`,
   default 2 (BullMQ parity), per-batch bounded. Per-import aggregate
   refreshes are serialized via an import-row `FOR UPDATE` lock — the TS
   pipeline carries that lost-update race at concurrency 2; Kiln closes it.

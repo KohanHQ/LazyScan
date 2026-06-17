@@ -10,14 +10,13 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/LazyScan/Kiln/internal/processor"
+	"github.com/latoulicious/lazyscan/image-svc/internal/processor"
 )
 
 const (
@@ -33,18 +32,7 @@ const (
 	reclaimInterval = 30 * time.Second
 	reclaimCount    = 100
 	errorBackoff    = time.Second
-
-	// pendingPollInterval paces the XPENDING poll feeding the stream
-	// gauges; effective granularity is bounded below by readBlock.
-	pendingPollInterval = 10 * time.Second
 )
-
-// StreamObserver receives the XPENDING poll results (nil-safe seam; the
-// metrics package implements it).
-type StreamObserver interface {
-	SetStreamPending(n float64)
-	SetStreamOldestPendingSeconds(s float64)
-}
 
 // Consumer runs the stream read/claim/ack lifecycle.
 type Consumer struct {
@@ -54,7 +42,6 @@ type Consumer struct {
 	claimIdle     time.Duration
 	maxDeliveries int
 	concurrency   int
-	streamObs     StreamObserver
 	log           *slog.Logger
 }
 
@@ -76,12 +63,6 @@ func New(rdb *redis.Client, h *processor.Handler, claimIdle time.Duration, maxDe
 	}
 }
 
-// SetStreamObserver wires the metrics seam; call before Run. A nil
-// observer skips the XPENDING poll entirely.
-func (c *Consumer) SetStreamObserver(o StreamObserver) {
-	c.streamObs = o
-}
-
 // EnsureGroup creates the consumer group idempotently. Start "0" so a group
 // created late still sees earlier entries; BUSYGROUP means it already exists.
 func (c *Consumer) EnsureGroup(ctx context.Context) error {
@@ -101,7 +82,7 @@ func (c *Consumer) Run(ctx context.Context) error {
 		"claimIdle", c.claimIdle, "maxDeliveries", c.maxDeliveries,
 		"concurrency", c.concurrency,
 	)
-	var lastReclaim, lastPoll time.Time
+	var lastReclaim time.Time
 	for {
 		if ctx.Err() != nil {
 			c.log.Info("consumer stopped", "consumer", c.name)
@@ -111,47 +92,8 @@ func (c *Consumer) Run(ctx context.Context) error {
 			c.reclaimOnce(ctx)
 			lastReclaim = time.Now()
 		}
-		if c.streamObs != nil && time.Since(lastPoll) >= pendingPollInterval {
-			c.pollPendingOnce(ctx)
-			lastPoll = time.Now()
-		}
 		c.readOnce(ctx)
 	}
-}
-
-// pollPendingOnce feeds the stream gauges from an XPENDING summary: the
-// pending count and the age of the oldest pending entry (stream IDs encode
-// their add time in milliseconds). A failed poll skips the tick — gauges
-// go stale, the consumer never stalls.
-func (c *Consumer) pollPendingOnce(ctx context.Context) {
-	p, err := c.rdb.XPending(ctx, Stream, Group).Result()
-	if err != nil {
-		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
-			c.log.Warn("pending poll failed", "error", err)
-		}
-		return
-	}
-	c.streamObs.SetStreamPending(float64(p.Count))
-	c.streamObs.SetStreamOldestPendingSeconds(oldestPendingAge(p.Lower, time.Now()))
-}
-
-// oldestPendingAge derives the age of the oldest pending entry from its
-// stream ID (the milliseconds before the dash). Zero pending entries or an
-// unparseable ID read as zero age.
-func oldestPendingAge(lowestID string, now time.Time) float64 {
-	msPart, _, ok := strings.Cut(lowestID, "-")
-	if !ok {
-		return 0
-	}
-	ms, err := strconv.ParseInt(msPart, 10, 64)
-	if err != nil {
-		return 0
-	}
-	age := now.Sub(time.UnixMilli(ms)).Seconds()
-	if age < 0 {
-		return 0
-	}
-	return age
 }
 
 // readOnce blocks up to readBlock for new entries and handles them.

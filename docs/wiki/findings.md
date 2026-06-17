@@ -16,4 +16,15 @@ Format per finding:
 - status: open | resolved (→ R-NNN)
 ```
 
-> No findings yet. Populated after the first `/code-review`.
+## F-001 Dockerfile healthcheck depends on wget
+- date: 2026-06-17
+- source: CodeRabbit CLI (`coderabbit review --agent`), Phase 2 image-svc strip
+- severity: low (reported critical; downgraded — see note)
+- location: image-svc/Dockerfile:19
+- problem: The runtime `HEALTHCHECK` calls `wget`; the review flagged `wget` as
+  missing from the runtime image (`apk add --no-cache vips` only).
+- note: Verified false positive — `alpine:3.23` ships BusyBox `wget` at
+  `/usr/bin/wget` (`docker run --rm alpine:3.23 command -v wget`), which the
+  original Kiln Dockerfile relied on. Resolved anyway (R-001) by making the
+  dependency explicit rather than implicit on BusyBox.
+- status: resolved (→ R-001)

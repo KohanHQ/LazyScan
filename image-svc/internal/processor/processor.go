@@ -10,11 +10,10 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
-	"github.com/LazyScan/Kiln/internal/convert"
-	"github.com/LazyScan/Kiln/internal/storage"
-	"github.com/LazyScan/Kiln/internal/store"
+	"github.com/latoulicious/lazyscan/image-svc/internal/convert"
+	"github.com/latoulicious/lazyscan/image-svc/internal/storage"
+	"github.com/latoulicious/lazyscan/image-svc/internal/store"
 )
 
 // EventTypeProcessingRequested is the only event type Kiln handles in v1.
@@ -40,28 +39,8 @@ type ObjectStore interface {
 
 // Converter runs the reader image profile.
 type Converter interface {
-	Convert(input []byte) (convert.Result, error)
+	Convert(input []byte, opt convert.Options) (convert.Result, error)
 }
-
-// Observer receives durable-outcome notifications (nil-safe seam; the
-// metrics package implements it). Retryable attempts are not reported —
-// the entry stays pending and the stream gauges carry that signal.
-type Observer interface {
-	// EventProcessed records one event handled to a durable outcome
-	// (outcomeOK, outcomeDedup, or outcomeFailed) and how long it took.
-	EventProcessed(eventType, outcome string, seconds float64)
-	// Poison records one entry poisoned at the delivery threshold.
-	Poison()
-}
-
-// Outcome label values for Observer.EventProcessed: dedup is an
-// idempotency skip, failed is a durable failure, ok is everything else
-// durably acked.
-const (
-	outcomeOK     = "ok"
-	outcomeDedup  = "dedup"
-	outcomeFailed = "failed"
-)
 
 // Outcome tells the consumer what to do with the stream entry. The zero value
 // is deliberately OutcomeRetryable: a code path that forgets to decide leaves
@@ -83,7 +62,6 @@ type Handler struct {
 	objects      ObjectStore
 	convert      Converter
 	publicDomain string // image_url = publicDomain + "/" + storage_key
-	obs          Observer
 	log          *slog.Logger
 }
 
@@ -99,26 +77,9 @@ func New(st Store, objects ObjectStore, conv Converter, publicDomain string, log
 	}
 }
 
-// SetObserver wires the metrics seam; call before the consumer starts. A
-// nil observer keeps the handler silent (tests, rollback).
-func (h *Handler) SetObserver(o Observer) {
-	h.obs = o
-}
-
-// observe reports a durable outcome to the observer, if one is wired.
-// Observation never alters the returned Outcome — ack-after-durable-outcome
-// stays untouched.
-func (h *Handler) observe(eventType, outcome string, start time.Time) {
-	if h.obs == nil {
-		return
-	}
-	h.obs.EventProcessed(eventType, outcome, time.Since(start).Seconds())
-}
-
 // Handle processes one raw envelope (the stream entry's `event` field value).
 // It returns OutcomeAck only after the durable outcome is recorded.
 func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
-	start := time.Now()
 	env, pl, err := parseEnvelope(raw)
 	if err != nil {
 		// Unparseable is poison, but below the delivery threshold the entry
@@ -145,7 +106,6 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 		}
 		h.log.Warn("rejected event: unsupported schemaVersion",
 			"eventId", env.EventID, "schemaVersion", env.SchemaVersion)
-		h.observe(env.EventType, outcomeFailed, start)
 		return OutcomeAck, nil
 	}
 
@@ -157,7 +117,6 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 			return OutcomeRetryable, err
 		}
 		h.log.Warn("ignoring unknown eventType", "eventId", env.EventID, "eventType", env.EventType)
-		h.observe(env.EventType, outcomeOK, start)
 		return OutcomeAck, nil
 	}
 
@@ -169,7 +128,6 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 	}
 	if done {
 		log.Info("duplicate delivery, already processed")
-		h.observe(env.EventType, outcomeDedup, start)
 		return OutcomeAck, nil
 	}
 
@@ -180,7 +138,6 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 			return OutcomeRetryable, err
 		}
 		log.Warn("page row missing, recording processed and skipping")
-		h.observe(env.EventType, outcomeOK, start)
 		return OutcomeAck, nil
 	}
 	if err != nil {
@@ -193,7 +150,6 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 			return OutcomeRetryable, err
 		}
 		log.Info("page already ready, terminal no-op")
-		h.observe(env.EventType, outcomeDedup, start)
 		return OutcomeAck, nil
 	}
 
@@ -206,17 +162,17 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 	original, err := h.objects.Download(ctx, page.OriginalKey)
 	if errors.Is(err, storage.ErrObjectNotFound) {
 		// Original gone after the verification window — non-retryable.
-		return h.failPage(ctx, env, page, raw, err, start, log)
+		return h.failPage(ctx, env, page, raw, err, log)
 	}
 	if err != nil {
 		return OutcomeRetryable, err // transient storage failure
 	}
 
-	result, err := h.convert.Convert(original)
+	result, err := h.convert.Convert(original, convert.Default())
 	if errors.Is(err, convert.ErrUnprocessable) {
 		// Unsupported format, over the size limit, corrupt — deterministic
 		// for this input, so non-retryable.
-		return h.failPage(ctx, env, page, raw, err, start, log)
+		return h.failPage(ctx, env, page, raw, err, log)
 	}
 	if err != nil {
 		return OutcomeRetryable, err
@@ -241,7 +197,6 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 	if err := h.store.MarkProcessed(ctx, env.EventID, env.EventType); err != nil {
 		return OutcomeRetryable, err
 	}
-	h.observe(env.EventType, outcomeOK, start)
 	return OutcomeAck, nil
 }
 
@@ -250,7 +205,7 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 // processed-events row — the event was handled, its outcome is failure, so
 // duplicate deliveries dedup instead of re-failing. Any error here leaves
 // the entry pending; every step is idempotent on redelivery.
-func (h *Handler) failPage(ctx context.Context, env Envelope, page store.Page, raw string, cause error, start time.Time, log *slog.Logger) (Outcome, error) {
+func (h *Handler) failPage(ctx context.Context, env Envelope, page store.Page, raw string, cause error, log *slog.Logger) (Outcome, error) {
 	if err := h.store.MarkPageFailed(ctx, page.ID, page.ImportID, cause.Error()); err != nil {
 		return OutcomeRetryable, err
 	}
@@ -268,7 +223,6 @@ func (h *Handler) failPage(ctx context.Context, env Envelope, page store.Page, r
 		return OutcomeRetryable, err
 	}
 	log.Warn("page failed, non-retryable", "error", cause)
-	h.observe(env.EventType, outcomeFailed, start)
 	return OutcomeAck, nil
 }
 
@@ -277,7 +231,6 @@ func (h *Handler) failPage(ctx context.Context, env Envelope, page store.Page, r
 // message, page marked `failed` when the envelope parsed well enough to
 // know it, then ack.
 func (h *Handler) HandlePoison(ctx context.Context, raw string, deliveries int64) (Outcome, error) {
-	start := time.Now()
 	env, pl, parseErr := parseEnvelope(raw)
 
 	msg := fmt.Sprintf("max deliveries reached (%d)", deliveries)
@@ -295,7 +248,6 @@ func (h *Handler) HandlePoison(ctx context.Context, raw string, deliveries int64
 		if done {
 			h.log.Info("poison threshold on already-processed event, acking",
 				"eventId", env.EventID, "deliveries", deliveries)
-			h.observe(env.EventType, outcomeDedup, start)
 			return OutcomeAck, nil
 		}
 	}
@@ -335,10 +287,6 @@ func (h *Handler) HandlePoison(ctx context.Context, raw string, deliveries int64
 	}
 	h.log.Warn("poison message recorded, acked",
 		"eventId", env.EventID, "pageId", pl.PageID, "deliveries", deliveries)
-	h.observe(env.EventType, outcomeFailed, start)
-	if h.obs != nil {
-		h.obs.Poison()
-	}
 	return OutcomeAck, nil
 }
 
