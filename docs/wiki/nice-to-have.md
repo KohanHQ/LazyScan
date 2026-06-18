@@ -92,6 +92,16 @@ verify in the browser before committing the CSS fix.
 
 ## P2 / Product polish
 
+### Email / Auth (UX)
+
+- **"Check your spam" hint on verify step** — after register the user lands on the
+  verify-email view (`renderVerifyView`, `web/src/pages/login.ts:137`); the only
+  copy is "Enter the 6-digit code sent to …" (`login.ts:149`). Add a small note
+  near that hint (or by the Resend button) telling the user to check their spam
+  folder if the code isn't in the inbox. Cheap mitigation for the DKIM
+  deliverability gap (P1) — codes that spam-land are still findable. Copy-only
+  change; no API/flow change.
+
 ### Profile / Personalization
 
 - **Animated GIF owner avatar** — let the owner upload an animated GIF avatar and
