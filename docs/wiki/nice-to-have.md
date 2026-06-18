@@ -32,29 +32,6 @@ Urgency guide:
 
 ## P1 / Important
 
-### Core UI/UX (reported bugs)
-
-User-reported 2026-06-18 (screenshots confirmed). Symptom + root cause below;
-verify in the browser before committing the CSS fix.
-
-- **Advanced filter — funnel icon overlaps the "Advanced" label.** In the Library
-  header the status-filter funnel button renders on top of the adjacent Advanced
-  button text (reads "Adv▣ced"). Cause: `.library-filter` (the funnel,
-  `icons.filter()`, `web/src/pages/home.ts:168`) lives in `.library-search-wrap`
-  and collides with the sibling `.library-advanced-btn` (`home.ts:177`) — a
-  positioning/spacing bug in the `.heading-aside` row (`base.css` ~`:2737`).
-  Likely fix: gap/positioning between the funnel and the Advanced button (the
-  funnel may be absolutely positioned against the search input and bleed past it).
-- **Save-as-draft checkbox — unstyled, mis-laid-out.** On the chapter upload form
-  the `holdAsDraft` checkbox renders as a large raw white box stacked *above* its
-  label instead of an inline row beside it (`web/src/pages/manage-chapter.ts:94`).
-  Root cause: `.manage-checkbox` (`web/src/styles/base.css:3848`) sets
-  `flex-direction: row`, `align-items: flex-start`, `gap: 8px` **without
-  `display: flex`** — the flex props are inert, so input + label fall back to
-  block/inline layout (a global form-`input` style likely also bleeds onto the
-  native checkbox, hence the oversized white box). Fix: add `display: flex` (and
-  confirm the checkbox isn't picking up a full-width form-input rule).
-
 ### Email / Auth
 
 - **DKIM not configured (OTP deliverability)** — SPF + the sumo-verification TXT
@@ -150,6 +127,17 @@ LazyScan-Stack backlog wholesale; that tree is experimental and its state diverg
 
 Move old done notes to [deferred-notes.md](deferred-notes.md) once they are no
 longer useful for near-term planning.
+
+### Web / UI (reported bugs)
+
+- **Library funnel / draft-checkbox CSS bugs** — fixed 2026-06-18. (1) Library
+  header funnel overlapped the Advanced button: the absolute funnel/kbd/pop now
+  anchor to a new inner `.library-search-box` instead of `.library-search-wrap`
+  (which also holds Advanced). (2) Chapter-upload draft checkbox rendered as a big
+  white box above its label: `.manage-form .manage-checkbox` now sets
+  `display: flex` (scoped to outrank `.manage-form label`'s grid) and
+  `.manage-checkbox input` resets the bled-in field look (min-height/border/
+  padding/background). Web-only, no JS. See session 2026-06-18.
 
 ### Email / Auth
 

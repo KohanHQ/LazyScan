@@ -2495,6 +2495,14 @@ img.user-avatar {
 
 /* Library search */
 .library-search-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Inner box scopes the absolute funnel/kbd/pop to the input, not the wrap (which
+   also holds the Advanced button). */
+.library-search-box {
   position: relative;
   display: inline-flex;
 }
@@ -3845,15 +3853,22 @@ img.user-avatar {
   font-weight: 800;
 }
 
-.manage-checkbox {
+/* Scoped to .manage-form so display:flex outranks .manage-form label's grid. */
+.manage-form .manage-checkbox {
+  display: flex;
   flex-direction: row;
   align-items: flex-start;
   gap: 8px;
 }
 
+/* Reset the .manage-form input field look off the native checkbox. */
 .manage-checkbox input {
   width: auto;
+  min-height: 0;
   margin-top: 3px;
+  padding: 0;
+  border: 0;
+  background: none;
 }
 
 .muted {

@@ -163,15 +163,17 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
       </div>
       <div class="heading-aside">
         <div class="library-search-wrap">
-          <input class="library-search" type="search" placeholder="Search" aria-label="Search manga" autocomplete="off" />
-          <kbd class="search-kbd" aria-hidden="true">/</kbd>
-          <button class="library-filter" type="button" aria-label="Filter by status" aria-haspopup="true" aria-expanded="false">${icons.filter()}</button>
-          <div class="library-filter-pop" role="menu" hidden>
-            <button class="library-filter-option is-active" type="button" role="menuitemradio" data-status="">All status</button>
-            ${MANGA_STATUSES.map((s) => `<button class="library-filter-option" type="button" role="menuitemradio" data-status="${s}">${statusLabel(s)}</button>`).join("")}
-            <div class="library-filter-tags" data-role="tag-options" hidden>
-              <p class="library-filter-label">Tags</p>
-              <div class="library-filter-tag-list" data-role="tag-list"></div>
+          <div class="library-search-box">
+            <input class="library-search" type="search" placeholder="Search" aria-label="Search manga" autocomplete="off" />
+            <kbd class="search-kbd" aria-hidden="true">/</kbd>
+            <button class="library-filter" type="button" aria-label="Filter by status" aria-haspopup="true" aria-expanded="false">${icons.filter()}</button>
+            <div class="library-filter-pop" role="menu" hidden>
+              <button class="library-filter-option is-active" type="button" role="menuitemradio" data-status="">All status</button>
+              ${MANGA_STATUSES.map((s) => `<button class="library-filter-option" type="button" role="menuitemradio" data-status="${s}">${statusLabel(s)}</button>`).join("")}
+              <div class="library-filter-tags" data-role="tag-options" hidden>
+                <p class="library-filter-label">Tags</p>
+                <div class="library-filter-tag-list" data-role="tag-list"></div>
+              </div>
             </div>
           </div>
           <button class="library-advanced-btn" type="button" aria-label="Advanced search" aria-expanded="false">Advanced</button>
