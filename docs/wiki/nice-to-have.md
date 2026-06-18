@@ -32,13 +32,6 @@ Urgency guide:
 
 ## P1 / Important
 
-### Email / Auth
-
-- **DKIM not configured (OTP deliverability)** — SPF + the sumo-verification TXT
-  are in place, but DKIM is missing (session 2026-06-18 note), so OTP mail may
-  spam-land. Public signup is only half-usable until codes deliver reliably. DNS
-  fix, not code.
-
 ### Deploy / Acceptance
 
 - **Acceptance items 7 & 8 never run live** — the over-cap `507`
@@ -64,16 +57,6 @@ Urgency guide:
   behavior changes — especially around the new `/api/v1` mount and the quota gate.
 
 ## P2 / Product polish
-
-### Email / Auth (UX)
-
-- **"Check your spam" hint on verify step** — after register the user lands on the
-  verify-email view (`renderVerifyView`, `web/src/pages/login.ts:137`); the only
-  copy is "Enter the 6-digit code sent to …" (`login.ts:149`). Add a small note
-  near that hint (or by the Resend button) telling the user to check their spam
-  folder if the code isn't in the inbox. Cheap mitigation for the DKIM
-  deliverability gap (P1) — codes that spam-land are still findable. Copy-only
-  change; no API/flow change.
 
 ### Profile / Personalization
 
@@ -146,6 +129,11 @@ longer useful for near-term planning.
   outbox → Redis Streams pipeline. Register is hard-verify (no session until
   `verify-email`); login gates unverified accounts (`EMAIL_NOT_VERIFIED`). See
   `modules/mail-svc.md` and session 2026-06-17 (Phase 3).
+- **DKIM (OTP deliverability)** — configured 2026-06-18; OTP mail now lands in the
+  inbox (verified by received message). Closes the earlier SPF-only spam-land gap.
+- **"Check your spam" hint on verify step** — added a muted `.auth-hint` line under
+  the code prompt in `renderVerifyView` (`web/src/pages/login.ts`). Copy-only, no
+  CSS/JS. See session 2026-06-18.
 
 ### Storage
 

@@ -147,6 +147,7 @@ function renderVerifyView(
         <div>
           <h1 id="auth-title">Verify your email</h1>
           <p class="auth-hint">Enter the 6-digit code sent to <strong></strong>.</p>
+          <p class="auth-hint">Not in your inbox? Check your spam folder.</p>
         </div>
         <form class="auth-form">
           <label>
