@@ -4,7 +4,7 @@ import { success, fail, httpStatusFromError } from "@/shared/http/response";
 import { requireAuth, resolveRequiredUser } from "@/middleware/auth";
 import { verifySessionToken } from "@/shared/crypto/jwt";
 import { revokeSession } from "@/shared/auth/denylist";
-import { authRateLimit } from "@/middleware/rate.limit";
+import { authStrictLimit, authLooseLimit } from "@/middleware/rate.limit";
 import * as profileRepo from "@/modules/profile/profile.repository";
 import {
   authTransportSchemas,
@@ -28,7 +28,6 @@ function sessionCookie(token: string, config: AppConfig) {
 }
 
 export const authHandler = new Elysia({ prefix: "/auth" })
-  .use(authRateLimit)
   .onError(({ code, error, set }) => {
     if (
       error instanceof ValidationError ||
@@ -65,6 +64,7 @@ export const authHandler = new Elysia({ prefix: "/auth" })
       });
     },
     {
+      beforeHandle: authStrictLimit,
       body: t.Object({
         email: t.String({ format: "email" }),
         password: t.String({ minLength: 8 }),
@@ -106,6 +106,7 @@ export const authHandler = new Elysia({ prefix: "/auth" })
       });
     },
     {
+      beforeHandle: authLooseLimit,
       body: t.Object({
         email: t.String({ format: "email" }),
         code: t.String({ minLength: 6, maxLength: 6 }),
@@ -139,6 +140,7 @@ export const authHandler = new Elysia({ prefix: "/auth" })
       return success({ ok: true });
     },
     {
+      beforeHandle: authStrictLimit,
       body: t.Object({
         email: t.String({ format: "email" }),
       }),
@@ -173,6 +175,7 @@ export const authHandler = new Elysia({ prefix: "/auth" })
       });
     },
     {
+      beforeHandle: authLooseLimit,
       body: t.Object({
         email: t.String({ format: "email" }),
         password: t.String(),

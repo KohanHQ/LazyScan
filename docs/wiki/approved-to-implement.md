@@ -20,9 +20,16 @@ code contradicts the assumptions below.
 
 ### Enforce rate limiting on the live public deploy (approved 2026-06-18)
 
-Status: **approved, not started.** Moved from `nice-to-have.md` P0. The site is
-public (`lazyscan.my.id`) with a paid SMTP relay behind the auth flow; the limiter
-exists in code but is inert in production.
+Status: **implemented 2026-06-18** (see `sessions/18-06-2026.md`). Moved from
+`nice-to-have.md` P0. The site is public (`lazyscan.my.id`) with a paid SMTP relay
+behind the auth flow; the limiter exists in code but was inert in production.
+
+> Correction discovered during implementation: the limiter was not just "off and
+> mis-keyed" — it was **inert**. Elysia defaults `.onBeforeHandle` to `local`
+> scope (stripped when `.use()`d into a parent → fires for no routes) and dedupes
+> plugins by `name+seed` (both limiters shared `name:"rateLimit"` with no seed →
+> the auth one was dropped). Fixed via `{ as: "global"/"scoped" }` + distinct
+> seeds, alongside the env/nginx wiring below.
 
 Reason:
 

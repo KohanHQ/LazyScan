@@ -57,3 +57,17 @@ Format per resolution:
 - verification: same run as R-003 (typecheck + 17/17 tests + clean re-review).
 - constraints honored: user-approved deviation from the original `|| 0` (surfaces
   a real upstream anomaly); confined to the convert path, no contract change.
+
+## R-005 Fail closed on undetectable client IP  (resolves F-005)
+- date: 2026-06-18
+- change: Dropped the `?? "unknown"` fallback. Resolve `ip` via the existing
+  `x-real-ip`/socket logic, then throw 429 (`tooManyRequests`) only if it is still
+  undetectable — placed *after* resolution so the normal `X-Real-IP` path is
+  unchanged. Did not use CodeRabbit's suggested ordering (which throws before the
+  proxy-header check and would 400 valid proxied requests).
+- files: api/src/middleware/rate.limit.ts
+- verification: `bun run typecheck` clean; CodeRabbit re-review
+  `-t uncommitted` → 0 findings; runtime probes still hold (enabled→429 +
+  Retry-After, disabled→200 gate).
+- constraints honored: smallest safe change (~4 lines); preserves the normal
+  resolution path; no DTO/contract/behavior change beyond the security hardening.

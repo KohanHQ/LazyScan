@@ -74,6 +74,8 @@ services:
       IMAGE_SVC_URL: http://image-svc:8001     # avatars/covers sync convert
       STORAGE_QUOTA_BYTES: ${STORAGE_QUOTA_BYTES:-8589934592}   # 8 GiB (§8.3)
       ENABLE_STORAGE_PRUNE: ${ENABLE_STORAGE_PRUNE:-false}      # reclaim staged page originals under the cap
+      ENABLE_RATE_LIMIT: ${ENABLE_RATE_LIMIT:-false}            # per-IP limiter (all routes + auth/public buckets)
+      TRUST_PROXY: ${TRUST_PROXY:-false}                        # key on nginx X-Real-IP (from CF-Connecting-IP)
       JWT_SECRET: ${JWT_SECRET}
       DEFAULT_SUPERUSER_EMAIL: ${DEFAULT_SUPERUSER_EMAIL}
       DEFAULT_SUPERUSER_PASSWORD: ${DEFAULT_SUPERUSER_PASSWORD}

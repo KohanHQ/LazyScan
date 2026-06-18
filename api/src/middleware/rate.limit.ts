@@ -29,78 +29,96 @@ function tooManyRequests(retryAfter: number): AppError {
 }
 
 export interface RateLimitOptions {
-  windowMs?: number;
-  maxRequests?: number;
-  keyGenerator?: (request: Request, ip: string) => string;
+  windowMs: number;
+  maxRequests: number;
+  // Bucket namespace; distinct prefixes keep separate counters in the shared
+  // store (e.g. the global cap and a per-route cap never collide for one IP).
+  keyPrefix?: string;
   forceEnabled?: boolean;
 }
 
-export function rateLimitMiddleware(options: RateLimitOptions = {}) {
-  const {
-    windowMs = staticConfig.rateLimit.windowMs,
-    maxRequests = staticConfig.rateLimit.maxRequests,
-    keyGenerator = (_req: Request, ip: string) => ip,
-    forceEnabled = false,
-  } = options;
+// Fixed-window counter. Callable from a plugin hook or a route `beforeHandle`;
+// throws 429 when the bucket is exhausted, else sets X-RateLimit-* headers.
+export function enforceRateLimit(ctx: any, options: RateLimitOptions): void {
+  const { request, server, set, config } = ctx;
+  const { windowMs, maxRequests, keyPrefix, forceEnabled = false } = options;
 
-  return new Elysia({ name: "rateLimit" })
-    .derive(({ request, server }) => {
-      const ip = server?.requestIP(request)?.address ?? "unknown";
-      return { clientIp: ip };
-    })
-    .onBeforeHandle((ctx: any) => {
-      const { request, clientIp, set, config } = ctx;
-      if (!forceEnabled && !config?.features.rateLimit) {
-        return;
-      }
+  if (!forceEnabled && !config?.features.rateLimit) {
+    return;
+  }
 
-      // Behind a trusted reverse proxy the socket peer is the proxy, so every
-      // client would share one bucket. Use the proxy-set `X-Real-IP` (nginx sets
-      // it to `$remote_addr`, so it is not client-spoofable) when trustProxy is on;
-      // otherwise stay on the spoof-proof socket address.
-      const ip =
-        config?.server?.trustProxy
-          ? request.headers.get("x-real-ip")?.trim() || clientIp
-          : clientIp;
+  const socketIp = server?.requestIP(request)?.address;
 
-      const key = keyGenerator(request, ip);
-      const now = Date.now();
-      const entry = store.get(key);
+  // Behind the proxy the socket peer is nginx; when trustProxy is on use the
+  // proxy-set X-Real-IP (nginx fills it from CF-Connecting-IP, not client-spoofable).
+  const ip = config?.server?.trustProxy
+    ? request.headers.get("x-real-ip")?.trim() || socketIp
+    : socketIp;
 
-      if (!entry || entry.resetAt <= now) {
-        store.set(key, {
-          count: 1,
-          resetAt: now + windowMs,
-        });
-        return;
-      }
+  // No detectable client IP: fail closed rather than collapse into one bucket.
+  if (!ip) {
+    throw tooManyRequests(Math.ceil(windowMs / 1000));
+  }
 
-      entry.count++;
+  const key = keyPrefix ? `${keyPrefix}:${ip}` : ip;
+  const now = Date.now();
+  const entry = store.get(key);
 
-      if (entry.count > maxRequests) {
-        const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
-        set.headers["Retry-After"] = String(retryAfter);
-        set.headers["X-RateLimit-Limit"] = String(maxRequests);
-        set.headers["X-RateLimit-Remaining"] = "0";
-        set.headers["X-RateLimit-Reset"] = String(entry.resetAt);
-        throw tooManyRequests(retryAfter);
-      }
-
-      set.headers["X-RateLimit-Limit"] = String(maxRequests);
-      set.headers["X-RateLimit-Remaining"] = String(maxRequests - entry.count);
-      set.headers["X-RateLimit-Reset"] = String(entry.resetAt);
+  if (!entry || entry.resetAt <= now) {
+    store.set(key, {
+      count: 1,
+      resetAt: now + windowMs,
     });
+    return;
+  }
+
+  entry.count++;
+
+  if (entry.count > maxRequests) {
+    const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+    set.headers["Retry-After"] = String(retryAfter);
+    set.headers["X-RateLimit-Limit"] = String(maxRequests);
+    set.headers["X-RateLimit-Remaining"] = "0";
+    set.headers["X-RateLimit-Reset"] = String(entry.resetAt);
+    throw tooManyRequests(retryAfter);
+  }
+
+  set.headers["X-RateLimit-Limit"] = String(maxRequests);
+  set.headers["X-RateLimit-Remaining"] = String(maxRequests - entry.count);
+  set.headers["X-RateLimit-Reset"] = String(entry.resetAt);
 }
 
-export const globalRateLimit = rateLimitMiddleware();
+// App-wide. `as:"global"` so the hook fires for sibling routes (default local
+// scope is stripped on `.use()`); `seed` avoids Elysia name+seed dedup. See findings.md.
+export const globalRateLimit = new Elysia({ name: "rateLimit", seed: "global" })
+  .onBeforeHandle({ as: "global" }, (ctx: any) =>
+    enforceRateLimit(ctx, {
+      windowMs: staticConfig.rateLimit.windowMs,
+      maxRequests: staticConfig.rateLimit.maxRequests,
+    })
+  );
 
-export const strictRateLimit = rateLimitMiddleware({
-  windowMs: 60 * 1000, // 1 minute
-  maxRequests: 10,
-});
+// Per-route limiters used as a route `beforeHandle`. Strict = SMTP-cost paths
+// (register/resend); loose = OTP-typo/password retries (verify/login).
+export const authStrictLimit = (ctx: any): void =>
+  enforceRateLimit(ctx, {
+    windowMs: staticConfig.rateLimit.auth.strict.windowMs,
+    maxRequests: staticConfig.rateLimit.auth.strict.maxRequests,
+    keyPrefix: "auth:strict",
+  });
 
-export const authRateLimit = rateLimitMiddleware({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 5,
-  keyGenerator: (req, ip) => `auth:${ip}`,
-});
+export const authLooseLimit = (ctx: any): void =>
+  enforceRateLimit(ctx, {
+    windowMs: staticConfig.rateLimit.auth.loose.windowMs,
+    maxRequests: staticConfig.rateLimit.auth.loose.maxRequests,
+    keyPrefix: "auth:loose",
+  });
+
+// Short-window burst cap on public reads (catalog/reader/profile); bounds
+// scraping under the global cap without tripping normal browsing.
+export const publicReadLimit = (ctx: any): void =>
+  enforceRateLimit(ctx, {
+    windowMs: staticConfig.rateLimit.publicRead.windowMs,
+    maxRequests: staticConfig.rateLimit.publicRead.maxRequests,
+    keyPrefix: "public",
+  });

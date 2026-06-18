@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import * as service from "@/modules/manga/manga.service";
 import { success, fail, httpStatusFromError } from "@/shared/http/response";
 import { requireAuth, resolveRequiredUser } from "@/middleware/auth";
+import { publicReadLimit } from "@/middleware/rate.limit";
 import {
   mangaTransportSchemas,
   validateMangaRequest,
@@ -93,6 +94,7 @@ export const mangaHandler = new Elysia({ prefix: "/manga" })
       return success(mangaList);
     },
     {
+      beforeHandle: publicReadLimit,
       query: t.Object({
         limit: t.Optional(t.String()),
         offset: t.Optional(t.String()),
@@ -135,6 +137,7 @@ export const mangaHandler = new Elysia({ prefix: "/manga" })
       return success(mangaList);
     },
     {
+      beforeHandle: publicReadLimit,
       query: t.Object({
         limit: t.Optional(t.String()),
         range: t.Optional(t.String()),
@@ -159,6 +162,7 @@ export const mangaHandler = new Elysia({ prefix: "/manga" })
       return success(tags);
     },
     {
+      beforeHandle: publicReadLimit,
       response: {
         200: t.Object({
           success: t.Literal(true),
@@ -182,6 +186,7 @@ export const mangaHandler = new Elysia({ prefix: "/manga" })
       return success(mangaList);
     },
     {
+      beforeHandle: publicReadLimit,
       query: t.Object({
         limit: t.Optional(t.String()),
       }),
@@ -202,6 +207,7 @@ export const mangaHandler = new Elysia({ prefix: "/manga" })
       return success(manga);
     },
     {
+      beforeHandle: publicReadLimit,
       params: t.Object({
         slug: t.String(),
       }),
@@ -222,6 +228,7 @@ export const mangaHandler = new Elysia({ prefix: "/manga" })
       return success(manga);
     },
     {
+      beforeHandle: publicReadLimit,
       params: t.Object({
         id: t.String({ format: "uuid" }),
       }),

@@ -67,3 +67,21 @@ Format per finding:
   `sharp` fallback, but in the HTTP path a dimensionless 200 is a real anomaly
   (image-svc always returns computed dims) that should surface, not persist.
 - status: resolved (→ R-004)
+
+## F-005 Rate limiter "unknown" IP fallback collapses to one bucket
+- date: 2026-06-18
+- source: CodeRabbit CLI (`coderabbit review --agent -t uncommitted`), P0 rate-limit
+- severity: low (reported critical; downgraded — see note)
+- location: api/src/middleware/rate.limit.ts:50
+- problem: `enforceRateLimit` fell back to `"unknown"` when no client IP could be
+  resolved, so every IP-less request shared one bucket (mis-throttle / shared-bucket
+  DoS surface).
+- note: Pre-existing behavior, preserved from the original limiter — not introduced
+  by this change. Effectively unreachable in this deploy: `server.requestIP()` is
+  null only for synthetic `app.handle()` calls, and with `trustProxy` on every
+  limited route is under `/api/` where nginx sets `X-Real-IP`, so `ip` is always the
+  real client. Hardened anyway (user decision, defense-in-depth). CodeRabbit's
+  suggested patch (throw 400 *before* the `x-real-ip` check) was NOT applied — it
+  would reject valid proxied requests when `socketIp` is absent but `X-Real-IP` is
+  present.
+- status: resolved (→ R-005)

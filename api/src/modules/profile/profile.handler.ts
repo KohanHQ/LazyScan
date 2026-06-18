@@ -3,6 +3,7 @@ import * as service from "@/modules/profile/profile.service";
 import { mangaResponseSchema } from "@/modules/manga/manga.handler";
 import { success, fail, httpStatusFromError } from "@/shared/http/response";
 import { requireAuth, resolveRequiredUser } from "@/middleware/auth";
+import { publicReadLimit } from "@/middleware/rate.limit";
 import {
   profileTransportSchemas,
   validateProfileRequest,
@@ -163,6 +164,7 @@ export const profileHandler = new Elysia({ prefix: "/profile" })
       return success(profile);
     },
     {
+      beforeHandle: publicReadLimit,
       params: t.Object({
         username: t.String(),
       }),

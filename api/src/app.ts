@@ -54,6 +54,18 @@ export function createApp() {
       .onAfterResponse(metricsOnAfterResponse)
 
       .use(logger({ skip: ["/health", "/metrics"] }))
+
+      // Ops health: defined before the rate limiter so uptime/tunnel checks are
+      // never throttled (they share one proxy-IP bucket). RED-metered as usual.
+      .get("/health", ({ config }) =>
+        success({
+          status: healthStatus.healthy,
+          environment: config?.isProduction ? "production" : "development",
+          features: config?.features,
+          timestamp: new Date().toISOString(),
+        })
+      )
+
       .use(globalRateLimit)
       .use(authMiddleware)
 
@@ -75,15 +87,6 @@ export function createApp() {
           .use(libraryHandler)
           .use(readingStatusHandler)
           .use(adminHandler),
-      )
-
-      .get("/health", ({ config }) =>
-        success({
-          status: healthStatus.healthy,
-          environment: config?.isProduction ? "production" : "development",
-          features: config?.features,
-          timestamp: new Date().toISOString(),
-        })
       )
 
       .onError(({ code, error, set, config }) => {

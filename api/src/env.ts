@@ -48,10 +48,8 @@ export const envSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((val) => val === "true"),
-  // When true, derive the client IP from the proxy-set `X-Real-IP` header instead
-  // of the socket peer. Enable only when the app sits behind a trusted reverse
-  // proxy (this repo's nginx sets `X-Real-IP $remote_addr`); leaving it off keeps
-  // the spoof-proof socket address.
+  // When true, key the limiter on the proxy-set `X-Real-IP` instead of the socket
+  // peer. Enable only behind the trusted nginx (fills X-Real-IP from CF-Connecting-IP).
   TRUST_PROXY: z
     .enum(["true", "false"])
     .default("false")

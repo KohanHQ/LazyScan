@@ -259,6 +259,14 @@ export const staticConfig = {
   rateLimit: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     maxRequests: 100,
+    // Per-route auth buckets (per IP). Strict = SMTP-cost register/resend; loose
+    // = verify/login (OTP attempt cap is the real brute-force control).
+    auth: {
+      strict: { windowMs: 15 * 60 * 1000, maxRequests: 5 },
+      loose: { windowMs: 15 * 60 * 1000, maxRequests: 20 },
+    },
+    // Burst cap on public reads (catalog/reader/profile) — anti-scraping.
+    publicRead: { windowMs: 60 * 1000, maxRequests: 60 },
   },
 
   // Email verification OTP (Herald pipeline).

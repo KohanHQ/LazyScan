@@ -2,6 +2,7 @@ import { Elysia, t, NotFoundError } from "elysia";
 import * as service from "@/modules/reader/reader.service";
 import { success, fail, httpStatusFromError } from "@/shared/http/response";
 import { requireAuth, resolveRequiredUser } from "@/middleware/auth";
+import { publicReadLimit } from "@/middleware/rate.limit";
 import {
   ValidationError,
   BusinessRuleError,
@@ -99,6 +100,7 @@ export const readerHandler = new Elysia()
       return success(result);
     },
     {
+      beforeHandle: publicReadLimit,
       params: t.Object({
         id: t.String(),
       }),
@@ -122,6 +124,7 @@ export const readerHandler = new Elysia()
       return success(result);
     },
     {
+      beforeHandle: publicReadLimit,
       params: t.Object({
         id: t.String(),
         chapterId: t.String(),
