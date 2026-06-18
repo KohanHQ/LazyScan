@@ -28,11 +28,7 @@ Urgency guide:
 
 ## P0 / Approved next
 
-- **Enforce rate limiting on the live public deploy** — moved to
-  [approved-to-implement.md](approved-to-implement.md) (approved 2026-06-18). The
-  limiter exists in code but is off and mis-keyed for this deploy
-  (`ENABLE_RATE_LIMIT`/`TRUST_PROXY` unset, nginx never sets `X-Real-IP`,
-  `CF-Connecting-IP` unread). Email-bomb + brute-force open until wired.
+- _(empty — rate limiting shipped 2026-06-18; see Done.)_
 
 ## P1 / Important
 
@@ -178,6 +174,11 @@ longer useful for near-term planning.
 
 ### Deploy / Edge
 
+- **Rate limiting (live)** — fixed-window limiter wired + verified in production
+  (2026-06-18): global 100/15min, auth strict 5/15min + loose 20/15min, public-read
+  60/1min burst cap, keyed on the real client IP (`CF-Connecting-IP` → nginx
+  `X-Real-IP`). See session 2026-06-18 (deploy) and `approved-to-implement.md`. The
+  limiter had been inert (Elysia local-scope hook stripping + name dedup); fixed.
 - **Single-origin nginx edge** — SPA at `/`, API at `/api/v1/*`, `/health` at root;
   same host, no CORS, same-site cookies; 10 MB edge body cap. `/metrics`
   internal-only. See session 2026-06-17 (Phase 5) and `deploy.md`.
