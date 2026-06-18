@@ -2864,9 +2864,9 @@ img.user-avatar {
 }
 
 [data-theme="dark"] .library-advanced-btn {
-  background: #1a1f1e;
-  border-color: #2f3d38;
-  color: #a8b8af;
+  background: var(--bg-tertiary);
+  border-color: var(--border);
+  color: var(--text-secondary);
 }
 
 [data-theme="dark"] .library-advanced-btn:hover,
@@ -2882,8 +2882,8 @@ img.user-avatar {
 }
 
 [data-theme="dark"] .library-advanced-panel {
-  background: #1a1f1e;
-  border-color: #2f3d38;
+  background: var(--bg-card);
+  border-color: var(--border);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -2893,8 +2893,8 @@ img.user-avatar {
 
 [data-theme="dark"] .library-advanced-input,
 [data-theme="dark"] .library-advanced-select {
-  background: #121615;
-  border-color: #2f3d38;
+  background: var(--bg-tertiary);
+  border-color: var(--border);
   color: #e8e4dd;
 }
 
