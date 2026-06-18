@@ -2766,12 +2766,23 @@ img.user-avatar {
   color: #fff;
 }
 
+/* Drop the advanced panel as an absolute dropdown below the search row (scope the
+   positioning context to the home aside — the only one carrying this panel). */
+.heading-aside:has(.library-advanced-panel) {
+  position: relative;
+}
+
 .library-advanced-panel {
-  margin-top: 12px;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 100;
+  width: min(520px, 90vw);
   padding: 16px;
   border: 1px solid #d2ded8;
   border-radius: 8px;
   background: #fffaf2;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .library-advanced-panel[hidden] {
@@ -2873,6 +2884,7 @@ img.user-avatar {
 [data-theme="dark"] .library-advanced-panel {
   background: #1a1f1e;
   border-color: #2f3d38;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="dark"] .library-advanced-field label {
