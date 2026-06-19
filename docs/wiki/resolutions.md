@@ -97,3 +97,19 @@ Format per resolution:
 - constraints honored: smallest safe change; global cap + per-route auth/publicRead
   buckets unchanged; no DTO/response-contract change; poll-route auth gating
   untouched (still owner/superuser-scoped).
+
+## R-007 Require >= 10 bytes in GIF magic check  (resolves F-007)
+- date: 2026-06-19
+- change: `isGifBuffer` now requires `buffer.length >= 10` (was `>= 6`) so the
+  magic-byte sniff also guards `readGifDimensions`' offset-6-9 reads. A malformed
+  6–9 byte upload with valid GIF magic now fails the sniff → clean 400
+  (`INVALID_IMAGE`) instead of an unhandled `RangeError` → 500. No valid GIF is
+  rejected (a real GIF is always >= 13 bytes: 6-byte header + 7-byte logical
+  screen descriptor). Applied with user approval; CodeRabbit's exact suggested fix.
+- files: api/src/modules/upload/upload.service.ts (`isGifBuffer`)
+- verification: api `bun run typecheck` clean; CodeRabbit re-review
+  `--type uncommitted` → 0 findings (twice — after the fix and after the comment
+  trim). DB-backed avatar path not run live (no local Postgres/storage; see
+  session note).
+- constraints honored: smallest safe change (one-line bound); no DTO/response
+  contract change; owner-gate + static-image path untouched.

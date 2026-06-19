@@ -107,3 +107,18 @@ Format per finding:
   progress page poll, then attempt login from the same IP → 429
   "Too many requests".
 - status: resolved (→ R-006)
+
+## F-007 GIF magic-byte check too short for dimension read
+- date: 2026-06-19
+- source: CodeRabbit CLI (`coderabbit review --plain --type uncommitted`), animated GIF owner avatar
+- severity: major (reported by CodeRabbit; agreed)
+- location: api/src/modules/upload/upload.service.ts:42-58 (`isGifBuffer` / `readGifDimensions`)
+- problem: `isGifBuffer` only requires `buffer.length >= 6`, but `readGifDimensions`
+  reads little-endian uint16 at offsets 6 and 8 (needs ≥10 bytes). A malformed
+  6–9 byte upload with valid GIF magic passes the sniff, then `readUInt16LE`
+  throws `RangeError [ERR_OUT_OF_RANGE]` — an unhandled crash surfacing as a 500
+  instead of a clean 400. Owner-only route, but still a robustness gap.
+- suggested fix: require `buffer.length >= 10` in `isGifBuffer` (a real GIF is
+  always ≥13 bytes — 6-byte header + 7-byte logical screen descriptor — so no
+  valid GIF is rejected).
+- status: resolved (→ R-007)
