@@ -262,8 +262,8 @@ function renderEditForm(container: HTMLElement, profile: Profile): void {
             ? `
         <label>
           <span>Custom avatar (owner)</span>
-          <input name="avatarFile" type="file" accept="image/png,image/jpeg,image/webp" />
-          <small>PNG, JPEG, or WebP up to 10MB. Replaces the generated avatar; uploaded on save.</small>
+          <input name="avatarFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+          <small>PNG, JPEG, WebP, or GIF up to 10MB. Animated GIFs are kept as-is. Replaces the generated avatar; uploaded on save.</small>
         </label>`
             : ""
         }

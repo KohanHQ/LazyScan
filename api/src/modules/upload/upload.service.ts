@@ -10,7 +10,11 @@ import { badRequest, forbidden, notFound } from "@/shared/http/error";
 import { UUID } from "@/shared/types/id";
 import { assertUuid } from "@/shared/identity/uuid";
 import { createStorageService, type StorageService } from "@/shared/storage";
-import { validateAndProcessImage, VERTICAL_READER_IMAGE_OPTIONS } from "@/shared/upload";
+import {
+  validateAndProcessImage,
+  VERTICAL_READER_IMAGE_OPTIONS,
+  MAX_IMAGE_UPLOAD_BYTES,
+} from "@/shared/upload";
 import {
   generateMangaPath,
   generateGenericPath,
@@ -18,7 +22,7 @@ import {
 import { envSchema } from "@/env";
 import { createConfig, isOwnerEmail } from "@/config";
 import { AuthUser } from "@/middleware/auth";
-import { logInfo } from "@/shared/utility/logger";
+import { logInfo, logWarn } from "@/shared/utility/logger";
 import { logger } from "@/shared/utility/logger";
 
 const env = envSchema.parse(process.env);
@@ -32,6 +36,26 @@ const AVATAR_IMAGE_OPTIONS = {
   quality: 88,
   format: "webp",
 } as const;
+
+// GIF magic "GIF87a"/"GIF89a"; confirms bytes match the declared type. The >= 10
+// floor also guards readGifDimensions' offset-6-9 reads (real GIFs are >= 13 b).
+function isGifBuffer(buffer: Buffer): boolean {
+  return (
+    buffer.length >= 10 &&
+    buffer[0] === 0x47 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x38 &&
+    (buffer[4] === 0x37 || buffer[4] === 0x39) &&
+    buffer[5] === 0x61
+  );
+}
+
+// Logical-screen dimensions from the GIF header (little-endian uint16 at
+// offsets 6 and 8) — recorded as object metadata, mirroring the WebP path.
+function readGifDimensions(buffer: Buffer): { width: number; height: number } {
+  return { width: buffer.readUInt16LE(6), height: buffer.readUInt16LE(8) };
+}
 
 function generateUploadKey(
   userId: UUID,
@@ -58,10 +82,14 @@ function toStatusResponse(upload: Upload): UploadStatusResponse {
 // the display name for everyone else, and PATCH /profile/me keeps rejecting
 // avatarUrl (the upload route is the only write path).
 //
-// The processed key is deterministic (avatars/{userId}.webp) so replacing the
-// avatar overwrites the same object instead of orphaning old ones; the stored
-// avatar_url carries a `?v=` cache-buster so browsers/CDNs pick up the new
-// bytes despite the unchanged key.
+// The processed key is deterministic (avatars/{userId}.{webp|gif}) so replacing
+// the avatar overwrites the same object instead of orphaning old ones; the
+// stored avatar_url carries a `?v=` cache-buster so browsers/CDNs pick up the
+// new bytes despite the unchanged key.
+//
+// A GIF is stored as-is (convert only emits static WebP, which would drop the
+// animation); everything else converts to a static 512px WebP. A format switch
+// deletes the stale counterpart so the no-orphan invariant holds.
 export async function createAvatarUpload(
   user: AuthUser,
   file: File
@@ -79,23 +107,65 @@ export async function createAvatarUpload(
   }
   const storage = createStorageService(config);
 
-  const processed = await validateAndProcessImage(file, {
-    ...AVATAR_IMAGE_OPTIONS,
-  });
+  // Detect by declared type, then confirm the magic bytes; a GIF is stored
+  // as-is to keep its animation, anything else is converted to static WebP.
+  const isGifAvatar = file.type === "image/gif";
+
+  let processedBuffer: Buffer;
+  let processedContentType: string;
+  let processedExt: "gif" | "webp";
+  let dimensions: { width: number; height: number };
+
+  if (isGifAvatar) {
+    if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+      throw badRequest("Image file too large. Maximum size is 10MB", {
+        code: "FILE_TOO_LARGE",
+        details: { maxSize: MAX_IMAGE_UPLOAD_BYTES, actualSize: file.size },
+      });
+    }
+    const buffer = Buffer.from(await file.arrayBuffer());
+    if (!isGifBuffer(buffer)) {
+      throw badRequest("Invalid image file", { code: "INVALID_IMAGE" });
+    }
+    processedBuffer = buffer;
+    processedContentType = "image/gif";
+    processedExt = "gif";
+    dimensions = readGifDimensions(buffer);
+  } else {
+    const processed = await validateAndProcessImage(file, {
+      ...AVATAR_IMAGE_OPTIONS,
+    });
+    processedBuffer = processed.buffer;
+    processedContentType = processed.contentType;
+    processedExt = "webp";
+    dimensions = { width: processed.width, height: processed.height };
+  }
 
   const sanitized = file.name.replace(/[^a-zA-Z0-9.-]/g, "_").substring(0, 80);
   const originalKey = `avatars/${user.id}/${sanitized}`;
-  const processedKey = `avatars/${user.id}.webp`;
+  const processedKey = `avatars/${user.id}.${processedExt}`;
 
-  const uploadResult = await storage.upload(processedKey, processed.buffer, {
-    contentType: processed.contentType,
+  const uploadResult = await storage.upload(processedKey, processedBuffer, {
+    contentType: processedContentType,
     metadata: {
-      originalWidth: processed.width.toString(),
-      originalHeight: processed.height.toString(),
+      originalWidth: dimensions.width.toString(),
+      originalHeight: dimensions.height.toString(),
       processedAt: new Date().toISOString(),
       uploadType: "avatar",
     },
   });
+
+  // Key extension follows the format, so a GIF<->static switch orphans the old
+  // object; drop the counterpart best-effort (owner-only, one object).
+  const staleKey = `avatars/${user.id}.${processedExt === "gif" ? "webp" : "gif"}`;
+  try {
+    await storage.delete(staleKey);
+  } catch (cause) {
+    logWarn("Failed to delete stale avatar object", {
+      key: staleKey,
+      error: cause instanceof Error ? cause.message : String(cause),
+    });
+  }
 
   const upload = await uploadRepo.create({
     userId: user.id,
