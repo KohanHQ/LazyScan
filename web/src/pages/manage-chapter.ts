@@ -16,8 +16,9 @@ import { renderError } from "@/components/states";
 import { navigateTo } from "@/router";
 import { requireSessionForPage } from "@/components/page-session";
 import { renderPageHeading } from "@/components/page-heading";
-import { setFormError, setSubmitBusy } from "@/utils/form";
+import { clearFormError, setFormError, setSubmitBusy } from "@/utils/form";
 import { escapeHtml } from "@/utils/dom";
+import { cbzSupported, extractCbz, isArchiveFile } from "@/utils/cbz";
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const MAX_FILES = 300;
@@ -59,6 +60,14 @@ function renderForm(
   path: string,
   title: string
 ): void {
+  // CBZ/ZIP is desktop-only (in-memory unzip); accept + hint adapt to the device.
+  const archiveOk = cbzSupported();
+  const accept = archiveOk
+    ? "image/png,image/jpeg,image/webp,.cbz,.zip"
+    : "image/png,image/jpeg,image/webp";
+  const hint = archiveOk
+    ? `PNG, JPEG, or WebP — or a CBZ/ZIP archive. Up to ${MAX_FILES} pages, 10MB each. Pages are ordered by filename.`
+    : `PNG, JPEG, or WebP. Up to ${MAX_FILES} pages, 10MB each. Pages are ordered by filename.`;
   container.innerHTML = `
     ${renderPageHeading({ eyebrow: "Chapter upload", title: title || "Upload chapter" })}
     <section class="manage-panel">
@@ -82,14 +91,14 @@ function renderForm(
         <label>
           <span>Page images</span>
           <div class="dropzone" data-role="dropzone">
-            <input class="dropzone-input" name="files" type="file" accept="image/png,image/jpeg,image/webp" multiple required />
+            <input class="dropzone-input" name="files" type="file" accept="${accept}" multiple required />
             <div class="dropzone-prompt">
               <strong>Drag &amp; drop pages here</strong>
               <span>or click to browse</span>
               <span class="dropzone-count" data-role="count" hidden></span>
             </div>
           </div>
-          <small>PNG, JPEG, or WebP. Up to ${MAX_FILES} pages, 10MB each. Pages are ordered by filename.</small>
+          <small>${escapeHtml(hint)}</small>
         </label>
         <label class="manage-checkbox">
           <input name="holdAsDraft" type="checkbox" />
@@ -111,33 +120,48 @@ function renderForm(
       navigateTo(`/manage/manga/${encodeURIComponent(mangaId)}`)
     );
 
+  // Resolved at pick time: loose images directly, or the image entries unzipped
+  // from a dropped CBZ/ZIP. Read at submit instead of the raw input FileList.
+  const selection: SelectedPages = { files: [] };
   const dropzone = container.querySelector<HTMLElement>("[data-role='dropzone']");
-  if (dropzone) {
-    wireDropzone(dropzone);
-  }
 
-  form?.addEventListener("submit", (event) => {
-    event.preventDefault();
-    void handleCreate(container, mangaId, path, form);
-  });
+  if (form) {
+    if (dropzone) {
+      wireDropzone(dropzone, form, selection);
+    }
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      void handleCreate(container, mangaId, path, form, selection.files);
+    });
+  }
+}
+
+interface SelectedPages {
+  files: File[];
 }
 
 // The file <input> overlays the dropzone (opacity 0), so native click-to-browse
-// and native file drops both target it directly. The dropzone only adds the
-// drag-over highlight and a selected-count readout — validation still runs on
-// the input's FileList at submit, so the upload contract is unchanged.
-function wireDropzone(dropzone: HTMLElement): void {
+// and native file drops both target it directly. The change handler resolves the
+// picked files into `selection` (unzipping a CBZ/ZIP first); submit validates and
+// uploads from `selection`, so the per-page upload contract is unchanged.
+function wireDropzone(
+  dropzone: HTMLElement,
+  form: HTMLFormElement,
+  selection: SelectedPages
+): void {
   const input = dropzone.querySelector<HTMLInputElement>(".dropzone-input");
   const count = dropzone.querySelector<HTMLElement>("[data-role='count']");
   if (!input || !count) {
     return;
   }
 
+  const showCount = (label: string): void => {
+    count.hidden = label === "";
+    count.textContent = label;
+  };
+
   input.addEventListener("change", () => {
-    const selected = input.files?.length ?? 0;
-    count.hidden = selected === 0;
-    count.textContent =
-      selected === 1 ? "1 file selected" : `${selected} files selected`;
+    void resolveSelection(form, selection, input.files, showCount);
   });
 
   for (const eventName of ["dragenter", "dragover"]) {
@@ -152,11 +176,63 @@ function wireDropzone(dropzone: HTMLElement): void {
   }
 }
 
+// A single dropped CBZ/ZIP is unzipped into its image pages; anything else is
+// taken as loose image files. Archive errors and unsupported devices clear the
+// selection and surface a message rather than silently failing at submit.
+async function resolveSelection(
+  form: HTMLFormElement,
+  selection: SelectedPages,
+  fileList: FileList | null,
+  showCount: (label: string) => void
+): Promise<void> {
+  clearFormError(form);
+  const picked = fileList ? Array.from(fileList) : [];
+  const archive = picked.find(isArchiveFile);
+
+  if (!archive) {
+    selection.files = picked;
+    showCount(pageCountLabel(picked.length));
+    return;
+  }
+
+  if (picked.length > 1) {
+    selection.files = [];
+    showCount("");
+    setFormError(form, "Upload one CBZ/ZIP archive on its own, not mixed with other files.");
+    return;
+  }
+  if (!cbzSupported()) {
+    selection.files = [];
+    showCount("");
+    setFormError(form, "CBZ/ZIP import is desktop-only. Use individual page images here.");
+    return;
+  }
+
+  showCount("Reading archive…");
+  try {
+    const pages = await extractCbz(archive);
+    selection.files = pages;
+    showCount(`CBZ · ${pageCountLabel(pages.length)}`);
+  } catch (error) {
+    selection.files = [];
+    showCount("");
+    setFormError(form, error instanceof Error ? error.message : "Could not read the archive.");
+  }
+}
+
+function pageCountLabel(count: number): string {
+  if (count === 0) {
+    return "";
+  }
+  return count === 1 ? "1 file selected" : `${count} files selected`;
+}
+
 async function handleCreate(
   container: HTMLElement,
   mangaId: string,
   path: string,
-  form: HTMLFormElement
+  form: HTMLFormElement,
+  files: File[]
 ): Promise<void> {
   const data = new FormData(form);
   const title = String(data.get("title") || "").trim();
@@ -164,8 +240,6 @@ async function handleCreate(
   const volumeRaw = String(data.get("volume") || "").trim();
   const sortOrderRaw = String(data.get("sortOrder") || "").trim();
   const holdAsDraft = data.get("holdAsDraft") === "on";
-  const fileInput = form.querySelector<HTMLInputElement>("[name='files']");
-  const files = fileInput?.files ? Array.from(fileInput.files) : [];
 
   const validationError = validateSelection(title, files);
   if (validationError) {
