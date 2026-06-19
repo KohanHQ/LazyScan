@@ -76,6 +76,57 @@ Urgency guide:
   animated GIF/WebP) — confirm the avatar slot isn't a static `background-image`
   crop (`web/src/utils/avatar.ts`, profile render).
 
+- **General user avatar flow** — owner-only custom avatar exists
+  (`upload.service.ts`, owner-gated `avatar` type); everyone else stays on the
+  derived avatar. Open avatar upload/selection to all users. Route + convert
+  pipeline already exist — mainly auth-gate widening + a web entry point. Pairs with
+  **Animated GIF owner avatar** above (same MIME/convert touch points). _(from legacy
+  P2 review 2026-06-19; carried over as still-relevant.)_
+
+### Upload / Management
+
+- **ZIP/CBZ chapter upload** — _verified absent 2026-06-19_ (no `cbz`/`zip`/`unzip`/
+  `JSZip` in `web/src`, `api/src`, or `image-svc`). Upload is page-by-page only
+  (`api/src/modules/upload/*`, `chapter.service.ts`). CBZ/ZIP is the canonical manga
+  archive format; this is the biggest content-creation win for the uploader-centric
+  flow. Unzip (client `JSZip` or server-side) → feed pages into the existing staging/
+  presign + image-svc convert + outbox path (those stay untouched; only ingest shape
+  changes). Highest-leverage feature candidate. Effort: medium. _(from legacy P2.)_
+
+- **Replace individual failed page** — allow replacing one staged/failed page instead
+  of re-running the whole original. _(from legacy P2; not verified against trimmed
+  repo — check current retry surface before scoping.)_
+
+### Reader Experience
+
+- **Reader zoom/pan** — _verified absent 2026-06-19_. Reader has direction
+  (ltr/rtl/vertical incl. webtoon scroll), fit modes, and preload
+  (`pages/reader.ts`, `state/settings.ts`) but no zoom/pan for inspecting hi-res
+  pages. QoL on an otherwise-mature reader. Effort: low-med. _(from legacy P2.)_
+
+- **Double-page / spread mode**, **chapter jump/search inside reader**, **reader
+  shortcut/help overlay** — additional legacy reader-P2 ideas; not verified against
+  the trimmed reader. Confirm against `pages/reader.ts` before scoping. _(from legacy
+  P2.)_
+
+### Library / Discovery
+
+- **Author/artist pages** — _verified absent 2026-06-19_ (no author/artist route in
+  `web/src`). List manga by the same creator from existing metadata. Discovery win,
+  data already stored. Effort: low-med. _(from legacy P2.)_
+
+- **Card-level favorite/queue affordance**, **reading queue manual reorder**
+  (`user_library.position` reserved), **new-chapters feed read-state polish** —
+  legacy library-P2 ideas; not verified against trimmed repo (note: library advanced
+  filter/sort already shipped in trimmed). Confirm before scoping. _(from legacy P2.)_
+
+> Cherry-pick note (2026-06-19): the above were surfaced by reviewing the legacy
+> `LazyScan-Stack` backlog against this repo. Items tagged _verified absent_ were
+> grep-confirmed missing here; untagged ones still need a trimmed-repo check. Legacy
+> "Done" ≠ trimmed Done — webtoon scroll, library advanced filter/sort, and reading
+> status are already shipped here despite legacy still listing them. Promote chosen
+> items to P1/P0 (or `approved-to-implement.md`) when scoped.
+
 Otherwise populate as items are reviewed against this repo. Carry candidates here
 only after confirming they apply to the trimmed stack — do not import the
 LazyScan-Stack backlog wholesale; that tree is experimental and its state diverges.
@@ -91,10 +142,29 @@ LazyScan-Stack backlog wholesale; that tree is experimental and its state diverg
 - **Distributed rate limiting** — the limiter store is an in-memory `Map`
   (`rate.limit.ts:10`), correct for the single API instance this stack runs. Move
   to a shared store (Redis) only if the API is ever scaled past one replica.
-- **Re-add observability** — Prometheus/OTel were stripped from image-svc and
-  mail-svc during the lite trim (Phases 2–3). `/metrics` still exists on the API
-  but is internal-only. Re-add worker metrics only if debugging a live incident
-  needs cross-service visibility.
+- **Re-add observability (compact OTel)** — Prometheus/OTel were stripped from
+  image-svc and mail-svc during the lite trim (Phases 2–3); `/metrics` still exists
+  on the API but is internal-only. Idle footprint is tiny (~84 MB total across the
+  6 containers, near-zero CPU), so RAM headroom exists — but the self-hosted triad
+  (OTel Collector ~50–100 MB + Prometheus ~80–150 MB **+ unbounded local TSDB disk**
+  + Grafana ~100–150 MB) breaks the lite ethos for 6 small containers. Do **not**
+  self-host the triad. Two compact paths that fit:
+  1. **Metrics-only, scrape-free** — in-process OTel metrics SDK in api/image-svc/
+     mail-svc exposing `/metrics` (API already has it); curl-time snapshots, no
+     collector, no storage. ~0 cost, but no history/dashboards.
+  2. **Push to external free tier (recommended)** — thin OTLP exporter (SDK-direct
+     or one Grafana Alloy agent) → Grafana Cloud free tier (10k series). Dashboards
+     + history with **no self-hosted TSDB**, so no local VM disk growth. (Note: the
+     8 GiB cap is the R2 object-storage gate, unrelated to Prometheus local-disk
+     TSDB — separate tier.) Trade-off: external dependency.
+  Stays P3 (idle-low removes the blocker, not a need). Promote to P2 only when
+  committing to wire option 2. **Don't re-litigate self-host:** VPS is 1.9 GB RAM,
+  shared with non-lazyscan containers; the triad would eat ~half the free margin and
+  re-introduces the PromQL/scrape/dashboard overhead the lite trim deliberately
+  dropped. **Dozzle already covers the infra layer** (per-container CPU/mem/liveness)
+  — OTel is only worth it for *app-level* signals (request rate, p99, outbox queue
+  depth, conversion timings, error rates), and only via push (option 2) when a real
+  "why is this slow" can't be answered from logs.
 - **Request IDs / correlation IDs** — logging works without them; add only if
   cross-service request correlation becomes necessary.
 
