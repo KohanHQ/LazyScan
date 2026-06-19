@@ -61,28 +61,12 @@ Urgency guide:
 
 ### Profile / Personalization
 
-- **Animated GIF owner avatar** — let the owner upload an animated GIF avatar and
-  have the web profile render the animation. Three places block it today, all
-  assuming static WebP:
-  1. API MIME allowlists exclude GIF — `api/src/modules/upload/upload.validation.ts:46`
-     and `api/src/shared/upload/image.ts:29` (`image/jpeg|jpg|png|webp` only).
-  2. image-svc rejects non-JPEG/PNG/WebP input (`convert.go:85`) and exports
-     **static** WebP via `ExportWebp` (`convert.go:115`) — animation is lost even
-     if GIF were accepted.
-  3. The avatar key is deterministic `avatars/{userId}.webp`
-     (`upload.service.ts:61`), so the stored object is always `.webp`.
-  Decision needed before scoping: store the GIF as-is (skip convert for the avatar
-  type) vs transcode to **animated** WebP (libvips/govips multi-frame load
-  `n=-1` + animated export). Web render is likely already fine (`<img>` plays
-  animated GIF/WebP) — confirm the avatar slot isn't a static `background-image`
-  crop (`web/src/utils/avatar.ts`, profile render).
-
 - **General user avatar flow** — owner-only custom avatar exists
   (`upload.service.ts`, owner-gated `avatar` type); everyone else stays on the
   derived avatar. Open avatar upload/selection to all users. Route + convert
   pipeline already exist — mainly auth-gate widening + a web entry point. Pairs with
-  **Animated GIF owner avatar** above (same MIME/convert touch points). _(from legacy
-  P2 review 2026-06-19; carried over as still-relevant.)_
+  **Animated GIF owner avatar** (shipped — see Done; same MIME/convert touch
+  points). _(from legacy P2 review 2026-06-19; carried over as still-relevant.)_
 
 ### Upload / Management
 
@@ -125,6 +109,16 @@ only after confirming they apply to the trimmed stack — do not import the
 LazyScan-Stack backlog wholesale; that tree is experimental and its state diverges.
 
 ## P3 / Later / Only if needed
+
+### Deploy / Build
+
+- **Off-box image build → registry** — `docker compose up -d --build` on the VPS
+  recompiles api + web on the box; the web `bun run build` (vite + tsc) is the
+  long pole and likely swaps on the 1.9 GB VM (slow deploys). Move the build to
+  CI (GitHub Actions) → push images to GHCR → VPS does `docker compose pull &&
+  up -d` (no compile on the box). Cost: CI + registry wiring + image-tag pinning
+  in compose. Cheap interim: deps layers already cache (Dockerfiles install
+  before `COPY src`); rebuild only changed services (`--build api web`).
 
 ### Web / Branding
 
@@ -173,6 +167,15 @@ LazyScan-Stack backlog wholesale; that tree is experimental and its state diverg
 
 Move old done notes to [deferred-notes.md](deferred-notes.md) once they are no
 longer useful for near-term planning.
+
+### Profile / Personalization
+
+- **Animated GIF owner avatar** — shipped + **verified live 2026-06-19**. Owner
+  GIF avatar is stored as-is (skip image-svc convert, which only emits static
+  WebP) at `avatars/{userId}.gif`; static PNG/JPEG/WebP still convert to 512px
+  WebP. Web `<img>` plays it (no render change). Chose store-as-is over
+  animated-WebP transcode to avoid touching the load-bearing `convert.go`.
+  Owner-only (one object). See session 2026-06-19 + commit `7dc2040`.
 
 ### Upload / Management
 
