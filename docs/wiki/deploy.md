@@ -62,5 +62,5 @@ images come from R2's own domain. `STORAGE_PUBLIC_DOMAIN` = R2 custom domain
 - [ ] Create manga + upload cover → converts (image-svc `/convert`), shows from R2.
 - [ ] Import a chapter → pages flip `status='ready'` → readable from R2.
 - [ ] Presigned page upload succeeds (no CORS preflight error in console).
-- [ ] Import projected over 8 GiB → `507`.
-- [ ] Corrupt page → marked `failed`, stream not stuck.
+- [ ] Import projected over 8 GiB → `507`. *(still unverified live — no quota lever on prod; needs ~8 GiB content or a temp `STORAGE_QUOTA_BYTES` drop.)*
+- [x] Corrupt page → marked `failed`, stream not stuck. *(verified live 2026-06-19: garbage `.png` → page `failed` "unprocessable image: not a JPEG, PNG, or WebP", good sibling `ready`, import settled with Retry — stream acked, not stuck.)*

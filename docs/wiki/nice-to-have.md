@@ -34,11 +34,12 @@ Urgency guide:
 
 ### Deploy / Acceptance
 
-- **Acceptance items 7 & 8 never run live** — the over-cap `507`
-  (`STORAGE_QUOTA_EXCEEDED`) and corrupt-page → `failed` paths exist in code and
-  are smoke-tested, but were left untested on the live box by choice (`deploy.md`
-  §4; session 2026-06-18). Verify against the real 8 GiB cap before trusting the
-  cap / failure handling.
+- **Acceptance item 7 (`507` over-cap) never run live** — the over-cap `507`
+  (`STORAGE_QUOTA_EXCEEDED`) path exists in code and is smoke-tested but unverified
+  on prod: no quota lever on the live box (needs ~8 GiB of real content or a
+  temporary `STORAGE_QUOTA_BYTES` drop + restore). Parked until there's a safe way
+  to exercise it. (Item 8, corrupt-page → `failed`, **verified live 2026-06-19** —
+  see `deploy.md` §4 / session 2026-06-19.)
 
 ### Storage
 
