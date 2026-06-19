@@ -85,14 +85,6 @@ Urgency guide:
 
 ### Upload / Management
 
-- **ZIP/CBZ chapter upload** — _verified absent 2026-06-19_ (no `cbz`/`zip`/`unzip`/
-  `JSZip` in `web/src`, `api/src`, or `image-svc`). Upload is page-by-page only
-  (`api/src/modules/upload/*`, `chapter.service.ts`). CBZ/ZIP is the canonical manga
-  archive format; this is the biggest content-creation win for the uploader-centric
-  flow. Unzip (client `JSZip` or server-side) → feed pages into the existing staging/
-  presign + image-svc convert + outbox path (those stay untouched; only ingest shape
-  changes). Highest-leverage feature candidate. Effort: medium. _(from legacy P2.)_
-
 - **Replace individual failed page** — allow replacing one staged/failed page instead
   of re-running the whole original. _(from legacy P2; not verified against trimmed
   repo — check current retry surface before scoping.)_
@@ -180,6 +172,16 @@ LazyScan-Stack backlog wholesale; that tree is experimental and its state diverg
 
 Move old done notes to [deferred-notes.md](deferred-notes.md) once they are no
 longer useful for near-term planning.
+
+### Upload / Management
+
+- **ZIP/CBZ chapter upload** — shipped + deployed 2026-06-19. Client-side unzip
+  (`fflate`) in `web/src/utils/cbz.ts`; archive → `File[]` feeds the existing
+  presign → image-svc convert → outbox path (server untouched). Desktop-gated
+  (`pointer:fine` + `min-width:1024px`) + 250 MB cap; page-by-page is the mobile
+  fallback. Verified live at 184 pages, RAM trivial. Covers kept as page 1 by
+  design. v2 streaming/worker unzip parked (gate makes it moot). See session
+  2026-06-19.
 
 ### Web / UI (reported bugs)
 
