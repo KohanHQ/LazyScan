@@ -1,0 +1,1973 @@
+{
+  "info": {
+    "name": "LazyScan",
+    "description": "LazyScan API — self-upload manga reader.\n\nBusiness routes are versioned under `/api/v1` (set `base_url`). Ops endpoints (`/health`, `/metrics`) live at the root (`root_url`); `/metrics` is internal-only.\n\nAuth is cookie-based: Login / Verify Email set the `session` HTTP-only cookie, which Postman stores in its cookie jar automatically.\n\nSynced from the codebase routes (handlers under `api/src/modules/*`). The worker services (image-svc `/convert` + `/health`, mail-svc `/health`) are internal to the docker network and not host-exposed by default.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"vermont@example.com\",\n  \"password\": \"Secure@123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Registers a new user and sends a 6-digit OTP to the email."
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"vermont@example.com\",\n  \"code\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/verify-email",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verify-email"
+              ]
+            },
+            "description": "Verifies the 6-digit OTP and sets the session cookie."
+          },
+          "response": []
+        },
+        {
+          "name": "Resend Verification",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"vermont@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/resend-verification",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "resend-verification"
+              ]
+            },
+            "description": "Resends the verification OTP (silent cooldown)."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"vermont@example.com\",\n  \"password\": \"Secure@123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Logs in and sets the session cookie."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Logs out and clears the session cookie."
+          },
+          "response": []
+        },
+        {
+          "name": "Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Returns the authenticated user."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile/me/stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile",
+                "me",
+                "stats"
+              ]
+            },
+            "description": "Reading stats for the authenticated user."
+          },
+          "response": []
+        },
+        {
+          "name": "Profile Lookup",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile/username/:username",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile",
+                "username",
+                ":username"
+              ],
+              "variable": [
+                {
+                  "key": "username",
+                  "value": "Vermont"
+                }
+              ]
+            },
+            "description": "Public profile lookup by username."
+          },
+          "response": []
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"Vermont\",\n  \"displayName\": \"Vermont\",\n  \"profileVisibility\": \"public\",\n  \"shelfVisibility\": \"public\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/profile/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile",
+                "me"
+              ]
+            },
+            "description": "All fields optional. Visibility values: public | private. displayName accepts \"\" or null to clear."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Manga",
+      "item": [
+        {
+          "name": "Metadata",
+          "item": [
+            {
+              "name": "Manga",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/manga",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "manga"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "20",
+                      "disabled": true
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "ongoing",
+                      "description": "ongoing | completed | hiatus | cancelled",
+                      "disabled": true
+                    },
+                    {
+                      "key": "publishedYear",
+                      "value": "2024",
+                      "disabled": true
+                    },
+                    {
+                      "key": "tag",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "created_at",
+                      "description": "created_at | updated_at | title | published_year",
+                      "disabled": true
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc",
+                      "description": "asc | desc",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Lists manga with optional filters."
+              },
+              "response": []
+            },
+            {
+              "name": "Popular Manga",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/manga/popular",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "manga",
+                    "popular"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10",
+                      "disabled": true
+                    },
+                    {
+                      "key": "range",
+                      "value": "week",
+                      "description": "week (default) | month",
+                      "disabled": true
+                    },
+                    {
+                      "key": "tz",
+                      "value": "Asia/Jakarta",
+                      "description": "Client IANA timezone",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Popular manga carousel."
+              },
+              "response": []
+            },
+            {
+              "name": "Manga Tags",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/manga/tags",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "manga",
+                    "tags"
+                  ]
+                },
+                "description": "Distinct tags for filtering."
+              },
+              "response": []
+            },
+            {
+              "name": "Manga Updates",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/manga/updates",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "manga",
+                    "updates"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Recently updated manga."
+              },
+              "response": []
+            },
+            {
+              "name": "Manga By Slug",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/manga/slug/:slug",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "manga",
+                    "slug",
+                    ":slug"
+                  ],
+                  "variable": [
+                    {
+                      "key": "slug",
+                      "value": "slug-test"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Manga By ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/manga/:id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "manga",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "7d29a797-1e18-4b93-acec-90c2fb08c0ac"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Manga",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "title",
+                      "value": "title-test",
+                      "type": "text"
+                    },
+                    {
+                      "key": "slug",
+                      "value": "slug-test",
+                      "type": "text"
+                    },
+                    {
+                      "key": "cover",
+                      "type": "file",
+                      "value": ""
+                    },
+                    {
+                      "key": "description",
+                      "value": "description-test",
+                      "type": "text"
+                    },
+                    {
+                      "key": "status",
+                      "value": "hiatus",
+                      "description": "ongoing | completed | hiatus | cancelled",
+                      "type": "text"
+                    },
+                    {
+                      "key": "totalChapters",
+                      "value": "10",
+                      "type": "text"
+                    },
+                    {
+                      "key": "author",
+                      "value": "",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "artist",
+                      "value": "",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "publisher",
+                      "value": "",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "publishedYear",
+                      "value": "2024",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "tags",
+                      "value": "action, fantasy",
+                      "description": "Comma-separated, max 20 tags",
+                      "type": "text",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/manga",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "manga"
+                  ]
+                },
+                "description": "Creates a manga. Requires auth."
+              },
+              "response": []
+            },
+            {
+              "name": "Manga",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "title",
+                      "value": "title-test",
+                      "type": "text"
+                    },
+                    {
+                      "key": "slug",
+                      "value": "slug-test",
+                      "type": "text"
+                    },
+                    {
+                      "key": "cover",
+                      "type": "file",
+                      "value": ""
+                    },
+                    {
+                      "key": "description",
+                      "value": "description-test",
+                      "type": "text"
+                    },
+                    {
+                      "key": "status",
+                      "value": "cancelled",
+                      "description": "ongoing | completed | hiatus | cancelled",
+                      "type": "text"
+                    },
+                    {
+                      "key": "totalChapters",
+                      "value": "5",
+                      "type": "text"
+                    },
+                    {
+                      "key": "author",
+                      "value": "",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "artist",
+                      "value": "",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "publisher",
+                      "value": "",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "publishedYear",
+                      "value": "2024",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "tags",
+                      "value": "action, fantasy",
+                      "description": "Comma-separated; empty clears tags",
+                      "type": "text",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/manga/:id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "manga",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "7d29a797-1e18-4b93-acec-90c2fb08c0ac"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Manga",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/manga/:id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "manga",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "7d29a797-1e18-4b93-acec-90c2fb08c0ac"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Upload",
+          "item": [
+            {
+              "name": "Cover",
+              "item": [
+                {
+                  "name": "Manga Cover",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "file",
+                          "type": "file",
+                          "src": "<path-to-file>"
+                        }
+                      ]
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/manga/:id/cover",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "manga",
+                        ":id",
+                        "cover"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "7d29a797-1e18-4b93-acec-90c2fb08c0ac"
+                        }
+                      ]
+                    },
+                    "description": "Uploads or replaces the manga cover."
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Chapter",
+              "item": [
+                {
+                  "name": "Polling Chapters Progress",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/manga/:id/chapter/uploads/:uploadId",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "manga",
+                        ":id",
+                        "chapter",
+                        "uploads",
+                        ":uploadId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "0acea99c-a704-4b9c-bc92-517c1d2aa765"
+                        },
+                        {
+                          "key": "uploadId",
+                          "value": "45f4994e-7da4-4bd2-94f9-b2f26ac13f00"
+                        }
+                      ]
+                    },
+                    "description": "Upload progress details for a chapter import."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Upload Chapters",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"title\": \"Chapter 1\",\n  \"chapterNumber\": 1,\n  \"sortOrder\": 1,\n  \"files\": [\n    {\n      \"filename\": \"page_1.jpg\",\n      \"contentType\": \"image/jpeg\"\n    },\n    {\n      \"filename\": \"page_2.jpg\",\n      \"contentType\": \"image/jpeg\"\n    }\n  ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/manga/:id/chapter",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "manga",
+                        ":id",
+                        "chapter"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "9ea6beac-5918-4e34-afcb-de376fa88688"
+                        }
+                      ]
+                    },
+                    "description": "Creates a chapter import and returns per-page upload slots."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Upload Chapters Pages",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "file",
+                          "type": "file",
+                          "src": "<path-to-file>"
+                        }
+                      ]
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/manga/:id/chapter/uploads/:uploadId/pages/:pageId/upload",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "manga",
+                        ":id",
+                        "chapter",
+                        "uploads",
+                        ":uploadId",
+                        "pages",
+                        ":pageId",
+                        "upload"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "9ea6beac-5918-4e34-afcb-de376fa88688"
+                        },
+                        {
+                          "key": "uploadId",
+                          "value": "6bc27b67-5376-4c8b-a7a0-6ac7d12bf833"
+                        },
+                        {
+                          "key": "pageId",
+                          "value": "a2b4f6cd-559d-4155-89c7-ea1a03c9b039"
+                        }
+                      ]
+                    },
+                    "description": "Uploads a single page file for a pending chapter import."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Complete Upload Chapters",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/manga/:id/chapter/uploads/:uploadId/complete",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "manga",
+                        ":id",
+                        "chapter",
+                        "uploads",
+                        ":uploadId",
+                        "complete"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "0acea99c-a704-4b9c-bc92-517c1d2aa765"
+                        },
+                        {
+                          "key": "uploadId",
+                          "value": "45f4994e-7da4-4bd2-94f9-b2f26ac13f00"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Retry Upload Chapters",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/manga/:id/chapter/uploads/:uploadId/retry",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "manga",
+                        ":id",
+                        "chapter",
+                        "uploads",
+                        ":uploadId",
+                        "retry"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "0acea99c-a704-4b9c-bc92-517c1d2aa765"
+                        },
+                        {
+                          "key": "uploadId",
+                          "value": "45f4994e-7da4-4bd2-94f9-b2f26ac13f00"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "List Chapters",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/manga/:id/chapters",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "manga",
+                        ":id",
+                        "chapters"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": ""
+                        }
+                      ]
+                    },
+                    "description": "Owner-facing chapter list for a manga (all statuses)."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Chapter Preview",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/manga/:id/chapters/:chapterId/preview",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "manga",
+                        ":id",
+                        "chapters",
+                        ":chapterId",
+                        "preview"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": ""
+                        },
+                        {
+                          "key": "chapterId",
+                          "value": ""
+                        }
+                      ]
+                    },
+                    "description": "Preview a chapter's pages before publishing."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Update Chapter",
+                  "request": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/manga/:id/chapters/:chapterId",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "manga",
+                        ":id",
+                        "chapters",
+                        ":chapterId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": ""
+                        },
+                        {
+                          "key": "chapterId",
+                          "value": ""
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"title\": \"Chapter 1\",\n  \"chapterNumber\": 1,\n  \"volume\": 1,\n  \"sortOrder\": 1\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "description": "All fields optional; chapterNumber/volume accept null to clear."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Delete Chapter",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/manga/:id/chapters/:chapterId",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "manga",
+                        ":id",
+                        "chapters",
+                        ":chapterId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": ""
+                        },
+                        {
+                          "key": "chapterId",
+                          "value": ""
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Publish Chapter",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/manga/:id/chapters/:chapterId/publish",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "manga",
+                        ":id",
+                        "chapters",
+                        ":chapterId",
+                        "publish"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": ""
+                        },
+                        {
+                          "key": "chapterId",
+                          "value": ""
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Unpublish Chapter",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/manga/:id/chapters/:chapterId/unpublish",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "manga",
+                        ":id",
+                        "chapters",
+                        ":chapterId",
+                        "unpublish"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": ""
+                        },
+                        {
+                          "key": "chapterId",
+                          "value": ""
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Reorder Pages",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/manga/:id/chapters/:chapterId/pages/reorder",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "manga",
+                        ":id",
+                        "chapters",
+                        ":chapterId",
+                        "pages",
+                        "reorder"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": ""
+                        },
+                        {
+                          "key": "chapterId",
+                          "value": ""
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"pageIds\": [\n    \"<pageId-1>\",\n    \"<pageId-2>\"\n  ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "description": "Full ordered list of page IDs."
+                  },
+                  "response": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Reader",
+          "item": [
+            {
+              "name": "Chapter Status",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reader/manga/:id/chapters",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reader",
+                    "manga",
+                    ":id",
+                    "chapters"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "0acea99c-a704-4b9c-bc92-517c1d2aa765"
+                    }
+                  ]
+                },
+                "description": "Lists ready chapters for a manga."
+              },
+              "response": []
+            },
+            {
+              "name": "Chapter Read",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reader/manga/:id/chapters/:chapterId",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reader",
+                    "manga",
+                    ":id",
+                    "chapters",
+                    ":chapterId"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "0acea99c-a704-4b9c-bc92-517c1d2aa765"
+                    },
+                    {
+                      "key": "chapterId",
+                      "value": "ea2eecca-12ec-48bb-8026-5cdaa034bc0b"
+                    }
+                  ]
+                },
+                "description": "Chapter with pages for the reader."
+              },
+              "response": []
+            },
+            {
+              "name": "Chapter In Progress",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reader/manga/:id/progress",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reader",
+                    "manga",
+                    ":id",
+                    "progress"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "0acea99c-a704-4b9c-bc92-517c1d2aa765"
+                    }
+                  ]
+                },
+                "description": "Reading progress for a manga."
+              },
+              "response": []
+            },
+            {
+              "name": "Chapter In Progress",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"chapterId\": \"ea2eecca-12ec-48bb-8026-5cdaa034bc0b\",\n  \"pageId\": \"7dded971-6d27-4001-8038-35dc173f0de5\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/reader/manga/:id/progress",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reader",
+                    "manga",
+                    ":id",
+                    "progress"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "0acea99c-a704-4b9c-bc92-517c1d2aa765"
+                    }
+                  ]
+                },
+                "description": "Saves reading progress."
+              },
+              "response": []
+            },
+            {
+              "name": "Clear Progress",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reader/manga/:id/progress",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reader",
+                    "manga",
+                    ":id",
+                    "progress"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "0acea99c-a704-4b9c-bc92-517c1d2aa765"
+                    }
+                  ]
+                },
+                "description": "Clears reading progress for a manga."
+              },
+              "response": []
+            },
+            {
+              "name": "Mark All Read",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reader/manga/:id/read-all",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reader",
+                    "manga",
+                    ":id",
+                    "read-all"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "0acea99c-a704-4b9c-bc92-517c1d2aa765"
+                    }
+                  ]
+                },
+                "description": "Marks all chapters of a manga as read."
+              },
+              "response": []
+            },
+            {
+              "name": "Chapter Reads",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reader/manga/:id/reads",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reader",
+                    "manga",
+                    ":id",
+                    "reads"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "0acea99c-a704-4b9c-bc92-517c1d2aa765"
+                    }
+                  ]
+                },
+                "description": "Chapter IDs marked as read."
+              },
+              "response": []
+            },
+            {
+              "name": "Mark Chapter Read",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reader/manga/:id/chapters/:chapterId/read",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reader",
+                    "manga",
+                    ":id",
+                    "chapters",
+                    ":chapterId",
+                    "read"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "0acea99c-a704-4b9c-bc92-517c1d2aa765"
+                    },
+                    {
+                      "key": "chapterId",
+                      "value": "ea2eecca-12ec-48bb-8026-5cdaa034bc0b"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Unmark Chapter Read",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reader/manga/:id/chapters/:chapterId/read",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reader",
+                    "manga",
+                    ":id",
+                    "chapters",
+                    ":chapterId",
+                    "read"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "0acea99c-a704-4b9c-bc92-517c1d2aa765"
+                    },
+                    {
+                      "key": "chapterId",
+                      "value": "ea2eecca-12ec-48bb-8026-5cdaa034bc0b"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reading History",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/reader/history",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "reader",
+                    "history"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "20",
+                      "disabled": true
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Reading history for the authenticated user."
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Library",
+      "item": [
+        {
+          "name": "Membership",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/library/membership/:mangaId",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "library",
+                "membership",
+                ":mangaId"
+              ],
+              "variable": [
+                {
+                  "key": "mangaId",
+                  "value": "0acea99c-a704-4b9c-bc92-517c1d2aa765"
+                }
+              ]
+            },
+            "description": "Whether the manga is in the user's favorite/queue lists."
+          },
+          "response": []
+        },
+        {
+          "name": "Feed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/library/feed",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "library",
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "New ready chapters across saved manga."
+          },
+          "response": []
+        },
+        {
+          "name": "Library List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/library/:list",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "library",
+                ":list"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "newest",
+                  "description": "newest | title | year",
+                  "disabled": true
+                },
+                {
+                  "key": "year",
+                  "value": "2024",
+                  "description": "Exact year filter",
+                  "disabled": true
+                }
+              ],
+              "variable": [
+                {
+                  "key": "list",
+                  "value": "favorite",
+                  "description": "favorite | queue"
+                }
+              ]
+            },
+            "description": "Manga in the given library list."
+          },
+          "response": []
+        },
+        {
+          "name": "Add To Library",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mangaId\": \"0acea99c-a704-4b9c-bc92-517c1d2aa765\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/library/:list",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "library",
+                ":list"
+              ],
+              "variable": [
+                {
+                  "key": "list",
+                  "value": "favorite",
+                  "description": "favorite | queue"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove From Library",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/library/:list/:mangaId",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "library",
+                ":list",
+                ":mangaId"
+              ],
+              "variable": [
+                {
+                  "key": "list",
+                  "value": "favorite",
+                  "description": "favorite | queue"
+                },
+                {
+                  "key": "mangaId",
+                  "value": "0acea99c-a704-4b9c-bc92-517c1d2aa765"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Imports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/imports",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "imports"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "failed",
+                  "description": "uploading | processing | completed | failed",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lists chapter imports (retry targets). Requires superuser."
+          },
+          "response": []
+        },
+        {
+          "name": "Storage",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/storage",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "storage"
+              ]
+            },
+            "description": "Storage usage estimates by manga. Requires superuser."
+          },
+          "response": []
+        },
+        {
+          "name": "Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/logs?level=error&limit=50",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "level",
+                  "value": "error"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Admin/superuser log viewer."
+          },
+          "response": []
+        },
+        {
+          "name": "Prune Logs",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/logs/prune",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "logs",
+                "prune"
+              ]
+            },
+            "description": "Trim the logs table to the retention window."
+          },
+          "response": []
+        },
+        {
+          "name": "Prune Storage",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/storage/prune",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "storage",
+                "prune"
+              ]
+            },
+            "description": "Reclaim staged page originals already converted by image-svc."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Misc",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{root_url}}/health",
+              "host": [
+                "{{root_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "API health status + feature flags."
+          },
+          "response": []
+        },
+        {
+          "name": "Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{root_url}}/metrics",
+              "host": [
+                "{{root_url}}"
+              ],
+              "path": [
+                "metrics"
+              ]
+            },
+            "description": "Internal-only (never exposed at the public web edge)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Services",
+      "item": [
+        {
+          "name": "image-svc Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{image_svc_url}}/health",
+              "host": [
+                "{{image_svc_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "image-svc Convert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/octet-stream"
+              }
+            ],
+            "url": {
+              "raw": "{{image_svc_url}}/convert?w=512&h=512&q=88",
+              "host": [
+                "{{image_svc_url}}"
+              ],
+              "path": [
+                "convert"
+              ],
+              "query": [
+                {
+                  "key": "w",
+                  "value": "512"
+                },
+                {
+                  "key": "h",
+                  "value": "512"
+                },
+                {
+                  "key": "q",
+                  "value": "88"
+                }
+              ]
+            },
+            "description": "Raw image bytes (application/octet-stream) → WebP JSON. Used by avatar/cover upload.",
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": "<path-to-file>"
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "mail-svc Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mail_svc_url}}/health",
+              "host": [
+                "{{mail_svc_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Worker liveness + image-svc convert. Internal to the docker network (not host-exposed by default) — port-forward to reach from the host."
+    },
+    {
+      "name": "Upload (Generic)",
+      "item": [
+        {
+          "name": "Upload",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/upload/list?limit=100&offset=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "upload",
+                "list"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "offset",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Returns 501 (not implemented)."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/upload/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "upload",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Returns 501 (not implemented)."
+          },
+          "response": []
+        },
+        {
+          "name": "Avatar Upload",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "<path-to-file>"
+                },
+                {
+                  "key": "type",
+                  "value": "avatar",
+                  "type": "text",
+                  "description": "Only `avatar` is implemented; other types return 501."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/upload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "upload"
+              ]
+            },
+            "description": "Owner-only avatar upload. PNG/JPEG/WebP convert to a static 512px WebP; an animated GIF is stored as-is so it keeps animating. Non-owner → 403, mislabeled/oversized → 400."
+          },
+          "response": []
+        }
+      ],
+      "description": "Generic upload module. Only `type=avatar` is implemented on POST /upload; list and by-id return 501 — covers and chapter pages use the manga-scoped routes."
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "root_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "image_svc_url",
+      "value": "http://localhost:8001",
+      "type": "string"
+    },
+    {
+      "key": "mail_svc_url",
+      "value": "http://localhost:8002",
+      "type": "string"
+    }
+  ]
+}
