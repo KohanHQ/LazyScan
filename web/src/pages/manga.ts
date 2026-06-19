@@ -492,6 +492,8 @@ function renderChapterRow(
   const isRead = readSet.has(chapter.id);
   const isCurrent = !isRead && progress?.chapterId === chapter.id;
   const progressLabel = isCurrent ? `Page ${progress!.pageNumber}` : "";
+  // Chapter number + reading progress; `sortOrder` is internal, not shown.
+  const metaText = [chapterNumber, progressLabel].filter(Boolean).join(" · ");
 
   const statusIcon = isRead
     ? `<span class="chapter-read-badge" aria-label="Read">&#10003;</span>`
@@ -507,7 +509,7 @@ function renderChapterRow(
     <li class="chapter-row${isCurrent ? " chapter-row-current" : ""}${isRead ? " chapter-row-read" : ""}" data-action="read-chapter" data-chapter-id="${escapeHtml(chapter.id)}" tabindex="0" role="button" aria-label="Read ${escapeHtml(chapter.title)}">
       <div>
         <h3>${escapeHtml(chapter.title)}${statusIcon}</h3>
-        <p>${escapeHtml(chapterNumber || `Sort ${chapter.sortOrder}`)}${progressLabel ? ` &middot; ${escapeHtml(progressLabel)}` : ""}</p>
+        ${metaText ? `<p>${escapeHtml(metaText)}</p>` : ""}
       </div>
       <div class="chapter-row-aside">
         <span>${escapeHtml(formatDate(chapter.updatedAt))}</span>
