@@ -85,3 +85,25 @@ Format per finding:
   would reject valid proxied requests when `socketIp` is absent but `X-Real-IP` is
   present.
 - status: resolved (→ R-005)
+
+## F-006 Chapter-upload progress polling self-DoS's the global rate limit
+- date: 2026-06-19
+- source: User (live, after a 184-page CBZ upload on prod)
+- severity: medium
+- location: api/src/config.ts:261 (global `maxRequests: 100`/15min) +
+  api/src/middleware/rate.limit.ts:93 (`globalRateLimit`, `as:"global"`, all
+  routes) + web/src/pages/manage-chapter.ts:25 (`POLL_INTERVAL_MS = 2000`)
+- problem: The upload-progress view polls `GET /manga/:id/chapter/uploads/:uploadId`
+  every 2s for the *entire* conversion (not just the upload). The global limiter
+  (100 req / 15 min / IP) fires on every route and is the **only** bucket on that
+  poll GET — no dedicated limiter. Poll = 30 req/min, so ~3.3 min of polling
+  exhausts the global budget; a 184-page convert far exceeds that, after which any
+  request from that IP (e.g. login) hits the global cap and 429s. The owner
+  self-DoS'd their own IP by uploading a large chapter. Root smell: the global cap
+  (100) is tighter than the purpose-built per-route buckets (auth 5/20,
+  publicRead 60/min), so it binds first, and a logged-in owner's legitimate
+  progress polling is throttled by an anti-abuse coarse cap.
+- repro: upload a CBZ with enough pages that conversion runs > ~3 min, watch the
+  progress page poll, then attempt login from the same IP → 429
+  "Too many requests".
+- status: resolved (→ R-006)

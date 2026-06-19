@@ -267,6 +267,10 @@ export const staticConfig = {
     },
     // Burst cap on public reads (catalog/reader/profile) — anti-scraping.
     publicRead: { windowMs: 60 * 1000, maxRequests: 60 },
+    // Import-progress poll (manage-chapter polls for the whole conversion). Own
+    // generous bucket + exempt from the global cap so a large chapter's polling
+    // can't drain the IP's global budget (F-006).
+    uploadStatus: { windowMs: 60 * 1000, maxRequests: 120 },
   },
 
   // Email verification OTP (Herald pipeline).

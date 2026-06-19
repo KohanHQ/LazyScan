@@ -23,7 +23,11 @@ import { cbzSupported, extractCbz, isArchiveFile } from "@/utils/cbz";
 const MAX_BYTES = 10 * 1024 * 1024;
 const MAX_FILES = 300;
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
-const POLL_INTERVAL_MS = 2000;
+// Progress poll backs off: responsive early, then ramps toward the cap so a long
+// conversion doesn't hammer the status endpoint.
+const POLL_INTERVAL_START_MS = 2000;
+const POLL_INTERVAL_MAX_MS = 10000;
+const POLL_BACKOFF_FACTOR = 1.5;
 const MAX_POLL_FAILURES = 3;
 
 export function renderChapterUploadPage(
@@ -385,11 +389,11 @@ async function finishUpload(
   startPolling(container, mangaId, path, uploadId);
 }
 
-// The active status-poll interval. Retry can be clicked while a poll is still
+// The active status-poll timer. Retry can be clicked while a poll is still
 // running (a processing import with failed pages), and its handler restarts
-// polling — clearing the previous interval first prevents two pollers ticking
+// polling — clearing the previous timer first prevents two pollers ticking
 // against the same view.
-let activePollIntervalId: number | null = null;
+let activePollTimeoutId: number | null = null;
 
 function startPolling(
   container: HTMLElement,
@@ -397,16 +401,20 @@ function startPolling(
   path: string,
   uploadId: string
 ): void {
-  if (activePollIntervalId !== null) {
-    window.clearInterval(activePollIntervalId);
-    activePollIntervalId = null;
-  }
+  stopPolling();
   renderProcessing(container, mangaId, path, uploadId, null);
 
   let consecutiveFailures = 0;
+  let delay = POLL_INTERVAL_START_MS;
+
+  const scheduleNext = (): void => {
+    activePollTimeoutId = window.setTimeout(() => void tick(), delay);
+    delay = Math.min(Math.round(delay * POLL_BACKOFF_FACTOR), POLL_INTERVAL_MAX_MS);
+  };
+
   const tick = async (): Promise<void> => {
     if (window.location.pathname !== path) {
-      window.clearInterval(intervalId);
+      stopPolling();
       return;
     }
     let detail: ChapterImportDetail;
@@ -419,28 +427,37 @@ function startPolling(
       // forever, so stop after a few and surface an error instead.
       consecutiveFailures += 1;
       if (consecutiveFailures >= MAX_POLL_FAILURES) {
-        window.clearInterval(intervalId);
+        stopPolling();
         if (window.location.pathname === path) {
           container.innerHTML = renderError(
             "Lost contact with the server while processing. Refresh to check status."
           );
         }
+        return;
       }
+      scheduleNext();
       return;
     }
     if (window.location.pathname !== path) {
-      window.clearInterval(intervalId);
+      stopPolling();
       return;
     }
     renderProcessing(container, mangaId, path, uploadId, detail);
     if (detail.import.status === "completed" || detail.import.status === "failed") {
-      window.clearInterval(intervalId);
+      stopPolling();
+      return;
     }
+    scheduleNext();
   };
 
-  const intervalId = window.setInterval(() => void tick(), POLL_INTERVAL_MS);
-  activePollIntervalId = intervalId;
   void tick();
+}
+
+function stopPolling(): void {
+  if (activePollTimeoutId !== null) {
+    window.clearTimeout(activePollTimeoutId);
+    activePollTimeoutId = null;
+  }
 }
 
 function renderUploadProgress(

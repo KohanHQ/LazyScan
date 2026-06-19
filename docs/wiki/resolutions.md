@@ -71,3 +71,29 @@ Format per resolution:
   Retry-After, disabled→200 gate).
 - constraints honored: smallest safe change (~4 lines); preserves the normal
   resolution path; no DTO/contract/behavior change beyond the security hardening.
+
+## R-006 Exempt import-progress poll from the global rate cap  (resolves F-006)
+- date: 2026-06-19
+- change: The status-poll `GET …/chapter/uploads/:uploadId` now carries its own
+  generous bucket (`uploadStatusLimit`, 120/60s = ~2/sec) and is **exempted** from
+  the global cap: the `globalRateLimit` hook early-returns for that route
+  (`isUploadStatusPoll` — method GET + suffix regex, prefix-agnostic, excludes
+  `/complete` `/retry` `/pages`). So polling a large import can no longer drain the
+  IP's global 100/15min budget and 429 unrelated requests (login/browse). Global
+  cap unchanged (still 100/15min — the poll was the only offender). Web side: the
+  poll now backs off 2s → ×1.5 → 10s cap instead of a fixed 2s interval, cutting
+  steady-state request/DB pressure (defense-in-depth).
+- files: api/src/config.ts (new `rateLimit.uploadStatus`), api/src/middleware/
+  rate.limit.ts (`isUploadStatusPoll` skip + `uploadStatusLimit`),
+  api/src/modules/chapter/chapter.handler.ts (`beforeHandle: uploadStatusLimit` on
+  the poll GET), web/src/pages/manage-chapter.ts (backoff polling).
+- verification: api `bun run typecheck` clean; web `bun run build` + 51 unit tests
+  pass; exemption regex probed against 8 route paths (poll matched w/ & w/o
+  `/api/v1`; complete/retry/page-upload/list correctly NOT matched); CodeRabbit
+  `-t uncommitted` → 0 findings. **Runtime probe PENDING post-deploy**: confirm
+  hammering the poll >100×/15min no longer 429s login from the same IP, and the
+  poll's own 120/60s bucket still bounds abuse. (Rate-limit is gated off in the
+  smoke suite, so static verification only locally.)
+- constraints honored: smallest safe change; global cap + per-route auth/publicRead
+  buckets unchanged; no DTO/response-contract change; poll-route auth gating
+  untouched (still owner/superuser-scoped).

@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import * as service from "@/modules/chapter/chapter.service";
 import { success, fail, httpStatusFromError } from "@/shared/http/response";
 import { requireAuth, resolveRequiredUser } from "@/middleware/auth";
+import { uploadStatusLimit } from "@/middleware/rate.limit";
 import {
   ChapterValidator,
   chapterTransportSchemas,
@@ -186,6 +187,9 @@ export const chapterHandler = new Elysia()
       return success(result);
     },
     {
+      // Exempt from the global cap (see isUploadStatusPoll); this loose bucket is
+      // the only limit so progress polling can't drain the IP's global budget.
+      beforeHandle: uploadStatusLimit,
       params: t.Object({
         id: t.String(),
         uploadId: t.String(),

@@ -88,15 +88,34 @@ export function enforceRateLimit(ctx: any, options: RateLimitOptions): void {
   set.headers["X-RateLimit-Reset"] = String(entry.resetAt);
 }
 
+// The import-progress poll: GET …/chapter/uploads/:uploadId (nothing after the
+// id, so /complete, /retry, /pages are excluded). Prefix-agnostic — matches with
+// or without the /api/v1 mount. Carries its own bucket (uploadStatusLimit), so the
+// global hook skips it to keep a large upload from draining the global cap (F-006).
+const UPLOAD_STATUS_POLL = /\/manga\/[^/]+\/chapter\/uploads\/[^/]+$/;
+function isUploadStatusPoll(request: Request): boolean {
+  if (request.method !== "GET") {
+    return false;
+  }
+  try {
+    return UPLOAD_STATUS_POLL.test(new URL(request.url).pathname);
+  } catch {
+    return false;
+  }
+}
+
 // App-wide. `as:"global"` so the hook fires for sibling routes (default local
 // scope is stripped on `.use()`); `seed` avoids Elysia name+seed dedup. See findings.md.
 export const globalRateLimit = new Elysia({ name: "rateLimit", seed: "global" })
-  .onBeforeHandle({ as: "global" }, (ctx: any) =>
+  .onBeforeHandle({ as: "global" }, (ctx: any) => {
+    if (isUploadStatusPoll(ctx.request)) {
+      return; // own bucket (uploadStatusLimit) handles this high-frequency poll
+    }
     enforceRateLimit(ctx, {
       windowMs: staticConfig.rateLimit.windowMs,
       maxRequests: staticConfig.rateLimit.maxRequests,
-    })
-  );
+    });
+  });
 
 // Per-route limiters used as a route `beforeHandle`. Strict = SMTP-cost paths
 // (register/resend); loose = OTP-typo/password retries (verify/login).
@@ -121,4 +140,13 @@ export const publicReadLimit = (ctx: any): void =>
     windowMs: staticConfig.rateLimit.publicRead.windowMs,
     maxRequests: staticConfig.rateLimit.publicRead.maxRequests,
     keyPrefix: "public",
+  });
+
+// Import-progress poll. Generous own bucket; this route is exempt from the global
+// cap (see isUploadStatusPoll) so polling a large import can't self-DoS the IP.
+export const uploadStatusLimit = (ctx: any): void =>
+  enforceRateLimit(ctx, {
+    windowMs: staticConfig.rateLimit.uploadStatus.windowMs,
+    maxRequests: staticConfig.rateLimit.uploadStatus.maxRequests,
+    keyPrefix: "upload:status",
   });
