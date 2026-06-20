@@ -1,16 +1,9 @@
 name: lazyscan
 
+# Postgres is the shared `shared-postgres` instance (external `shared-db` network),
+# not a per-stack container. DATABASE_URL is fully env-driven so each environment
+# points at its own database (prod: lazyscan, staging: lazyscan_staging).
 services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: lazyscan
-      POSTGRES_USER: lazyscan
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes: [postgres-data:/var/lib/postgresql/data]
-    healthcheck: { test: ["CMD-SHELL", "pg_isready -U lazyscan -d lazyscan"] }
-    mem_limit: 256m
-
   redis:
     image: redis:7-alpine
     command: ["redis-server","--save","60","1","--maxmemory","48mb","--maxmemory-policy","noeviction"]
@@ -20,7 +13,7 @@ services:
   image-svc:                  # ex-Kiln: consumes events:chapter-page + HTTP /convert
     build: ./image-svc
     environment:
-      DATABASE_URL: postgres://lazyscan:${POSTGRES_PASSWORD}@postgres:5432/lazyscan
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379
       STORAGE_ENDPOINT: ${STORAGE_ENDPOINT}
       STORAGE_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY_ID}
@@ -31,15 +24,15 @@ services:
       STORAGE_PUBLIC_DOMAIN: ${STORAGE_PUBLIC_DOMAIN}
       IMAGE_SVC_PORT: 8001
     depends_on:
-      postgres: { condition: service_healthy }
       redis: { condition: service_started }
+    networks: [default, shared-db]
     mem_limit: 256m           # govips/libvips holds the decoded image in RAM
     restart: unless-stopped
 
   mail-svc:                   # ex-Herald: consumes events:email
     build: ./mail-svc
     environment:
-      DATABASE_URL: postgres://lazyscan:${POSTGRES_PASSWORD}@postgres:5432/lazyscan
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
@@ -49,19 +42,18 @@ services:
       SMTP_SSL: ${SMTP_SSL:-false}              # implicit TLS (SMTPS, port 465); mutually exclusive with STARTTLS
       SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
     depends_on:
-      postgres: { condition: service_healthy }
       redis: { condition: service_started }
+    networks: [default, shared-db]
     mem_limit: 48m
     restart: unless-stopped
 
   api:
     build: ./api
     depends_on:
-      postgres: { condition: service_healthy }
       redis: { condition: service_started }
       image-svc: { condition: service_started }
     environment:
-      DATABASE_URL: postgres://lazyscan:${POSTGRES_PASSWORD}@postgres:5432/lazyscan
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379
       STORAGE_PROVIDER: ${STORAGE_PROVIDER:-s3}   # s3 profile reads STORAGE_*; default r2 reads CLOUDFLARE_* (unset here)
       STORAGE_ENDPOINT: ${STORAGE_ENDPOINT}
@@ -79,16 +71,20 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       DEFAULT_SUPERUSER_EMAIL: ${DEFAULT_SUPERUSER_EMAIL}
       DEFAULT_SUPERUSER_PASSWORD: ${DEFAULT_SUPERUSER_PASSWORD}
+    networks: [default, shared-db]
     mem_limit: 256m
     restart: unless-stopped
 
   web:
     build: ./web                        # nginx: SPA + proxy /api
-    ports: ["127.0.0.1:8080:80"]        # Cloudflare Tunnel → here
+    ports: ["127.0.0.1:8081:80"]        # Cloudflare Tunnel → here (staging override shifts to 8082)
     depends_on: [api]
     mem_limit: 48m
     restart: unless-stopped
 
+networks:
+  shared-db:                  # external: shared-postgres lives here (discord-bot instance)
+    external: true
+
 volumes:
-  postgres-data:
   redis-data:

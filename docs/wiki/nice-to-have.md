@@ -57,6 +57,14 @@ Urgency guide:
   key regressions. Add targeted authorization, validation, and error-path tests as
   behavior changes — especially around the new `/api/v1` mount and the quota gate.
 
+### Auth / Account
+
+- **Password reset / forgot-password** — _absent entirely_. Login/register/verify
+  exist (`pages/login.ts`, `api/auth.ts`) but a user who forgets their password has
+  no recovery — locked out permanently. Reuse the existing OTP + mail-svc path (same
+  6-digit code as `verify-email`): request reset → emailed code → set new password.
+  Core account workflow, not polish. Effort: low-med (infra already built).
+
 ## P2 / Product polish
 
 ### Profile / Personalization
@@ -81,10 +89,24 @@ Urgency guide:
   (`pages/reader.ts`, `state/settings.ts`) but no zoom/pan for inspecting hi-res
   pages. QoL on an otherwise-mature reader. Effort: low-med. _(from legacy P2.)_
 
+- **In-chapter page bookmark** — bookmark a specific page/panel (distinct from the
+  Queue list, which bookmarks whole titles). Reader already persists per-page
+  progress (`pages/reader.ts:612`); a bookmark reuses that storage pattern + a marker
+  UI. Effort: low-med.
+
 - **Double-page / spread mode**, **chapter jump/search inside reader**, **reader
   shortcut/help overlay** — additional legacy reader-P2 ideas; not verified against
   the trimmed reader. Confirm against `pages/reader.ts` before scoping. _(from legacy
   P2.)_
+
+### Web / Site
+
+- **Public changelog page** — user-facing "what's new" page, common on web apps.
+  Source already exists: `docs/wiki/sessions/*.md` + the Done section here capture
+  every shipped change. Lazy path: a static `/changelog` route rendering a single
+  hand-curated markdown (user-readable summaries, not raw commits — raw git log is
+  noise). Effort: low. Promote to P1 only if a release cadence makes it worth
+  automating from commits/sessions.
 
 ### Library / Discovery
 
@@ -97,6 +119,19 @@ Urgency guide:
   legacy library-P2 ideas; not verified against trimmed repo (note: library advanced
   filter/sort already shipped in trimmed). Confirm before scoping. _(from legacy P2.)_
 
+- **"Similar titles" on detail page** — fills the empty "Comments coming soon" dead
+  space (`pages/manga.ts:86`) with a tag-overlap recommendation rail. No new data —
+  query existing `tags` for titles sharing the most tags. Reuses the catalog card
+  component. Effort: low.
+
+- **Tag / genre browse pages** (`/tag/:name`) — tags already power the home filter
+  (`/manga/tags`) but have no landing page. A browse route reuses the existing
+  catalog query keyed on one tag. Discovery win, ~zero new backend. Effort: low.
+
+- **Custom reading lists / collections** — beyond the fixed Favorite + Queue + 5
+  reading-statuses, let users make named lists. New table + simple CRUD; heavier than
+  the above. Effort: med.
+
 > Cherry-pick note (2026-06-19): the above were surfaced by reviewing the legacy
 > `LazyScan-Stack` backlog against this repo. Items tagged _verified absent_ were
 > grep-confirmed missing here; untagged ones still need a trimmed-repo check. Legacy
@@ -107,6 +142,18 @@ Urgency guide:
 Otherwise populate as items are reviewed against this repo. Carry candidates here
 only after confirming they apply to the trimmed stack — do not import the
 LazyScan-Stack backlog wholesale; that tree is experimental and its state diverges.
+
+### Social / Engagement
+
+- **Ratings / reviews** — _absent_. No rating UI or API anywhere; the hero "Popular
+  this week" ranks by read-count only (`/manga/popular`). User scores would add a
+  star/score per manga + optional text review, and could feed a real rating-based
+  rank alongside read-count. New table + API + aggregate. Effort: med.
+
+- **Comments / forum** — already stubbed: detail page shows "Comments coming soon"
+  (`pages/manga.ts:86`) and `/forum` is a placeholder route (`pages/forum.ts`). No
+  comment API exists. Real cost is moderation (spam, abuse, report/delete), not just
+  storage. Heaviest of the set — scope moderation before building. Effort: high.
 
 ## P3 / Later / Only if needed
 

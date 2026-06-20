@@ -1,13 +1,9 @@
 # LazyScan
 
-Self-upload manga reader. Compact fork of the LazyScan stack: a Bun/Elysia `api`,
-an nginx-served SPA `web`, and two Go workers — `image-svc` (ex-Kiln, WebP convert
-+ chapter-page consumer) and `mail-svc` (ex-Herald, verification mail consumer) —
-backed by Postgres, Redis, and Cloudflare R2. Six containers, async outbox pipeline
-preserved.
+A self-hosted manga platform for stuff I actually read.
 
-Run `cp .env.example .env`, fill it in, then `docker compose up -d --build`.
+Postgres. Redis. R2. Bun. Go.
 
-The authoritative rewrite plan and per-phase tasks live in
-`LazyScan-Stack/.hermes/plans/` (see `2026-06-17_173000-lazyscan-lite-concrete.md`).
-This repo is being assembled phase by phase.
+Upload chapters, process images, send emails, read manga.
+
+That's pretty much it.
