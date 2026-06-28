@@ -157,6 +157,27 @@ LazyScan-Stack backlog wholesale; that tree is experimental and its state diverg
 
 ## P3 / Later / Only if needed
 
+### Storage
+
+- **Reclaim space from already-read chapters** (concern raised 2026-06-26, deferred —
+  no implementation). Idea: auto/prune read chapters to free R2, preserve chapter +
+  page metadata so the title still lists and can be re-read later (e.g. when a new
+  chapter/volume drops). **Why deferred:** the cap has never been hit live (see P1
+  acceptance item 7), and read chapters are the highest-regret thing to delete —
+  pages are global + per-user "read" state, and after the staged-original prune the
+  served WebP (`storage_key`) is the *only* remaining copy, so deleting it makes
+  re-read require a manual re-upload (self-upload stack, no re-fetch source).
+  Reclaim-by-regret order if revisited:
+  1. **Orphan sweep first (zero loss)** — covers/avatars with no DB ref + deleted-manga
+     leftovers (already listed under P1 Storage). Solves cap pressure without touching
+     read content.
+  2. **Downscale, don't delete** — re-encode read chapters to archive-quality WebP
+     (smaller fit/quality); stays readable, no re-upload. Cost: touches the image-svc
+     convert profile contract (1080×1920/q88).
+  3. **Manual owner-controlled archive** — explicit "archive chapter" action (pages
+     deleted, shell kept, UI shows "re-upload to restore"); small blast radius. Only
+     if true deletion is wanted. Auto-on-new-chapter only after this is proven.
+
 ### Deploy / Build
 
 - **Off-box image build → registry** — `docker compose up -d --build` on the VPS

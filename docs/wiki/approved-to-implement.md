@@ -77,3 +77,52 @@ Open checks before coding:
   with the user.
 - Fix the `env.ts:53` comment in the same change (it currently claims nginx sets
   `X-Real-IP`).
+
+### Profile bio (short description) with 256-char cap + profanity guard (approved 2026-06-26)
+
+Status: **approved, not implemented.** New optional `bio` on the 1:1 `profiles` row.
+
+Reason:
+
+- No free-text self-description exists today (`profiles` has only `username`,
+  `display_name`, visibility flags). Add a short bio, length-capped, with a
+  profanity deterrent resistant to leet/symbol/number/spacing evasion.
+
+Decided approach (no new dependency — matches the "regex" intent + lean api deps):
+
+- **Length:** 256 chars. zod `.max(256)`, clearable (`"" | null` → null) exactly
+  like `displayName`.
+- **Profanity:** reject (400 `PROFILE_BIO_PROFANITY`) — do **not** auto-censor /
+  mutate user text. Store the raw bio; filter only at the validation layer.
+- **Matcher** (new `shared/utility/profanity.ts`, with one `assert` self-check):
+  normalize for matching only — lowercase → leet map (`@4→a $5→s 1!→i 0→o 3→e
+  7+→t …`) → collapse repeats (`fuuuck→fuck`) → match a small **root list with
+  word boundaries**. Catches `f0ck`, `$hit`, `sh!t`, leet/symbol/number swaps.
+
+Accepted ceiling (do not chase further):
+
+- Fully spaced-out `f u c k` slips through **by design**. Closing it requires
+  stripping all separators, which reintroduces the Scunthorpe problem (false
+  positives on `classic`, `assassin`, `Scunthorpe`, `circumstance`). Regex cannot
+  give both "catches spaced-out" and "no false positives" — deterrent + report/
+  moderation is the backstop. Upgrade path if recall matters: swap the matcher
+  internals for the `obscenity` dep behind the same `profanity.ts` seam (purpose-
+  built leet+spacing matcher with a whitelist to cut false positives).
+
+Implementation intent (smallest safe, mirrors `displayName`):
+
+- migration `028_profile_bio.sql` — additive `ALTER TABLE profiles ADD COLUMN IF
+  NOT EXISTS bio TEXT`.
+- `profile.model.ts` — `bio` on `Profile`, `UpdateProfileInput`,
+  `ProfileResponse`, `PublicProfileResponse` (public profile shows it).
+- `profile.validation.ts` — `bio: clearable(z.string().min(1).max(256))` +
+  profanity business-validator.
+- `profile.repository.ts` — select/insert/update `bio`.
+- `profile.service.ts` — passthrough.
+- web profile edit form + display — separate change, out of api scope.
+
+Open checks before coding:
+
+- Confirm `bio` shows on the **public** profile lookup (assumed yes) vs owner-only.
+- Confirm the profanity behavior is **reject** vs silent-censor with the user
+  (recorded as reject above).
