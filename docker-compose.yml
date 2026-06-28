@@ -77,7 +77,7 @@ services:
 
   web:
     build: ./web                        # nginx: SPA + proxy /api
-    ports: ["127.0.0.1:8081:80"]        # Cloudflare Tunnel → here (staging override shifts to 8082)
+    ports: ["127.0.0.1:${WEB_PORT:-8080}:80"]   # Cloudflare Tunnel → here; per-env WEB_PORT in .env (prod 8080, staging 8090)
     depends_on: [api]
     mem_limit: 48m
     restart: unless-stopped
