@@ -40,8 +40,8 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
 
   container.scrollTo({ top: 0 });
 
-  // ponytail: Stage 2 probe. Matched here rather than in match.ts so that pure,
-  // tested module stays untouched. Delete when pages/home.ts converts (Stage 5).
+  // Throwaway probe route. Matched here rather than in match.ts so that pure,
+  // tested module stays untouched. Delete when pages/home.ts converts to React.
   if (window.location.pathname === PROBE_PATH) {
     activeRoot = createRoot(container);
     activeRoot.render(createElement(ReactProbe));
