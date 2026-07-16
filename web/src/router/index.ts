@@ -16,9 +16,18 @@ import { renderReaderPage } from "@/pages/reader";
 import { renderSettingsPage } from "@/pages/settings";
 import { renderStatusPage } from "@/pages/status";
 import { renderUserPage } from "@/pages/user";
+import { createElement } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { ReactProbe } from "@/pages/__probe";
 import { matchRoute, type Route } from "./match";
 
 export type { Route } from "./match";
+
+// React and the vanilla pages share one <main>. Every vanilla page assigns
+// innerHTML, which would strand a live root's DOM, so unmount before each render.
+let activeRoot: Root | null = null;
+
+const PROBE_PATH = "/__react";
 
 export function navigateTo(path: string): void {
   window.history.pushState({}, "", path);
@@ -26,8 +35,20 @@ export function navigateTo(path: string): void {
 }
 
 export async function renderRoute(container: HTMLElement): Promise<void> {
-  const route: Route = matchRoute(window.location.pathname);
+  activeRoot?.unmount();
+  activeRoot = null;
+
   container.scrollTo({ top: 0 });
+
+  // ponytail: Stage 2 probe. Matched here rather than in match.ts so that pure,
+  // tested module stays untouched. Delete when pages/home.ts converts (Stage 5).
+  if (window.location.pathname === PROBE_PATH) {
+    activeRoot = createRoot(container);
+    activeRoot.render(createElement(ReactProbe));
+    return;
+  }
+
+  const route: Route = matchRoute(window.location.pathname);
 
   if (route.name === "login") {
     renderLoginPage(container, "login");

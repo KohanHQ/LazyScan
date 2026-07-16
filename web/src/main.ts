@@ -1,3 +1,4 @@
+import "@/styles/tailwind.css";
 import "@/styles/base.css";
 import "@/styles/reader.css";
 import { startApp } from "@/app";
