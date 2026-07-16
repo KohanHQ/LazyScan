@@ -1,6 +1,6 @@
 :root {
-  color: #17201b;
-  background: #f5f2ec;
+  color: var(--text);
+  background: var(--bg);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
@@ -48,11 +48,6 @@
   --status-warn-fg: #9a6b16;
   --status-info-bg: #e4edf7;
   --status-info-fg: #2b5c9b;
-}
-
-[data-theme="dark"] {
-  color: #e8e4dd;
-  background: var(--bg);
 }
 
 * {
@@ -256,7 +251,7 @@ h3 {
 }
 
 .rail-card:focus-visible .rail-cover {
-  outline: 3px solid #cbece2;
+  outline: 3px solid var(--accent-fg);
   outline-offset: 2px;
 }
 
@@ -304,7 +299,7 @@ h3 {
 
 .manga-card:focus-visible {
   border-color: var(--accent-fg);
-  outline: 3px solid #cbece2;
+  outline: 3px solid var(--accent-fg);
   outline-offset: 2px;
 }
 
@@ -982,8 +977,10 @@ img.user-avatar {
 
   /* Text */
   --text: #e8e4dd;
-  --text-secondary: #8a8278;
-  --text-muted: #6a6258;
+  /* Bumped from #8a8278/#6a6258 (4.2:1 / 2.7:1 on --surface) to clear WCAG 4.5:1
+     on both dark surfaces; hue kept. Tunable one-liners if too bright. */
+  --text-secondary: #a29a8c;
+  --text-muted: #9a927f;
   --text-label: #b8b2a8;
   --text-on-accent: #ffffff;
 
@@ -1620,7 +1617,7 @@ img.user-avatar {
 .manage-form textarea:focus-visible,
 .manage-form select:focus-visible {
   border-color: var(--accent-fg);
-  outline: 3px solid #cbece2;
+  outline: 3px solid var(--accent-fg);
 }
 
 .manage-form small {
@@ -2127,7 +2124,7 @@ img.user-avatar {
 
 .user-lookup-form input:focus-visible {
   border-color: var(--accent-fg);
-  outline: 3px solid #cbece2;
+  outline: 3px solid var(--accent-fg);
 }
 
 .profile-meta {
@@ -2162,7 +2159,7 @@ img.user-avatar {
 
 .library-search:focus-visible {
   border-color: var(--accent-fg);
-  outline: 3px solid #cbece2;
+  outline: 3px solid var(--accent-fg);
 }
 
 /* "/" shortcut hint, shown only while the search is empty + unfocused. */

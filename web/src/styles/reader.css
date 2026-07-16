@@ -547,7 +547,7 @@
 
 .reader-overlay-chapter-current {
   background: var(--reader-surface-raised);
-  color: var(--reader-accent);
+  color: var(--reader-accent-fg);
 }
 
 .reader-overlay-chapter-num {
@@ -559,7 +559,7 @@
 }
 
 .reader-overlay-chapter-current .reader-overlay-chapter-num {
-  color: var(--reader-accent);
+  color: var(--reader-accent-fg);
 }
 
 .reader-overlay-chapter-title {
