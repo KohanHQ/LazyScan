@@ -2,7 +2,7 @@ import { renderFavoritesPage } from "@/pages/favorites";
 import { renderFeedPage } from "@/pages/feed";
 import { renderForumPage } from "@/pages/forum";
 import { renderHistoryPage } from "@/pages/history";
-import { renderHomePage } from "@/pages/home";
+import { HomePage } from "@/pages/home";
 import { renderLoginPage } from "@/pages/login";
 import { renderChapterUploadPage } from "@/pages/manage-chapter";
 import { renderManagePage } from "@/pages/manage";
@@ -18,7 +18,6 @@ import { renderStatusPage } from "@/pages/status";
 import { renderUserPage } from "@/pages/user";
 import { createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { ReactProbe } from "@/pages/__probe";
 import { matchRoute, type Route } from "./match";
 
 export type { Route } from "./match";
@@ -26,8 +25,6 @@ export type { Route } from "./match";
 // React and the vanilla pages share one <main>. Every vanilla page assigns
 // innerHTML, which would strand a live root's DOM, so unmount before each render.
 let activeRoot: Root | null = null;
-
-const PROBE_PATH = "/__react";
 
 export function navigateTo(path: string): void {
   window.history.pushState({}, "", path);
@@ -39,14 +36,6 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
   activeRoot = null;
 
   container.scrollTo({ top: 0 });
-
-  // Throwaway probe route. Matched here rather than in match.ts so that pure,
-  // tested module stays untouched. Delete when pages/home.ts converts to React.
-  if (window.location.pathname === PROBE_PATH) {
-    activeRoot = createRoot(container);
-    activeRoot.render(createElement(ReactProbe));
-    return;
-  }
 
   const route: Route = matchRoute(window.location.pathname);
 
@@ -140,5 +129,7 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
     return;
   }
 
-  await renderHomePage(container);
+  // Home is React; createElement keeps this surviving .ts file free of JSX.
+  activeRoot = createRoot(container);
+  activeRoot.render(createElement(HomePage));
 }
