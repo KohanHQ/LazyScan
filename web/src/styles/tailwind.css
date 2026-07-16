@@ -9,7 +9,7 @@
    not shadcn's default .dark class. */
 @custom-variant dark (&:where([data-theme="dark"] *));
 
-/* Bridges the Stage 1 token layer into Tailwind. `inline` makes utilities emit
+/* Bridges the base.css token layer into Tailwind. `inline` makes utilities emit
    var(--bg) directly rather than freezing a snapshot of it at :root — without it
    the dark theme cannot repoint them. Names map 1:1 onto base.css on purpose;
    the text-text-* stutter is the cost, and shadcn's aliases supersede it. */
@@ -27,8 +27,9 @@
   --color-text-label: var(--text-label);
   --color-text-on-accent: var(--text-on-accent);
 
-  /* Accent */
-  --color-accent: var(--accent);
+  /* Accent — brand green is `primary` in Tailwind (shadcn convention); `accent`
+     belongs to shadcn's hover wash below. accent-hover/-fg keep LazyScan names:
+     shadcn has no slot for either (it derives hovers via opacity). */
   --color-accent-hover: var(--accent-hover);
   --color-accent-fg: var(--accent-fg);
 
@@ -49,4 +50,25 @@
   --color-status-warn-fg: var(--status-warn-fg);
   --color-status-info-bg: var(--status-info-bg);
   --color-status-info-fg: var(--status-info-fg);
+
+  /* shadcn semantic aliases → same base.css tokens. shadcn's `accent` means
+     hover wash, not brand — brand green lives at `primary`. */
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--text-on-accent);
+  --color-secondary: var(--surface-accent);
+  --color-secondary-foreground: var(--text-label);
+  --color-muted: var(--surface-raised);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent: var(--surface-accent);
+  --color-accent-foreground: var(--text);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--text-on-accent);
+  --color-input: var(--border-strong);
+  --color-ring: var(--accent-fg);
 }

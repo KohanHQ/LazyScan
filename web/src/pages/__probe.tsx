@@ -1,9 +1,20 @@
 import { useState, type ReactElement } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
-// ponytail: Stage 2 coexistence probe — delete when pages/home.ts converts (Stage 5).
-// Each element gates one risk the rewrite plan flagged: token-backed utilities in
-// both themes, `border` rendering without preflight, the data-theme dark variant,
-// base.css's element rules under a utility-styled <button>, and a live state update.
+// Throwaway coexistence probe — delete when pages/home.ts converts to React.
+// Each element gates one migration risk: token-backed utilities in both themes,
+// `border` rendering without preflight, the data-theme dark variant, base.css's
+// element rules under a utility-styled <button>, a live state update, and
+// shadcn Button variants + Dialog in the LazyScan palette.
 export function ReactProbe(): ReactElement {
   const [count, setCount] = useState(0);
 
@@ -14,12 +25,35 @@ export function ReactProbe(): ReactElement {
         This line turns mint in dark mode via the data-theme variant.
       </p>
       <button
-        className="rounded-md border border-accent bg-accent px-4 py-2 text-text-on-accent"
+        className="rounded-md border border-primary bg-primary px-4 py-2 text-text-on-accent"
         type="button"
         onClick={() => setCount(count + 1)}
       >
         Clicked {count}
       </button>
+
+      <div className="mt-6 flex flex-wrap items-center gap-2">
+        <Button>Primary</Button>
+        <Button variant="secondary">Secondary</Button>
+        <Button variant="outline">Outline</Button>
+        <Button variant="ghost">Ghost</Button>
+        <Button variant="destructive">Destructive</Button>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline">Open dialog</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>shadcn dialog</DialogTitle>
+              <DialogDescription>
+                Radix behavior (focus trap, esc, overlay close) in the LazyScan
+                palette. Both themes must read from the base.css tokens.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter showCloseButton />
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
