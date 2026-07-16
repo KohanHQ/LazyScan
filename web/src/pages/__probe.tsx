@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from "react";
+import { useReaderState, useSession } from "@/state/hooks";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,12 +18,21 @@ import {
 // shadcn Button variants + Dialog in the LazyScan palette.
 export function ReactProbe(): ReactElement {
   const [count, setCount] = useState(0);
+  const session = useSession();
+  const reader = useReaderState();
 
   return (
     <div className="m-8 rounded-lg border border-border bg-surface p-6 text-text">
       <h2 className="text-accent-fg">React probe</h2>
       <p className="text-text-secondary dark:text-accent-fg">
         This line turns mint in dark mode via the data-theme variant.
+      </p>
+      <p className="text-text-muted">
+        Store adapters: session{" "}
+        {session.isBootstrapping
+          ? "bootstrapping"
+          : (session.user?.username ?? "anonymous")}
+        , reader page {reader.currentPageIndex + 1}.
       </p>
       <button
         className="rounded-md border border-primary bg-primary px-4 py-2 text-text-on-accent"
