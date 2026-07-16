@@ -19,3 +19,7 @@ build/
 *.log
 .DS_Store
 .coderabbit.yaml
+
+# internal planning docs
+AGENTS.md
+docs/
