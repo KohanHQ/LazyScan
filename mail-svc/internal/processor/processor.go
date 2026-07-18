@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/latoulicious/lazyscan/mail-svc/internal/mailer"
-	"github.com/latoulicious/lazyscan/mail-svc/internal/store"
+	"github.com/KohanHQ/lazyscan/mail-svc/internal/mailer"
+	"github.com/KohanHQ/lazyscan/mail-svc/internal/store"
 )
 
 // EventTypeVerificationRequested is the only event type mail-svc handles in v1.

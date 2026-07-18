@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/latoulicious/lazyscan/mail-svc/internal/mailer"
-	"github.com/latoulicious/lazyscan/mail-svc/internal/store"
+	"github.com/KohanHQ/lazyscan/mail-svc/internal/mailer"
+	"github.com/KohanHQ/lazyscan/mail-svc/internal/store"
 )
 
 var errTransient = errors.New("connection refused")

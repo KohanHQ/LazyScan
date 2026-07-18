@@ -1,4 +1,4 @@
-module github.com/latoulicious/lazyscan/mail-svc
+module github.com/KohanHQ/lazyscan/mail-svc
 
 go 1.26
 

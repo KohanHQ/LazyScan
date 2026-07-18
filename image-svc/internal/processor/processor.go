@@ -11,9 +11,9 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/latoulicious/lazyscan/image-svc/internal/convert"
-	"github.com/latoulicious/lazyscan/image-svc/internal/storage"
-	"github.com/latoulicious/lazyscan/image-svc/internal/store"
+	"github.com/KohanHQ/lazyscan/image-svc/internal/convert"
+	"github.com/KohanHQ/lazyscan/image-svc/internal/storage"
+	"github.com/KohanHQ/lazyscan/image-svc/internal/store"
 )
 
 // EventTypeProcessingRequested is the only event type Kiln handles in v1.
