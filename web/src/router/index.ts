@@ -11,7 +11,7 @@ import {
   renderMangaEditPage,
 } from "@/pages/manage-manga";
 import { renderMangaPage } from "@/pages/manga";
-import { renderProfilePage, renderProfileEditPage } from "@/pages/profile";
+import { ProfilePage, ProfileEditPage } from "@/pages/profile";
 import { renderReaderPage } from "@/pages/reader";
 import { renderSettingsPage } from "@/pages/settings";
 import { StatusPage } from "@/pages/status";
@@ -90,12 +90,12 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
   }
 
   if (route.name === "profile") {
-    await renderProfilePage(container);
+    mountReact(container, ProfilePage);
     return;
   }
 
   if (route.name === "profile-edit") {
-    await renderProfileEditPage(container);
+    mountReact(container, ProfileEditPage);
     return;
   }
 
