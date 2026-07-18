@@ -4,7 +4,7 @@ import { ForumPage } from "@/pages/forum";
 import { HistoryPage } from "@/pages/history";
 import { HomePage } from "@/pages/home";
 import { LoginPage } from "@/pages/login";
-import { renderChapterUploadPage } from "@/pages/manage-chapter";
+import { ChapterUploadPage } from "@/pages/manage-chapter";
 import { ManagePage } from "@/pages/manage";
 import { MangaCreatePage, MangaEditPage } from "@/pages/manage-manga";
 import { MangaPage } from "@/pages/manga";
@@ -122,7 +122,7 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
   }
 
   if (route.name === "manga-chapter-upload") {
-    renderChapterUploadPage(container, route.id);
+    mountReact(container, ChapterUploadPage, { id: route.id });
     return;
   }
 
