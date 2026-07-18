@@ -3,7 +3,7 @@ import { FeedPage } from "@/pages/feed";
 import { ForumPage } from "@/pages/forum";
 import { HistoryPage } from "@/pages/history";
 import { HomePage } from "@/pages/home";
-import { renderLoginPage } from "@/pages/login";
+import { LoginPage } from "@/pages/login";
 import { renderChapterUploadPage } from "@/pages/manage-chapter";
 import { renderManagePage } from "@/pages/manage";
 import {
@@ -50,12 +50,12 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
   const route: Route = matchRoute(window.location.pathname);
 
   if (route.name === "login") {
-    renderLoginPage(container, "login");
+    mountReact(container, LoginPage, { mode: "login" });
     return;
   }
 
   if (route.name === "register") {
-    renderLoginPage(container, "register");
+    mountReact(container, LoginPage, { mode: "register" });
     return;
   }
 
