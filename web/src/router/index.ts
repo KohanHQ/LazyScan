@@ -1,4 +1,4 @@
-import { renderFavoritesPage } from "@/pages/favorites";
+import { FavoritesPage } from "@/pages/favorites";
 import { FeedPage } from "@/pages/feed";
 import { ForumPage } from "@/pages/forum";
 import { renderHistoryPage } from "@/pages/history";
@@ -60,7 +60,7 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
   }
 
   if (route.name === "favorites") {
-    renderFavoritesPage(container);
+    mountReact(container, FavoritesPage);
     return;
   }
 
