@@ -15,7 +15,7 @@ import { renderProfilePage, renderProfileEditPage } from "@/pages/profile";
 import { renderReaderPage } from "@/pages/reader";
 import { renderSettingsPage } from "@/pages/settings";
 import { StatusPage } from "@/pages/status";
-import { renderUserPage } from "@/pages/user";
+import { UserPage } from "@/pages/user";
 import { createElement, type ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { matchRoute, type Route } from "./match";
@@ -27,9 +27,13 @@ export type { Route } from "./match";
 let activeRoot: Root | null = null;
 
 // createElement keeps this surviving .ts file free of JSX.
-function mountReact(container: HTMLElement, page: ComponentType): void {
+function mountReact<P extends object>(
+  container: HTMLElement,
+  page: ComponentType<P>,
+  props?: P
+): void {
   activeRoot = createRoot(container);
-  activeRoot.render(createElement(page));
+  activeRoot.render(createElement(page, props ?? null));
 }
 
 export function navigateTo(path: string): void {
@@ -96,12 +100,12 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
   }
 
   if (route.name === "user-lookup") {
-    await renderUserPage(container);
+    mountReact(container, UserPage);
     return;
   }
 
   if (route.name === "user-profile") {
-    await renderUserPage(container, route.username);
+    mountReact(container, UserPage, { username: route.username });
     return;
   }
 

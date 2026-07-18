@@ -6,6 +6,7 @@ export function Cover(props: {
   url: string | null;
   seed: string;
   placeholderClass: string;
+  imgClassName?: string;
 }): ReactElement {
   // Track which URL failed so a later, different URL gets a fresh attempt.
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
@@ -19,5 +20,13 @@ export function Cover(props: {
     );
   }
   const url = props.url;
-  return <img src={url} alt="" loading="lazy" onError={() => setFailedUrl(url)} />;
+  return (
+    <img
+      src={url}
+      alt=""
+      className={props.imgClassName}
+      loading="lazy"
+      onError={() => setFailedUrl(url)}
+    />
+  );
 }
