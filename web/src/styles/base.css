@@ -1367,6 +1367,14 @@ img.user-avatar {
   margin-right: -50vw;
   margin-top: -88px;
   border-radius: 0;
+  /* Overlap the next section into the fade's near-opaque tail so the art-to-page
+     dissolve is never seen bare (bare fade reads as a gray band over light bg). */
+  margin-bottom: -56px;
+}
+
+.app-shell[data-hero="true"] .hero + * {
+  position: relative;
+  z-index: 1;
 }
 
 .app-shell[data-hero="true"] .hero-stage {
