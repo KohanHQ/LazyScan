@@ -10,8 +10,8 @@ import {
 } from "@/api/chapter";
 import type { ChapterPage, ReaderChapter } from "@/api/chapter";
 import type { Manga } from "@/api/manga";
-import { ConfirmDialog } from "@/components/react/confirm-dialog";
-import { ErrorState, Loading } from "@/components/react/states";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ErrorState, Loading } from "@/components/states";
 import {
   Dialog,
   DialogContent,

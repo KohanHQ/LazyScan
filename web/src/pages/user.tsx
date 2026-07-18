@@ -7,15 +7,15 @@ import {
 import { ApiClientError } from "@/api/client";
 import { getProfileByUsername } from "@/api/profile";
 import type { PublicProfile } from "@/api/profile";
-import { Badges } from "@/components/react/badges";
-import { Cover } from "@/components/react/cover";
-import { MangaCard } from "@/components/react/manga-card";
-import { Page } from "@/components/react/page";
-import { PageHeading } from "@/components/react/page-heading";
-import { RequireSession } from "@/components/react/require-session";
-import { ErrorState, Loading } from "@/components/react/states";
+import { Badges } from "@/components/badges";
+import { Cover } from "@/components/cover";
+import { MangaCard } from "@/components/manga-card";
+import { Page } from "@/components/page";
+import { PageHeading } from "@/components/page-heading";
+import { RequireSession } from "@/components/require-session";
+import { ErrorState, Loading } from "@/components/states";
 import { navigateTo } from "@/router";
-import { formatDate } from "@/utils/dom";
+import { formatDate } from "@/utils/format";
 import { resolveAvatar } from "@/utils/avatar";
 
 // Username lookup and public profiles are auth-gated; the API stays the real

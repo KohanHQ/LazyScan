@@ -8,10 +8,10 @@ import type {
   ReadingStatus,
   ReadingStatusEntry,
 } from "@/api/reading-status";
-import { MangaCard } from "@/components/react/manga-card";
-import { PageHeading } from "@/components/react/page-heading";
-import { RequireSession } from "@/components/react/require-session";
-import { Empty, ErrorState, Loading } from "@/components/react/states";
+import { MangaCard } from "@/components/manga-card";
+import { PageHeading } from "@/components/page-heading";
+import { RequireSession } from "@/components/require-session";
+import { Empty, ErrorState, Loading } from "@/components/states";
 
 const TABS: { key: ReadingStatus; label: string }[] = [
   { key: "reading", label: "Reading" },

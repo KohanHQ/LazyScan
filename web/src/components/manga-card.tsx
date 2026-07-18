@@ -1,11 +1,14 @@
 import type { ReactElement } from "react";
-import type { Manga } from "@/api/manga";
-import { statusLabel } from "@/components/manga-card";
-import { Cover } from "@/components/react/cover";
+import type { Manga, MangaStatus } from "@/api/manga";
+import { Cover } from "@/components/cover";
 import { clickable } from "@/lib/clickable";
 
-// React counterpart of components/manga-card.ts. Library cards open the public
-// detail page; manage cards open the edit page with a management aria-label.
+export function statusLabel(status: MangaStatus): string {
+  return status.replace(/^\w/, (letter) => letter.toUpperCase());
+}
+
+// Library cards open the public detail page; manage cards open the edit page
+// with a management aria-label.
 export function MangaCard({
   manga,
   variant = "library",

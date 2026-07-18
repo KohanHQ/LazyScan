@@ -1,7 +1,5 @@
 import type { ReactElement, ReactNode } from "react";
 
-// React counterpart of components/page-heading.ts; it replaces that file once the
-// last vanilla page is converted.
 export function PageHeading(props: {
   title: string;
   eyebrow?: string;

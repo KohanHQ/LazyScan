@@ -2,11 +2,11 @@ import { useEffect, useState, type ReactElement } from "react";
 import { Inbox } from "lucide-react";
 import { getLibraryFeed } from "@/api/library";
 import type { LibraryFeedEntry } from "@/api/library";
-import { Cover } from "@/components/react/cover";
-import { Empty, ErrorState, Loading } from "@/components/react/states";
-import { RequireSession } from "@/components/react/require-session";
+import { Cover } from "@/components/cover";
+import { Empty, ErrorState, Loading } from "@/components/states";
+import { RequireSession } from "@/components/require-session";
 import { clickable } from "@/lib/clickable";
-import { formatDate } from "@/utils/dom";
+import { formatDate } from "@/utils/format";
 
 // Server clamps to staticConfig.libraryFeed.maxLimit; request the max so the
 // page shows the full window (no pagination — the feed is a capped surface).

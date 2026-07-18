@@ -19,9 +19,9 @@ import type {
   CreateChapterUploadResponse,
 } from "@/api/chapter";
 import { getManga } from "@/api/manga";
-import { PageHeading } from "@/components/react/page-heading";
-import { RequireSession } from "@/components/react/require-session";
-import { ErrorState, Loading } from "@/components/react/states";
+import { PageHeading } from "@/components/page-heading";
+import { RequireSession } from "@/components/require-session";
+import { ErrorState, Loading } from "@/components/states";
 import { cbzSupported, extractCbz, isArchiveFile } from "@/utils/cbz";
 import { navigateTo } from "@/router";
 

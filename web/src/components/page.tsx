@@ -1,7 +1,6 @@
 import type { ReactElement, ReactNode } from "react";
-import { PageHeading } from "@/components/react/page-heading";
+import { PageHeading } from "@/components/page-heading";
 
-// React counterpart of components/page.ts (survives; several vanilla consumers).
 // Standard heading + a page-width content container. Trap: `.page-stack` (default)
 // widens any `.manage-panel` inside it — forms wanting the narrow column pass
 // stack={false}.

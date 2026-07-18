@@ -17,10 +17,10 @@ import type { ListMangaParams, Manga, MangaStatus } from "@/api/manga";
 import { getReadingHistory } from "@/api/reader";
 import type { MangaHistoryEntry } from "@/api/reader";
 import { statusLabel } from "@/components/manga-card";
-import { Cover } from "@/components/react/cover";
-import { MangaCard } from "@/components/react/manga-card";
-import { PopupSelect } from "@/components/react/popup-select";
-import { Empty, ErrorState, Loading } from "@/components/react/states";
+import { Cover } from "@/components/cover";
+import { MangaCard } from "@/components/manga-card";
+import { PopupSelect } from "@/components/popup-select";
+import { Empty, ErrorState, Loading } from "@/components/states";
 import { clickable } from "@/lib/clickable";
 import {
   historyChapterLabel,
@@ -113,7 +113,7 @@ export function HomePage(): ReactElement {
   }, []);
 
   // Drive the immersive home chrome (transparent topbar + full-bleed hero). Only
-  // set when a hero actually mounts; app.ts resets it to "false" on every
+  // set when a hero actually mounts; the shell resets it to "false" on every
   // navigation, so it never leaks to other routes.
   const hasHero = data !== null && data.firstPage.length > 0;
   useEffect(() => {

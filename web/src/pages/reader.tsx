@@ -15,7 +15,7 @@ import {
   saveReadingProgress,
 } from "@/api/reader";
 import type { ReaderChapterDetail, ReaderChapterPage } from "@/api/reader";
-import { ErrorState, Loading } from "@/components/react/states";
+import { ErrorState, Loading } from "@/components/states";
 import { navigateTo } from "@/router";
 import {
   getReaderState,

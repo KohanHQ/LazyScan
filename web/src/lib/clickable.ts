@@ -1,8 +1,7 @@
 import { navigateTo } from "@/router";
 import type { KeyboardEvent } from "react";
 
-// Click + Enter/Space navigation props for card-style elements — the React
-// counterpart of utils/dom.ts wireClickableRows.
+// Click + Enter/Space navigation props for card-style elements.
 export function clickable(path: string): {
   tabIndex: number;
   role: "button";

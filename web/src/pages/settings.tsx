@@ -13,10 +13,10 @@ import type {
   AdminStorageStats,
 } from "@/api/admin";
 import { retryChapterUpload } from "@/api/chapter";
-import { PageHeading } from "@/components/react/page-heading";
-import { Empty, ErrorState, Loading } from "@/components/react/states";
-import { RequireSession } from "@/components/react/require-session";
-import { formatDate } from "@/utils/dom";
+import { PageHeading } from "@/components/page-heading";
+import { Empty, ErrorState, Loading } from "@/components/states";
+import { RequireSession } from "@/components/require-session";
+import { formatDate } from "@/utils/format";
 
 const IMPORTS_LIMIT = 50;
 const LOGS_LIMIT = 10;

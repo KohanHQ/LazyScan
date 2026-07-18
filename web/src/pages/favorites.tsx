@@ -7,11 +7,11 @@ import {
 import { Bookmark, Heart } from "lucide-react";
 import { getLibrary, removeFromLibrary } from "@/api/library";
 import type { LibraryEntry, LibraryList } from "@/api/library";
-import { MangaCard } from "@/components/react/manga-card";
-import { PageHeading } from "@/components/react/page-heading";
-import { PopupSelect } from "@/components/react/popup-select";
-import { RequireSession } from "@/components/react/require-session";
-import { Empty, ErrorState, Loading } from "@/components/react/states";
+import { MangaCard } from "@/components/manga-card";
+import { PageHeading } from "@/components/page-heading";
+import { PopupSelect } from "@/components/popup-select";
+import { RequireSession } from "@/components/require-session";
+import { Empty, ErrorState, Loading } from "@/components/states";
 
 const TABS: { key: LibraryList; label: string }[] = [
   { key: "favorite", label: "Favorites" },

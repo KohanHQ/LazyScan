@@ -8,9 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// Confirm modal replacing components/dialog.ts confirmDialog. Mount it while a
-// confirmation is pending; Escape/backdrop/X resolve as cancel (radix handles
-// keys, so vanilla's Enter-confirms is dropped).
+// Mount while a confirmation is pending; Escape/backdrop/X resolve as cancel.
 export function ConfirmDialog(props: {
   title: string;
   message: string;

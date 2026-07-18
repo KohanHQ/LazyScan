@@ -1,7 +1,6 @@
 import type { ReactElement } from "react";
 import type { Badge } from "@/api/profile";
 
-// React counterpart of components/badges.ts (survives; profile.ts still uses it).
 // The API pre-sorts badges rarest-first — a hidden contract; render order mirrors
 // it. Each chip carries a rarity modifier plus a per-code class for theming.
 export function Badges({ badges }: { badges: Badge[] }): ReactElement | null {

@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { MessageSquare } from "lucide-react";
-import { PageHeading } from "@/components/react/page-heading";
-import { Empty } from "@/components/react/states";
+import { PageHeading } from "@/components/page-heading";
+import { Empty } from "@/components/states";
 
 // Forum placeholder: the sidebar item exists so the surface is discoverable,
 // but the feature itself is not built yet.

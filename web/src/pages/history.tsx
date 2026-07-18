@@ -2,11 +2,11 @@ import { useEffect, useRef, useState, type ReactElement } from "react";
 import { Inbox } from "lucide-react";
 import { clearReadingProgress, getReadingHistory } from "@/api/reader";
 import type { MangaHistoryEntry } from "@/api/reader";
-import { Cover } from "@/components/react/cover";
-import { Empty, ErrorState, Loading } from "@/components/react/states";
-import { RequireSession } from "@/components/react/require-session";
+import { Cover } from "@/components/cover";
+import { Empty, ErrorState, Loading } from "@/components/states";
+import { RequireSession } from "@/components/require-session";
 import { clickable } from "@/lib/clickable";
-import { formatDate } from "@/utils/dom";
+import { formatDate } from "@/utils/format";
 
 const PAGE_SIZE = 20;
 const HAS_OBSERVER = "IntersectionObserver" in window;

@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from "react";
 
-// Cover image with a letter-placeholder fallback — the React counterpart of
-// utils/dom.ts renderCover + wireCoverFallbacks (onError needs no post-wiring).
+// Cover image with a letter-placeholder fallback; onError swaps in the placeholder.
 export function Cover(props: {
   url: string | null;
   seed: string;

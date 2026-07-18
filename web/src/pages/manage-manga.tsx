@@ -14,12 +14,12 @@ import {
   MANGA_STATUSES,
 } from "@/api/manga";
 import type { Manga, MangaInput, MangaStatus } from "@/api/manga";
-import { ConfirmDialog } from "@/components/react/confirm-dialog";
-import { Cover } from "@/components/react/cover";
-import { PageHeading } from "@/components/react/page-heading";
-import { PopupSelect } from "@/components/react/popup-select";
-import { RequireSession } from "@/components/react/require-session";
-import { ErrorState, Loading } from "@/components/react/states";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { Cover } from "@/components/cover";
+import { PageHeading } from "@/components/page-heading";
+import { PopupSelect } from "@/components/popup-select";
+import { RequireSession } from "@/components/require-session";
+import { ErrorState, Loading } from "@/components/states";
 import {
   Dialog,
   DialogContent,

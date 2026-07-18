@@ -1,7 +1,5 @@
 import type { ReactElement, ReactNode } from "react";
 
-// React counterparts of components/states.ts; they replace it once the last
-// vanilla page is converted.
 export function Loading({ message = "Loading" }: { message?: string }): ReactElement {
   return (
     <div className="state-block" role="status">

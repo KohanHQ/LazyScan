@@ -1,13 +1,12 @@
 import type { ReactElement, ReactNode } from "react";
 import type { CurrentUser } from "@/api/auth";
-import { Loading } from "@/components/react/states";
+import { Loading } from "@/components/states";
 import { navigateTo } from "@/router";
 import { useSession } from "@/state/hooks";
 
-// React counterpart of page-session.ts + auth-required.ts (both survive for
-// vanilla pages). Gates an auth-only page: loading while session bootstrap
-// settles, the login-required block for anonymous visitors, else the page. The
-// API stays the real guard; this only controls the affordance.
+// Gates an auth-only page: loading while session bootstrap settles, the
+// login-required block for anonymous visitors, else the page. The API stays the
+// real guard; this only controls the affordance.
 export function RequireSession(props: {
   loading?: string;
   loginMessage?: string;

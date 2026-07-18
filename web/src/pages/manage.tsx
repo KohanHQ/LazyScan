@@ -2,10 +2,10 @@ import { useEffect, useState, type ReactElement } from "react";
 import { canManageManga, listManga } from "@/api/manga";
 import type { Manga } from "@/api/manga";
 import type { CurrentUser } from "@/api/auth";
-import { MangaCard } from "@/components/react/manga-card";
-import { PageHeading } from "@/components/react/page-heading";
-import { RequireSession } from "@/components/react/require-session";
-import { ErrorState, Loading } from "@/components/react/states";
+import { MangaCard } from "@/components/manga-card";
+import { PageHeading } from "@/components/page-heading";
+import { RequireSession } from "@/components/require-session";
+import { ErrorState, Loading } from "@/components/states";
 import { navigateTo } from "@/router";
 
 const PAGE_LIMIT = 100;

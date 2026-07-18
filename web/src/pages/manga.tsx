@@ -33,12 +33,12 @@ import {
 } from "@/api/reading-status";
 import type { ReadingStatus } from "@/api/reading-status";
 import { statusLabel } from "@/components/manga-card";
-import { Cover } from "@/components/react/cover";
-import { Empty, ErrorState, Loading } from "@/components/react/states";
+import { Cover } from "@/components/cover";
+import { Empty, ErrorState, Loading } from "@/components/states";
 import { clickable } from "@/lib/clickable";
 import { invalidateChapterCache } from "@/pages/reader";
 import { useSession } from "@/state/hooks";
-import { formatDate } from "@/utils/dom";
+import { formatDate } from "@/utils/format";
 
 type MangaData = {
   manga: Manga;
@@ -65,8 +65,7 @@ export function MangaPage({ id }: { id: string }): ReactElement {
   useEffect(() => {
     let ignore = false;
     setState({ kind: "loading" });
-    // Reader stays vanilla until Stage 7; keep invalidating its chapter cache at
-    // load start as the old page did.
+    // Invalidate the reader's chapter cache at load start.
     invalidateChapterCache(id);
     void (async () => {
       let manga: Manga;
