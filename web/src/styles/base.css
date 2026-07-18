@@ -2807,20 +2807,17 @@ img.user-avatar {
 .hero-fade {
   position: absolute;
   inset: 0;
-  /* Bottom layer (painted on top) melts the hero into the page background colour;
-     the dense easing-curve stops keep the ramp below the banding threshold over
-     bright art. The left-to-right layer keeps text contrast while the art reads
-     through right. */
+  /* Bottom layer (painted on top) melts the hero into the page background colour so
+     there's no seam where it meets the body. The fallback (#f5f2ec) matters: the
+     `--bg-*` tokens are only defined for the dark theme, so light mode needs the
+     literal page colour or the layer would be invalid (hard edge). The mid color-mix
+     stop eases the ramp so the transition isn't a perceptible line over bright art.
+     The left-to-right layer keeps text contrast while the art reads through right. */
   background:
     linear-gradient(
       180deg,
-      transparent 22%,
-      color-mix(in srgb, var(--bg) 4%, transparent) 34%,
-      color-mix(in srgb, var(--bg) 13%, transparent) 46%,
-      color-mix(in srgb, var(--bg) 28%, transparent) 57%,
-      color-mix(in srgb, var(--bg) 48%, transparent) 68%,
-      color-mix(in srgb, var(--bg) 70%, transparent) 79%,
-      color-mix(in srgb, var(--bg) 89%, transparent) 90%,
+      transparent 28%,
+      color-mix(in srgb, var(--bg) 55%, transparent) 70%,
       var(--bg) 100%
     ),
     linear-gradient(
