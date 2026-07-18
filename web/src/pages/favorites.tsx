@@ -1,12 +1,8 @@
-import {
-  useEffect,
-  useState,
-  type KeyboardEvent,
-  type ReactElement,
-} from "react";
+import { useState, type KeyboardEvent, type ReactElement } from "react";
 import { Bookmark, Heart } from "lucide-react";
 import { getLibrary, removeFromLibrary } from "@/api/library";
 import type { LibraryEntry, LibraryList } from "@/api/library";
+import { useCached } from "@/lib/use-cached";
 import { MangaCard } from "@/components/manga-card";
 import { PageHeading } from "@/components/page-heading";
 import { PopupSelect } from "@/components/popup-select";
@@ -39,33 +35,10 @@ function FavoritesContent(): ReactElement {
   const [committedYear, setCommittedYear] = useState(() =>
     initialParam("year", "")
   );
-  const [reloadKey, setReloadKey] = useState(0);
-  const [entries, setEntries] = useState<LibraryEntry[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let ignore = false;
-    setEntries(null);
-    setError(null);
-    getLibrary(tab, sort, committedYear || undefined)
-      .then((list) => {
-        if (!ignore) {
-          setEntries(list);
-        }
-      })
-      .catch((loadError) => {
-        if (!ignore) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Unable to load your list."
-          );
-        }
-      });
-    return () => {
-      ignore = true;
-    };
-  }, [tab, sort, committedYear, reloadKey]);
+  const { data: entries, error, reload } = useCached<LibraryEntry[]>(
+    `${tab}|${sort}|${committedYear}`,
+    () => getLibrary(tab, sort, committedYear || undefined)
+  );
 
   function syncUrl(sortValue: string, yearValue: string): void {
     const url = new URL(window.location.href);
@@ -197,7 +170,7 @@ function FavoritesContent(): ReactElement {
                 <RemoveButton
                   list={tab}
                   mangaId={entry.manga.id}
-                  onRemoved={() => setReloadKey((key) => key + 1)}
+                  onRemoved={reload}
                 />
               </div>
             ))}

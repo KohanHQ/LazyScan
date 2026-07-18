@@ -806,6 +806,18 @@ h3 {
   color: var(--text);
 }
 
+/* Reveal after a beat so sub-250ms fetches never flash a loading state. */
+.state-loading {
+  opacity: 0;
+  animation: state-loading-reveal 0.2s ease 0.25s forwards;
+}
+
+@keyframes state-loading-reveal {
+  to {
+    opacity: 1;
+  }
+}
+
 .state-error {
   border-color: var(--danger-border);
   background: var(--danger-surface);

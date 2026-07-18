@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { Inbox } from "lucide-react";
 import {
   clearReadingStatus,
@@ -8,6 +8,7 @@ import type {
   ReadingStatus,
   ReadingStatusEntry,
 } from "@/api/reading-status";
+import { useCached } from "@/lib/use-cached";
 import { MangaCard } from "@/components/manga-card";
 import { PageHeading } from "@/components/page-heading";
 import { RequireSession } from "@/components/require-session";
@@ -33,34 +34,10 @@ export function StatusPage(): ReactElement {
 
 function StatusContent(): ReactElement {
   const [tab, setTab] = useState<ReadingStatus>(DEFAULT_TAB);
-  // Bumped after a removal to re-run the loader for the current tab.
-  const [reloadKey, setReloadKey] = useState(0);
-  const [entries, setEntries] = useState<ReadingStatusEntry[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let ignore = false;
-    setEntries(null);
-    setError(null);
-    getReadingStatusList(tab)
-      .then((list) => {
-        if (!ignore) {
-          setEntries(list);
-        }
-      })
-      .catch((loadError) => {
-        if (!ignore) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Unable to load your list."
-          );
-        }
-      });
-    return () => {
-      ignore = true;
-    };
-  }, [tab, reloadKey]);
+  const { data: entries, error, reload } = useCached<ReadingStatusEntry[]>(
+    tab,
+    () => getReadingStatusList(tab)
+  );
 
   const label = TABS.find((entry) => entry.key === tab)?.label ?? tab;
 
@@ -97,10 +74,7 @@ function StatusContent(): ReactElement {
             {entries.map((entry) => (
               <div className="library-card" key={entry.manga.id}>
                 <MangaCard manga={entry.manga} />
-                <RemoveButton
-                  mangaId={entry.manga.id}
-                  onRemoved={() => setReloadKey((key) => key + 1)}
-                />
+                <RemoveButton mangaId={entry.manga.id} onRemoved={reload} />
               </div>
             ))}
           </section>
