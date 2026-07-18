@@ -118,19 +118,33 @@ function RemoveButton(props: {
   onRemoved: () => void;
 }): ReactElement {
   const [busy, setBusy] = useState(false);
+  // Surface a failed remove inline; the button stays enabled so it doubles as
+  // the retry control (success reloads the tab, unmounting this).
+  const [error, setError] = useState<string | null>(null);
   return (
-    <button
-      className="library-remove"
-      type="button"
-      disabled={busy}
-      onClick={() => {
-        setBusy(true);
-        clearReadingStatus(props.mangaId)
-          .then(props.onRemoved)
-          .catch(() => setBusy(false));
-      }}
-    >
-      Remove
-    </button>
+    <>
+      <button
+        className="library-remove"
+        type="button"
+        disabled={busy}
+        onClick={() => {
+          setBusy(true);
+          setError(null);
+          clearReadingStatus(props.mangaId)
+            .then(props.onRemoved)
+            .catch((removeError) => {
+              setError(
+                removeError instanceof Error
+                  ? removeError.message
+                  : "Couldn't remove. Try again."
+              );
+              setBusy(false);
+            });
+        }}
+      >
+        Remove
+      </button>
+      {error ? <p className="form-error">{error}</p> : null}
+    </>
   );
 }
