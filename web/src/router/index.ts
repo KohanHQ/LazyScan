@@ -1,6 +1,6 @@
 import { renderFavoritesPage } from "@/pages/favorites";
 import { renderFeedPage } from "@/pages/feed";
-import { renderForumPage } from "@/pages/forum";
+import { ForumPage } from "@/pages/forum";
 import { renderHistoryPage } from "@/pages/history";
 import { HomePage } from "@/pages/home";
 import { renderLoginPage } from "@/pages/login";
@@ -16,7 +16,7 @@ import { renderReaderPage } from "@/pages/reader";
 import { renderSettingsPage } from "@/pages/settings";
 import { renderStatusPage } from "@/pages/status";
 import { renderUserPage } from "@/pages/user";
-import { createElement } from "react";
+import { createElement, type ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { matchRoute, type Route } from "./match";
 
@@ -25,6 +25,12 @@ export type { Route } from "./match";
 // React and the vanilla pages share one <main>. Every vanilla page assigns
 // innerHTML, which would strand a live root's DOM, so unmount before each render.
 let activeRoot: Root | null = null;
+
+// createElement keeps this surviving .ts file free of JSX.
+function mountReact(container: HTMLElement, page: ComponentType): void {
+  activeRoot = createRoot(container);
+  activeRoot.render(createElement(page));
+}
 
 export function navigateTo(path: string): void {
   window.history.pushState({}, "", path);
@@ -65,7 +71,7 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
   }
 
   if (route.name === "forum") {
-    renderForumPage(container);
+    mountReact(container, ForumPage);
     return;
   }
 
@@ -129,7 +135,5 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
     return;
   }
 
-  // Home is React; createElement keeps this surviving .ts file free of JSX.
-  activeRoot = createRoot(container);
-  activeRoot.render(createElement(HomePage));
+  mountReact(container, HomePage);
 }

@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 // React counterparts of components/states.ts; they replace it once the last
 // vanilla page is converted.
@@ -10,9 +10,18 @@ export function Loading({ message = "Loading" }: { message?: string }): ReactEle
   );
 }
 
-export function Empty(props: { title: string; message: string }): ReactElement {
+export function Empty(props: {
+  title: string;
+  message: string;
+  icon?: ReactNode;
+}): ReactElement {
   return (
     <section className="state-block state-block-strong state-empty">
+      {props.icon ? (
+        <div className="state-empty-icon" aria-hidden="true">
+          {props.icon}
+        </div>
+      ) : null}
       <h2>{props.title}</h2>
       <p>{props.message}</p>
     </section>
