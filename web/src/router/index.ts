@@ -5,7 +5,7 @@ import { HistoryPage } from "@/pages/history";
 import { HomePage } from "@/pages/home";
 import { LoginPage } from "@/pages/login";
 import { renderChapterUploadPage } from "@/pages/manage-chapter";
-import { renderManagePage } from "@/pages/manage";
+import { ManagePage } from "@/pages/manage";
 import {
   renderMangaCreatePage,
   renderMangaEditPage,
@@ -110,7 +110,7 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
   }
 
   if (route.name === "manage") {
-    renderManagePage(container);
+    mountReact(container, ManagePage);
     return;
   }
 
