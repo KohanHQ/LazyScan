@@ -121,6 +121,7 @@ function FavoritesContent(): ReactElement {
             className={`library-tab${entry.key === tab ? " is-active" : ""}`}
             type="button"
             role="tab"
+            aria-selected={entry.key === tab}
             onClick={() => setTab(entry.key)}
           >
             {entry.label}
