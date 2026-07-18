@@ -434,6 +434,7 @@ function AuditTrailPanel({ initial }: { initial: AdminLogsResult }): ReactElemen
                 className={`library-filter-option${level === undefined ? " is-active" : ""}`}
                 type="button"
                 role="menuitemradio"
+                aria-checked={level === undefined}
                 onClick={() => chooseLevel(undefined)}
               >
                 All levels
@@ -444,6 +445,7 @@ function AuditTrailPanel({ initial }: { initial: AdminLogsResult }): ReactElemen
                   className={`library-filter-option${value === level ? " is-active" : ""}`}
                   type="button"
                   role="menuitemradio"
+                  aria-checked={value === level}
                   onClick={() => chooseLevel(value)}
                 >
                   {value}

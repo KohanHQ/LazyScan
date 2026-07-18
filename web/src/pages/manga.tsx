@@ -483,6 +483,7 @@ function ReadingStatusControl({
             }`}
             type="button"
             role="menuitemradio"
+            aria-checked={option.value === current}
             onClick={() => choose(option.value)}
           >
             {option.label}
