@@ -46,6 +46,9 @@ function HistoryContent(): ReactElement {
   const offsetRef = useRef(0);
   const loadingRef = useRef(false);
   const doneRef = useRef(false);
+  // Bumped by removeManga so an in-flight page fetched from the pre-removal
+  // offset is discarded instead of appending skipped/duplicated rows.
+  const seqRef = useRef(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const syncMore = (): void => {
@@ -83,15 +86,22 @@ function HistoryContent(): ReactElement {
     }
     loadingRef.current = true;
     syncMore();
+    const mySeq = seqRef.current;
     try {
       const page = await getReadingHistory({
         limit: PAGE_SIZE,
         offset: offsetRef.current,
       });
+      if (mySeq !== seqRef.current) {
+        return;
+      }
       setEntries((current) => [...(current ?? []), ...page]);
       offsetRef.current += page.length;
       doneRef.current = page.length < PAGE_SIZE;
     } catch (loadError) {
+      if (mySeq !== seqRef.current) {
+        return;
+      }
       // Halt auto-loading (so the observer doesn't retry-loop) and surface an
       // inline retry that re-arms this same page.
       doneRef.current = true;
@@ -137,6 +147,7 @@ function HistoryContent(): ReactElement {
   }, [showShell]);
 
   const removeManga = (mangaId: string): void => {
+    seqRef.current += 1;
     setEntries((current) => {
       const list = current ?? [];
       const next = list.filter((entry) => entry.mangaId !== mangaId);
