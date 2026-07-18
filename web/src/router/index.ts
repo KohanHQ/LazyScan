@@ -7,7 +7,7 @@ import { LoginPage } from "@/pages/login";
 import { renderChapterUploadPage } from "@/pages/manage-chapter";
 import { ManagePage } from "@/pages/manage";
 import { MangaCreatePage, MangaEditPage } from "@/pages/manage-manga";
-import { renderMangaPage } from "@/pages/manga";
+import { MangaPage } from "@/pages/manga";
 import { ProfilePage, ProfileEditPage } from "@/pages/profile";
 import { renderReaderPage } from "@/pages/reader";
 import { SettingsPage } from "@/pages/settings";
@@ -132,7 +132,7 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
   }
 
   if (route.name === "manga") {
-    await renderMangaPage(container, route.id);
+    mountReact(container, MangaPage, { id: route.id });
     return;
   }
 
