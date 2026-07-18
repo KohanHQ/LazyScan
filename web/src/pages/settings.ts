@@ -19,7 +19,7 @@ import { escapeHtml, formatDate } from "@/utils/dom";
 
 const PATH = "/settings";
 const IMPORTS_LIMIT = 50;
-const LOGS_LIMIT = 50;
+const LOGS_LIMIT = 10;
 const LOG_LEVELS: AdminLogLevel[] = ["debug", "info", "warn", "error"];
 
 // Owner/superuser operations page: chapter import health (with retry) and a
