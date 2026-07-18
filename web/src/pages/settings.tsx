@@ -335,6 +335,9 @@ function AuditTrailPanel({ initial }: { initial: AdminLogsResult }): ReactElemen
   const [hasNext, setHasNext] = useState(initial.entries.length === LOGS_LIMIT);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [popOpen, setPopOpen] = useState(false);
+  // Renders the in-flight guard: disables the filter/pager and marks the list
+  // aria-busy while a page/filter fetch is running.
+  const [loading, setLoading] = useState(false);
 
   // Single in-flight fetch guard: blocks overlapping page/filter requests so a
   // slower earlier response can't land after a newer one.
@@ -382,6 +385,7 @@ function AuditTrailPanel({ initial }: { initial: AdminLogsResult }): ReactElemen
       return;
     }
     loadingRef.current = true;
+    setLoading(true);
     try {
       const result = await listAdminLogs(nextLevel, LOGS_LIMIT, nextOffset);
       setEntries(result.entries);
@@ -394,6 +398,7 @@ function AuditTrailPanel({ initial }: { initial: AdminLogsResult }): ReactElemen
       setErrorMessage(error instanceof Error ? error.message : "Unable to load logs.");
     } finally {
       loadingRef.current = false;
+      setLoading(false);
     }
   };
 
@@ -425,6 +430,7 @@ function AuditTrailPanel({ initial }: { initial: AdminLogsResult }): ReactElemen
               aria-label="Filter by level"
               aria-haspopup="true"
               aria-expanded={popOpen}
+              disabled={loading}
               onClick={() => setPopOpen((open) => !open)}
             >
               <Funnel className="icon" size={20} aria-hidden="true" />
@@ -456,21 +462,25 @@ function AuditTrailPanel({ initial }: { initial: AdminLogsResult }): ReactElemen
         </div>
       </div>
       {errorMessage ? <p className="settings-import-error">{errorMessage}</p> : null}
-      {entries.length === 0 ? (
-        <p className="settings-note">No log entries{level ? ` at level ${level}` : ""}.</p>
-      ) : (
-        <ol className="settings-logs">
-          {entries.map((entry) => (
-            <LogRow key={entry.id} entry={entry} />
-          ))}
-        </ol>
-      )}
+      <div aria-busy={loading} style={loading ? { opacity: 0.6 } : undefined}>
+        {entries.length === 0 ? (
+          <p className="settings-note">
+            No log entries{level ? ` at level ${level}` : ""}.
+          </p>
+        ) : (
+          <ol className="settings-logs">
+            {entries.map((entry) => (
+              <LogRow key={entry.id} entry={entry} />
+            ))}
+          </ol>
+        )}
+      </div>
       {showPager ? (
         <nav className="chapter-pager" aria-label="Audit trail pages">
           <button
             className="secondary-button"
             type="button"
-            disabled={offset === 0}
+            disabled={offset === 0 || loading}
             onClick={() => {
               if (offset > 0) {
                 void goTo(Math.max(0, offset - LOGS_LIMIT));
@@ -483,7 +493,7 @@ function AuditTrailPanel({ initial }: { initial: AdminLogsResult }): ReactElemen
           <button
             className="secondary-button"
             type="button"
-            disabled={!hasNext}
+            disabled={!hasNext || loading}
             onClick={() => {
               if (hasNext) {
                 void goTo(offset + LOGS_LIMIT);
