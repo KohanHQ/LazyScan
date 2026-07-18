@@ -1,7 +1,7 @@
 import { FavoritesPage } from "@/pages/favorites";
 import { FeedPage } from "@/pages/feed";
 import { ForumPage } from "@/pages/forum";
-import { renderHistoryPage } from "@/pages/history";
+import { HistoryPage } from "@/pages/history";
 import { HomePage } from "@/pages/home";
 import { renderLoginPage } from "@/pages/login";
 import { renderChapterUploadPage } from "@/pages/manage-chapter";
@@ -85,7 +85,7 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
   }
 
   if (route.name === "history") {
-    renderHistoryPage(container);
+    mountReact(container, HistoryPage);
     return;
   }
 
