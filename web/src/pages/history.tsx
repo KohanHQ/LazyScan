@@ -37,6 +37,9 @@ function HistoryContent(): ReactElement {
   const [entries, setEntries] = useState<MangaHistoryEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [moreHidden, setMoreHidden] = useState(true);
+  // A failed page fetch during infinite scroll; drives an inline retry that
+  // re-attempts the same page without resetting the loaded list.
+  const [pageError, setPageError] = useState<string | null>(null);
 
   // Paging control flow in refs so the mount-once observer outlives any render
   // and the in-flight guard survives re-renders (mirrors home.tsx Library).
@@ -88,13 +91,24 @@ function HistoryContent(): ReactElement {
       setEntries((current) => [...(current ?? []), ...page]);
       offsetRef.current += page.length;
       doneRef.current = page.length < PAGE_SIZE;
-    } catch {
-      // Stop auto-loading on error.
+    } catch (loadError) {
+      // Halt auto-loading (so the observer doesn't retry-loop) and surface an
+      // inline retry that re-arms this same page.
       doneRef.current = true;
+      setPageError(
+        loadError instanceof Error ? loadError.message : "Couldn't load more history."
+      );
     } finally {
       loadingRef.current = false;
       syncMore();
     }
+  };
+
+  // Clears the error and re-arms the halted page fetch, keeping the loaded list.
+  const retryLoadMore = (): void => {
+    setPageError(null);
+    doneRef.current = false;
+    void loadMore();
   };
 
   // Latest loadMore for the mount-once observer below.
@@ -123,9 +137,15 @@ function HistoryContent(): ReactElement {
   }, [showShell]);
 
   const removeManga = (mangaId: string): void => {
-    setEntries((current) =>
-      (current ?? []).filter((entry) => entry.mangaId !== mangaId)
-    );
+    setEntries((current) => {
+      const list = current ?? [];
+      const next = list.filter((entry) => entry.mangaId !== mangaId);
+      // Keep the paging offset aligned with the (now shorter) server list so the
+      // next page load neither skips nor duplicates a row. offsetRef
+      // counts loaded rows; drop it by however many rows this removal took out.
+      offsetRef.current = Math.max(0, offsetRef.current - (list.length - next.length));
+      return next;
+    });
   };
 
   if (error !== null) {
@@ -173,14 +193,27 @@ function HistoryContent(): ReactElement {
         ))}
       </ol>
       <div ref={sentinelRef} className="library-sentinel" aria-hidden="true" />
-      <button
-        className="secondary-button library-more"
-        type="button"
-        hidden={moreHidden}
-        onClick={() => void loadMore()}
-      >
-        Load more
-      </button>
+      {pageError !== null ? (
+        <>
+          <ErrorState message={pageError} />
+          <button
+            className="secondary-button library-more"
+            type="button"
+            onClick={retryLoadMore}
+          >
+            Retry
+          </button>
+        </>
+      ) : (
+        <button
+          className="secondary-button library-more"
+          type="button"
+          hidden={moreHidden}
+          onClick={() => void loadMore()}
+        >
+          Load more
+        </button>
+      )}
     </>
   );
 }
