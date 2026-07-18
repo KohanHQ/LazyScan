@@ -301,24 +301,62 @@ function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
 
     setError(null);
     setBusy(true);
-    try {
-      // A picked avatar file uploads first (the API sets avatar_url), then the
-      // patch saves.
-      const avatarFile = data.get("avatarFile");
-      if (avatarFile instanceof File && avatarFile.size > 0) {
+
+    // Avatar upload and profile patch are two independent server actions. Run
+    // both and report per-half so a mixed failure isn't one undifferentiated
+    // message. Avatar goes first (it sets avatar_url) but a failure no
+    // longer aborts the patch — each is reported on its own.
+    const avatarEntry = data.get("avatarFile");
+    const avatarFile =
+      avatarEntry instanceof File && avatarEntry.size > 0 ? avatarEntry : null;
+
+    let avatarError: string | null = null;
+    if (avatarFile) {
+      try {
         await uploadAvatar(avatarFile);
+      } catch (uploadError) {
+        avatarError =
+          uploadError instanceof Error ? uploadError.message : "Avatar upload failed.";
       }
+    }
+
+    let patchError: string | null = null;
+    try {
       await updateMyProfile(patch);
-      // Re-bootstrap so the sidebar account name/avatar reflect the saved
-      // display name/avatar without a reload (sidebar re-renders on session).
+    } catch (saveError) {
+      patchError =
+        saveError instanceof Error ? saveError.message : "Unable to save profile.";
+    }
+
+    const avatarUploaded = Boolean(avatarFile) && avatarError === null;
+
+    if (avatarError === null && patchError === null) {
+      // Both succeeded: re-bootstrap so the sidebar reflects the saved
+      // name/avatar without a reload, then leave the form.
       void bootstrapSession();
       navigateTo("/profile");
-    } catch (saveError) {
-      setError(
-        saveError instanceof Error ? saveError.message : "Unable to save profile."
-      );
-      setBusy(false);
+      return;
     }
+
+    // Partial or total failure: if the avatar did land, refresh the session so
+    // the sidebar shows it, then stay and say which half failed.
+    if (avatarUploaded) {
+      void bootstrapSession();
+    }
+    const avatarFailed = Boolean(avatarFile) && avatarError !== null;
+    let message: string;
+    if (avatarFailed && patchError !== null) {
+      message = `Profile save and avatar upload both failed. ${patchError}`;
+    } else if (avatarFailed) {
+      message = `Profile saved, but avatar upload failed. ${avatarError}`;
+    } else {
+      // Patch failed; avatar succeeded or none was picked.
+      message = avatarUploaded
+        ? `Avatar uploaded, but saving your profile failed. ${patchError}`
+        : (patchError ?? "Unable to save profile.");
+    }
+    setError(message);
+    setBusy(false);
   };
 
   return (
