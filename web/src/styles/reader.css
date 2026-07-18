@@ -540,6 +540,18 @@
   color: var(--reader-text);
 }
 
+/* Rows are <button>s for keyboard focus; strip UA chrome so they render like
+   the former divs. Hover/current rules below still win by source order. */
+.reader-overlay-chapter-row {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+}
+
 .reader-overlay-chapter-row:hover,
 .reader-overlay-chapter-row:focus-visible {
   background: var(--reader-surface-raised);

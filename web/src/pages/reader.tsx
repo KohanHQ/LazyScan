@@ -222,6 +222,11 @@ function ReaderView({
   // One mark-read per chapter open; a failed mark un-guards for retry.
   const markedReadRef = useRef<Set<string>>(new Set());
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The debounced save's target, so an unmount before the timer fires can flush
+  // it instead of dropping it. Cleared when the timer fires.
+  const pendingSaveRef = useRef<{ chapterId: string; pageId: string } | null>(
+    null
+  );
   const gearRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
 
@@ -253,7 +258,11 @@ function ReaderView({
       // Position unchanged since the last successful save: nothing to persist.
       if (p.id === lastSavedPageIdRef.current) return;
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      // Record the pending target so the unmount cleanup can flush it.
+      pendingSaveRef.current = { chapterId: p.chapterId, pageId: p.id };
       saveTimerRef.current = setTimeout(() => {
+        saveTimerRef.current = null;
+        pendingSaveRef.current = null;
         void saveReadingProgress(mangaId, p.chapterId, p.id)
           .then(() => {
             lastSavedPageIdRef.current = p.id;
@@ -262,19 +271,30 @@ function ReaderView({
           .catch(() => {
             if (mountedRef.current) setSaveFailed(true);
           });
-        saveTimerRef.current = null;
       }, 500);
     },
     [mangaId]
   );
 
-  // Clear the pending debounce and flag stale async on unmount (route change).
+  // Flush the pending debounce and flag stale async on unmount (route change).
   useEffect(() => {
     return () => {
       mountedRef.current = false;
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
+        // Fire the pending save immediately instead of dropping it on a fast
+        // route change. Fire-and-forget: mountedRef is already false, so
+        // the handlers won't touch state after unmount.
+        const pending = pendingSaveRef.current;
+        pendingSaveRef.current = null;
+        if (pending) {
+          void saveReadingProgress(
+            mangaId,
+            pending.chapterId,
+            pending.pageId
+          ).catch(() => {});
+        }
       }
     };
   }, []);
@@ -367,9 +387,16 @@ function ReaderView({
   // the closure never goes stale.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent): void => {
+      // A focused control keeps its keys (Space activates, arrows move within a
+      // select) — except Escape, which no control consumes, so the reader's
+      // close/exit priority below still applies with a button focused.
+      const el = e.target as HTMLElement | null;
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+        return;
+      }
       if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
+        (el?.isContentEditable || el?.closest("button, a, select, [role=menuitem]")) &&
+        e.key !== "Escape"
       ) {
         return;
       }
@@ -887,8 +914,9 @@ function ChapterOverlay({
                   ? `Ch. ${c.chapterNumber}`
                   : `Sort ${c.sortOrder}`;
               return (
-                <div
+                <button
                   key={c.id}
+                  type="button"
                   className={`reader-overlay-chapter-row${isCurrent ? " reader-overlay-chapter-current" : ""}`}
                   onClick={() => {
                     onClose();
@@ -897,7 +925,7 @@ function ChapterOverlay({
                 >
                   <span className="reader-overlay-chapter-num">{num}</span>
                   <span className="reader-overlay-chapter-title">{c.title}</span>
-                </div>
+                </button>
               );
             })
           )}
