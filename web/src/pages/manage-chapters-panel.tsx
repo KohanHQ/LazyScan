@@ -61,6 +61,26 @@ function chapterLabel(chapter: ReaderChapter): string {
   return `${number}${chapter.title}`;
 }
 
+// Numeric-field backstop shared by the edit dialog: chapter number / volume must
+// be non-negative, sort order a whole number. Empty raw values are optional and
+// pass (the caller decides how to send them).
+function validateChapterNumbers(
+  numberRaw: string,
+  volumeRaw: string,
+  sortRaw: string
+): string | null {
+  if (numberRaw && !(Number(numberRaw) >= 0)) {
+    return "Chapter number must be zero or greater.";
+  }
+  if (volumeRaw && !(Number(volumeRaw) >= 0)) {
+    return "Volume must be zero or greater.";
+  }
+  if (sortRaw && !Number.isInteger(Number(sortRaw))) {
+    return "Sort order must be a whole number.";
+  }
+  return null;
+}
+
 export function ChaptersPanel({ manga }: { manga: Manga }): ReactElement {
   const [state, setState] = useState<ListState>({ kind: "loading" });
   const [reload, setReload] = useState(0);
@@ -158,7 +178,9 @@ export function ChaptersPanel({ manga }: { manga: Manga }): ReactElement {
                     >
                       Unpublish
                     </button>
-                  ) : (
+                  ) : chapter.status === "ready" ? (
+                    // Only a fully processed ("ready"), unpublished chapter can be
+                    // published; processing/importing/failed rows can't.
                     <button
                       className="ghost-button"
                       type="button"
@@ -170,7 +192,7 @@ export function ChaptersPanel({ manga }: { manga: Manga }): ReactElement {
                     >
                       Publish
                     </button>
-                  )}
+                  ) : null}
                   <button
                     className="ghost-button danger"
                     type="button"
@@ -255,6 +277,15 @@ function EditChapterDialog({
     const numberRaw = numberRef.current?.value.trim() ?? "";
     const volumeRaw = volumeRef.current?.value.trim() ?? "";
     const sortRaw = sortRef.current?.value.trim() ?? "";
+
+    // JS backstop for the numeric fields' native min/step (a dialog, not a form,
+    // so native validation never fires): non-negative number/volume, whole-number
+    // sort order.
+    const numericError = validateChapterNumbers(numberRaw, volumeRaw, sortRaw);
+    if (numericError) {
+      setError(numericError);
+      return;
+    }
 
     setBusy(true);
     try {
