@@ -14,7 +14,7 @@ import { renderMangaPage } from "@/pages/manga";
 import { renderProfilePage, renderProfileEditPage } from "@/pages/profile";
 import { renderReaderPage } from "@/pages/reader";
 import { renderSettingsPage } from "@/pages/settings";
-import { renderStatusPage } from "@/pages/status";
+import { StatusPage } from "@/pages/status";
 import { renderUserPage } from "@/pages/user";
 import { createElement, type ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -61,7 +61,7 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
   }
 
   if (route.name === "status") {
-    renderStatusPage(container);
+    mountReact(container, StatusPage);
     return;
   }
 
