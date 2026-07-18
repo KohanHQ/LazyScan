@@ -1,9 +1,15 @@
-import { useEffect, useState, type FormEvent, type ReactElement } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactElement,
+} from "react";
+import { apiRequest } from "@/api/client";
 import {
   completeChapterUpload,
   createChapterUpload,
   getChapterUpload,
-  putToPresignedUrl,
   retryChapterUpload,
 } from "@/api/chapter";
 import type {
@@ -145,20 +151,28 @@ function ChapterForm({
   const [dragover, setDragover] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // CBZ extraction is async; while it runs, submit is disabled and this guards a
+  // re-pick race — each pick bumps the counter so a superseded extraction's late
+  // result can't land its stale pages against the newer selection.
+  const [extracting, setExtracting] = useState(false);
+  const pickSeqRef = useRef(0);
 
   // A single dropped CBZ/ZIP is unzipped into its image pages; anything else is
   // loose files. Archive errors / unsupported devices clear the pick.
   const onFilesChange = async (fileList: FileList | null): Promise<void> => {
+    const mySeq = ++pickSeqRef.current;
     setError(null);
     const picked = fileList ? Array.from(fileList) : [];
     const archive = picked.find(isArchiveFile);
 
     if (!archive) {
+      setExtracting(false);
       setSelection(picked);
       setCountLabel(pageCountLabel(picked.length));
       return;
     }
     if (picked.length > 1) {
+      setExtracting(false);
       setSelection([]);
       setCountLabel("");
       setError(
@@ -167,17 +181,30 @@ function ChapterForm({
       return;
     }
     if (!cbzSupported()) {
+      setExtracting(false);
       setSelection([]);
       setCountLabel("");
       setError("CBZ/ZIP import is desktop-only. Use individual page images here.");
       return;
     }
+    // Clear any prior selection up front so a stale pick can't be submitted while
+    // this archive is still unzipping (submit is also disabled via `extracting`).
+    setExtracting(true);
+    setSelection([]);
     setCountLabel("Reading archive…");
     try {
       const pages = await extractCbz(archive);
+      // A newer pick superseded this extraction — drop its stale result.
+      if (mySeq !== pickSeqRef.current) {
+        return;
+      }
       setSelection(pages);
       setCountLabel(`CBZ · ${pageCountLabel(pages.length)}`);
+      setExtracting(false);
     } catch (extractError) {
+      if (mySeq !== pickSeqRef.current) {
+        return;
+      }
       setSelection([]);
       setCountLabel("");
       setError(
@@ -185,6 +212,7 @@ function ChapterForm({
           ? extractError.message
           : "Could not read the archive."
       );
+      setExtracting(false);
     }
   };
 
@@ -197,7 +225,11 @@ function ChapterForm({
     const sortOrderRaw = String(data.get("sortOrder") || "").trim();
     const holdAsDraft = data.get("holdAsDraft") === "on";
 
-    const validationError = validateSelection(title, selection);
+    // Required fields + page constraints, then the numeric-field backstop for the
+    // suppressed native validation (form is noValidate).
+    const validationError =
+      validateSelection(title, selection) ??
+      validateChapterNumbers(chapterNumberRaw, volumeRaw, sortOrderRaw);
     if (validationError) {
       setError(validationError);
       return;
@@ -293,7 +325,11 @@ function ChapterForm({
           </label>
           {error ? <p className="form-error">{error}</p> : null}
           <div className="manage-actions">
-            <button className="primary-button" type="submit" disabled={busy}>
+            <button
+              className="primary-button"
+              type="submit"
+              disabled={busy || extracting}
+            >
               {busy ? "Creating" : "Start upload"}
             </button>
             <button
@@ -363,6 +399,12 @@ function UploadingPhase({
     const setStatus = (pageId: string, status: PageStatus): void =>
       setStatuses((prev) => ({ ...prev, [pageId]: status }));
 
+    // Presigned URLs are issued once at create time and can expire before a large
+    // serial batch reaches its later pages. On the first expiry-shaped 403, switch
+    // the rest of the batch to the API proxy route (no signed URL, fresh auth per
+    // request) — a one-time switch that also retries the page that hit expiry.
+    let useApiFallback = false;
+
     void (async () => {
       for (const target of run.targets) {
         if (cancelled) {
@@ -376,7 +418,11 @@ function UploadingPhase({
           continue;
         }
         try {
-          await putToPresignedUrl(target.uploadUrl, file);
+          if (useApiFallback) {
+            await uploadPageViaApi(mangaId, uploadId, target.pageId, file);
+          } else {
+            await putPresigned(target.uploadUrl, file);
+          }
           if (cancelled) {
             return;
           }
@@ -384,6 +430,32 @@ function UploadingPhase({
         } catch (uploadError) {
           if (cancelled) {
             return;
+          }
+          const status = (uploadError as { status?: number }).status;
+          if (!useApiFallback && status === 403) {
+            // Expired presigned URL: switch remaining pages to the proxy and
+            // retry this one via it. If the proxy also fails, fall through to the
+            // normal failed-page handling (surfaced by the retry UI below).
+            useApiFallback = true;
+            try {
+              await uploadPageViaApi(mangaId, uploadId, target.pageId, file);
+              if (cancelled) {
+                return;
+              }
+              setStatus(target.pageId, { state: "ready", label: "Uploaded" });
+              continue;
+            } catch (proxyError) {
+              if (cancelled) {
+                return;
+              }
+              setStatus(target.pageId, {
+                state: "failed",
+                label:
+                  proxyError instanceof Error ? proxyError.message : "Upload failed",
+              });
+              failed.push(target);
+              continue;
+            }
           }
           setStatus(target.pageId, {
             state: "failed",
@@ -691,6 +763,25 @@ function pageCountLabel(count: number): string {
   return count === 1 ? "1 file selected" : `${count} files selected`;
 }
 
+// Numeric-field backstop for the noValidate form: chapter number / volume must
+// be non-negative, sort order a whole number. Empty raw values are optional.
+function validateChapterNumbers(
+  chapterNumberRaw: string,
+  volumeRaw: string,
+  sortOrderRaw: string
+): string | null {
+  if (chapterNumberRaw && !(Number(chapterNumberRaw) >= 0)) {
+    return "Chapter number must be zero or greater.";
+  }
+  if (volumeRaw && !(Number(volumeRaw) >= 0)) {
+    return "Volume must be zero or greater.";
+  }
+  if (sortOrderRaw && !Number.isInteger(Number(sortOrderRaw))) {
+    return "Sort order must be a whole number.";
+  }
+  return null;
+}
+
 function validateSelection(title: string, files: File[]): string | null {
   if (!title) {
     return "Chapter title is required.";
@@ -710,6 +801,41 @@ function validateSelection(title: string, files: File[]): string | null {
     }
   }
   return null;
+}
+
+// Presigned PUT to storage that surfaces the HTTP status, so the upload loop can
+// tell an expired-URL 403 apart from a generic failure. Mirrors
+// api/chapter.putToPresignedUrl but keeps the status for expiry detection.
+async function putPresigned(url: string, file: File): Promise<void> {
+  const response = await fetch(url, {
+    method: "PUT",
+    body: file,
+    headers: { "Content-Type": file.type },
+  });
+  if (!response.ok) {
+    const error = new Error(
+      `Upload failed for ${file.name} (${response.status} ${response.statusText})`
+    ) as Error & { status: number };
+    error.status = response.status;
+    throw error;
+  }
+}
+
+// Fallback for when presigned URLs expire mid-batch: stream the page
+// through the existing API proxy route, which re-authenticates per request and
+// has no signed-URL expiry. No server change — this route already exists.
+async function uploadPageViaApi(
+  mangaId: string,
+  uploadId: string,
+  pageId: string,
+  file: File
+): Promise<void> {
+  const form = new FormData();
+  form.append("file", file);
+  await apiRequest(
+    `/manga/${encodeURIComponent(mangaId)}/chapter/uploads/${encodeURIComponent(uploadId)}/pages/${encodeURIComponent(pageId)}/upload`,
+    { method: "POST", body: form }
+  );
 }
 
 // Maps upload targets back to picked files by filename (the API natural-sorts and
