@@ -1,5 +1,5 @@
 import { renderFavoritesPage } from "@/pages/favorites";
-import { renderFeedPage } from "@/pages/feed";
+import { FeedPage } from "@/pages/feed";
 import { ForumPage } from "@/pages/forum";
 import { renderHistoryPage } from "@/pages/history";
 import { HomePage } from "@/pages/home";
@@ -66,7 +66,7 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
   }
 
   if (route.name === "feed") {
-    renderFeedPage(container);
+    mountReact(container, FeedPage);
     return;
   }
 
