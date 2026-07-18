@@ -211,6 +211,28 @@ function MangaForm({
       setError("Title and slug are required.");
       return;
     }
+    // React-side validation standing in for the suppressed native constraints
+    // (the form is noValidate): slug pattern and numeric ranges.
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.slug)) {
+      setError("Slug may only contain lowercase letters, numbers, and single hyphens.");
+      return;
+    }
+    if (
+      typeof input.publishedYear === "number" &&
+      (!Number.isInteger(input.publishedYear) ||
+        input.publishedYear < 1900 ||
+        input.publishedYear > maxYear)
+    ) {
+      setError(`Published year must be a year between 1900 and ${maxYear}.`);
+      return;
+    }
+    if (
+      typeof input.totalChapters === "number" &&
+      (!Number.isInteger(input.totalChapters) || input.totalChapters < 1)
+    ) {
+      setError("Total chapters must be a whole number of at least 1.");
+      return;
+    }
 
     setError(null);
     setBusy(true);
