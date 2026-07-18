@@ -5,7 +5,10 @@ import { ApiClientError } from "@/api/client";
 import { navigateTo } from "@/router";
 import * as session from "@/state/session";
 import { getTheme, toggleTheme } from "@/state/theme";
-import loginArt from "../../assets/login.png";
+import bundledLoginArt from "../../assets/login.png";
+
+// Baked at build time; swap the image by overwriting the same R2 key (no rebuild).
+const loginArt = import.meta.env.VITE_LOGIN_ART_URL || bundledLoginArt;
 
 type AuthMode = "login" | "register";
 

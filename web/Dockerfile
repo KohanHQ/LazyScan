@@ -9,6 +9,8 @@ COPY public ./public
 COPY assets ./assets
 COPY src ./src
 
+ARG VITE_LOGIN_ART_URL
+ENV VITE_LOGIN_ART_URL=${VITE_LOGIN_ART_URL}
 RUN bun run build
 
 FROM oven/bun:1 AS dev

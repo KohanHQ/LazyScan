@@ -66,7 +66,10 @@ services:
     restart: unless-stopped
 
   web:
-    build: ./web                        # nginx: SPA + proxy /api
+    build:                              # nginx: SPA + proxy /api
+      context: ./web
+      args:
+        VITE_LOGIN_ART_URL: ${VITE_LOGIN_ART_URL:-}
     ports: ["127.0.0.1:8080:80"]        # Cloudflare Tunnel → here
     depends_on: [api]
     mem_limit: 256m
