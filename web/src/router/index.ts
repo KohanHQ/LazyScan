@@ -9,7 +9,7 @@ import { ManagePage } from "@/pages/manage";
 import { MangaCreatePage, MangaEditPage } from "@/pages/manage-manga";
 import { MangaPage } from "@/pages/manga";
 import { ProfilePage, ProfileEditPage } from "@/pages/profile";
-import { renderReaderPage } from "@/pages/reader";
+import { ReaderPage } from "@/pages/reader";
 import { SettingsPage } from "@/pages/settings";
 import { StatusPage } from "@/pages/status";
 import { UserPage } from "@/pages/user";
@@ -127,7 +127,10 @@ export async function renderRoute(container: HTMLElement): Promise<void> {
   }
 
   if (route.name === "reader") {
-    await renderReaderPage(container, route.mangaId, route.chapterId);
+    mountReact(container, ReaderPage, {
+      mangaId: route.mangaId,
+      chapterId: route.chapterId,
+    });
     return;
   }
 
