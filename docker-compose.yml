@@ -1,8 +1,5 @@
 name: lazyscan
 
-# Postgres and Redis are shared external instances on the `shared-db` network,
-# not per-stack containers. DATABASE_URL / REDIS_URL are env-driven so this stack
-# points at whichever shared instance the environment provides.
 services:
   image-svc:
     build: ./image-svc
@@ -18,7 +15,8 @@ services:
       STORAGE_PUBLIC_DOMAIN: ${STORAGE_PUBLIC_DOMAIN}
       IMAGE_SVC_PORT: 8001
     networks: [default, shared-db]
-    mem_limit: 256m           # govips/libvips holds the decoded image in RAM
+    # govips/libvips holds the decoded image in RAM
+    mem_limit: 256m           
     restart: unless-stopped
 
   mail-svc:
@@ -31,7 +29,8 @@ services:
       SMTP_USERNAME: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM}
-      SMTP_SSL: ${SMTP_SSL:-false}              # implicit TLS (SMTPS, port 465); mutually exclusive with STARTTLS
+      # implicit TLS (SMTPS, port 465); mutually exclusive with STARTTLS
+      SMTP_SSL: ${SMTP_SSL:-false}              
       SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
     networks: [default, shared-db]
     mem_limit: 256m
@@ -44,7 +43,8 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
-      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-s3}   # s3 profile reads STORAGE_*; default r2 reads CLOUDFLARE_* (unset here)
+      # s3 profile reads STORAGE_*; default r2 reads CLOUDFLARE_* (unset here)
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-s3}   
       STORAGE_ENDPOINT: ${STORAGE_ENDPOINT}
       STORAGE_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY_ID}
       STORAGE_SECRET_ACCESS_KEY: ${STORAGE_SECRET_ACCESS_KEY}
@@ -52,8 +52,9 @@ services:
       STORAGE_REGION: auto
       STORAGE_FORCE_PATH_STYLE: "true"
       STORAGE_PUBLIC_DOMAIN: ${STORAGE_PUBLIC_DOMAIN}
-      IMAGE_SVC_URL: http://image-svc:8001     # avatars/covers sync convert
-      STORAGE_QUOTA_BYTES: ${STORAGE_QUOTA_BYTES:-8589934592}   # 8 GiB (§8.3)
+      # avatars/covers sync convert
+      IMAGE_SVC_URL: http://image-svc:8001    
+      STORAGE_QUOTA_BYTES: ${STORAGE_QUOTA_BYTES:-8589934592}   # 8 GiB
       ENABLE_STORAGE_PRUNE: ${ENABLE_STORAGE_PRUNE:-false}      # reclaim staged page originals under the cap
       ENABLE_RATE_LIMIT: ${ENABLE_RATE_LIMIT:-false}            # per-IP limiter (all routes + auth/public buckets)
       TRUST_PROXY: ${TRUST_PROXY:-false}                        # key on nginx X-Real-IP (from CF-Connecting-IP)
@@ -65,12 +66,15 @@ services:
     restart: unless-stopped
 
   web:
-    build: ./web                        # nginx: SPA + proxy /api
-    ports: ["127.0.0.1:8080:80"]   # Cloudflare Tunnel → here
+    build:                              # nginx: SPA + proxy /api
+      context: ./web
+      args:
+        VITE_LOGIN_ART_URL: ${VITE_LOGIN_ART_URL:-}
+    ports: ["127.0.0.1:8080:80"]        # Cloudflare Tunnel → here
     depends_on: [api]
     mem_limit: 256m
     restart: unless-stopped
 
 networks:
-  shared-db:                  # external: shared-postgres + shared-redis live here (discord-bot instance)
+  shared-db:
     external: true

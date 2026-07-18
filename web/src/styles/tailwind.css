@@ -1,0 +1,74 @@
+/* Tailwind entry. Preflight is deliberately NOT imported: its global reset would
+   strip base.css from under the 14 unconverted vanilla pages during the rolling
+   React migration. base.css already carries the reset that matters here. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* The app flips themes with a data-theme attribute on <html> (state/theme.ts),
+   not shadcn's default .dark class. */
+@custom-variant dark (&:where([data-theme="dark"] *));
+
+/* Bridges the base.css token layer into Tailwind. `inline` makes utilities emit
+   var(--bg) directly rather than freezing a snapshot of it at :root — without it
+   the dark theme cannot repoint them. Names map 1:1 onto base.css on purpose;
+   the text-text-* stutter is the cost, and shadcn's aliases supersede it. */
+@theme inline {
+  /* Surfaces */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-accent: var(--surface-accent);
+
+  /* Text */
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-label: var(--text-label);
+  --color-text-on-accent: var(--text-on-accent);
+
+  /* Accent — brand green is `primary` in Tailwind (shadcn convention); `accent`
+     belongs to shadcn's hover wash below. accent-hover/-fg keep LazyScan names:
+     shadcn has no slot for either (it derives hovers via opacity). */
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+
+  /* Borders */
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-overlay: var(--border-overlay);
+
+  /* Danger */
+  --color-danger: var(--danger);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-border: var(--danger-border);
+  --color-danger-surface: var(--danger-surface);
+
+  /* Status */
+  --color-status-ok-bg: var(--status-ok-bg);
+  --color-status-warn-bg: var(--status-warn-bg);
+  --color-status-warn-fg: var(--status-warn-fg);
+  --color-status-info-bg: var(--status-info-bg);
+  --color-status-info-fg: var(--status-info-fg);
+
+  /* shadcn semantic aliases → same base.css tokens. shadcn's `accent` means
+     hover wash, not brand — brand green lives at `primary`. */
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--text-on-accent);
+  --color-secondary: var(--surface-accent);
+  --color-secondary-foreground: var(--text-label);
+  --color-muted: var(--surface-raised);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent: var(--surface-accent);
+  --color-accent-foreground: var(--text);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--text-on-accent);
+  --color-input: var(--border-strong);
+  --color-ring: var(--accent-fg);
+}

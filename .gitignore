@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 
+# Local dev stack (stands in for shared postgres/redis + R2) — never deploy
+docker-compose.override.yml
+
 # Node / Bun deps + build output
 node_modules/
 dist/

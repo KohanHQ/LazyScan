@@ -1,22 +1,8 @@
-:root {
-  /* Reader chrome — INVARIANT: the immersive reader stays dark in BOTH themes so
-     it never fights the page art. Values coincide with the dark palette but mean
-     "reader chrome", not "theme surface" — never point these at --bg/--surface. */
-  --reader-bg: #141a22;
-  --reader-surface: #18222b;
-  --reader-surface-raised: #1f2a35;
-  --reader-border: #283441;
-  --reader-text: #e8e4dd;
-  --reader-text-secondary: #8a8278;
-  --reader-accent: #0f6f5c;
-  --reader-accent-fg: #2dd4a8;
-}
-
 .reader-shell {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: var(--reader-bg);
+  background: #141a22;
 }
 
 .reader-shell-vertical .reader-viewport {
@@ -36,7 +22,7 @@
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  color: var(--reader-text-secondary);
+  color: #8a8278;
   font-size: 0.78rem;
   background: rgba(24, 34, 43, 0.85);
   padding: 6px 12px;
@@ -49,9 +35,9 @@
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  background: var(--reader-surface);
-  border-bottom: 1px solid var(--reader-border);
-  color: var(--reader-text);
+  background: #18222b;
+  border-bottom: 1px solid #283441;
+  color: #e8e4dd;
   font-size: 0.875rem;
 }
 
@@ -61,7 +47,7 @@
   gap: 4px;
   border: 0;
   background: transparent;
-  color: var(--reader-text-secondary);
+  color: #8a8278;
   font-weight: 700;
   font-size: 0.875rem;
   padding: 6px 8px;
@@ -71,8 +57,8 @@
 
 .reader-back:hover,
 .reader-back:focus-visible {
-  color: var(--reader-text);
-  background: var(--reader-surface-raised);
+  color: #e8e4dd;
+  background: #1f2a35;
 }
 
 .reader-header-info {
@@ -87,17 +73,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--reader-text);
+  color: #e8e4dd;
   font-weight: 700;
 }
 
 .reader-chapter-number {
-  color: var(--reader-text-secondary);
+  color: #8a8278;
   font-size: 0.78rem;
 }
 
 .reader-page-counter {
-  color: var(--reader-text-secondary);
+  color: #8a8278;
   font-size: 0.78rem;
   font-weight: 700;
   white-space: nowrap;
@@ -111,7 +97,7 @@
   gap: 5px;
   border: 0;
   background: transparent;
-  color: var(--reader-text-secondary);
+  color: #8a8278;
   font-size: 1rem;
   padding: 4px 8px;
   border-radius: 4px;
@@ -129,8 +115,8 @@
 .reader-settings-btn:focus-visible,
 .reader-fullscreen-btn:hover,
 .reader-fullscreen-btn:focus-visible {
-  color: var(--reader-text);
-  background: var(--reader-surface-raised);
+  color: #e8e4dd;
+  background: #1f2a35;
 }
 
 .reader-viewport {
@@ -139,7 +125,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--reader-bg);
+  background: #141a22;
   min-height: 0;
 }
 
@@ -197,15 +183,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--reader-bg);
+  background: #141a22;
   z-index: 0;
 }
 
 .reader-spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid var(--reader-border);
-  border-top-color: var(--reader-accent);
+  border: 3px solid #283441;
+  border-top-color: #0f6f5c;
   border-radius: 50%;
   animation: reader-spin 0.8s linear infinite;
 }
@@ -215,7 +201,7 @@
 }
 
 .reader-image-error {
-  color: var(--reader-text-secondary);
+  color: #8a8278;
   font-size: 0.875rem;
   text-align: center;
   padding: 20px;
@@ -261,7 +247,7 @@
 
 .reader-endcard-eyebrow {
   margin: 0;
-  color: var(--reader-accent-fg);
+  color: #2dd4a8;
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -270,13 +256,13 @@
 
 .reader-endcard-title {
   margin: 0;
-  color: var(--reader-text);
+  color: #e8e4dd;
   font-size: 1.6rem;
 }
 
 .reader-endcard-sub {
   margin: 0 0 14px;
-  color: var(--reader-text-secondary);
+  color: #8a8278;
   font-size: 0.92rem;
 }
 
@@ -284,10 +270,10 @@
   position: relative;
   z-index: 5; /* above the tap zones so the click is the button's */
   padding: 9px 18px;
-  border: 1px solid var(--reader-border);
+  border: 1px solid #283441;
   border-radius: 8px;
-  background: var(--reader-surface);
-  color: var(--reader-text);
+  background: #18222b;
+  color: #e8e4dd;
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
@@ -295,8 +281,8 @@
 
 .reader-endcard-back:hover,
 .reader-endcard-back:focus-visible {
-  border-color: var(--reader-accent-fg);
-  color: var(--reader-accent-fg);
+  border-color: #2dd4a8;
+  color: #2dd4a8;
 }
 
 /* Compact centered control bar: « ‹ page › » | chapters ⚙. The footer strip
@@ -308,7 +294,7 @@
   align-items: center;
   justify-content: center;
   padding: 10px 14px;
-  background: var(--reader-bg);
+  background: #141a22;
 }
 
 /* Settings popup above the control bar (direction / fit / preload rows). Each
@@ -322,8 +308,8 @@
   transform: translateX(-50%);
   min-width: 230px;
   padding: 6px;
-  background: var(--reader-surface);
-  border: 1px solid var(--reader-border);
+  background: #18222b;
+  border: 1px solid #283441;
   border-radius: 10px;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
   z-index: 30;
@@ -345,15 +331,15 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--reader-text-secondary);
+  color: #8a8278;
   font-size: 0.85rem;
   cursor: pointer;
 }
 
 .reader-settings-row:hover,
 .reader-settings-row:focus-visible {
-  color: var(--reader-text);
-  background: var(--reader-surface-raised);
+  color: #e8e4dd;
+  background: #1f2a35;
 }
 
 .reader-settings-name {
@@ -361,14 +347,14 @@
 }
 
 .reader-settings-value {
-  color: var(--reader-text);
+  color: #e8e4dd;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .reader-ctrl.is-active {
-  color: var(--reader-text);
-  background: var(--reader-surface-raised);
+  color: #e8e4dd;
+  background: #1f2a35;
 }
 
 .reader-controlbar {
@@ -376,8 +362,8 @@
   align-items: center;
   gap: 2px;
   padding: 4px 8px;
-  background: var(--reader-surface);
-  border: 1px solid var(--reader-border);
+  background: #18222b;
+  border: 1px solid #283441;
   border-radius: 10px;
 }
 
@@ -391,7 +377,7 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--reader-text-secondary);
+  color: #8a8278;
   font-size: 1.05rem;
   line-height: 1;
   cursor: pointer;
@@ -399,15 +385,15 @@
 
 .reader-ctrl:hover,
 .reader-ctrl:focus-visible {
-  color: var(--reader-text);
-  background: var(--reader-surface-raised);
+  color: #e8e4dd;
+  background: #1f2a35;
 }
 
 .reader-ctrl-divider {
   width: 1px;
   height: 18px;
   margin: 0 4px;
-  background: var(--reader-border);
+  background: #283441;
 }
 
 .reader-footer .reader-page-counter {
@@ -456,8 +442,8 @@
   width: min(420px, 90vw);
   max-height: 80vh;
   margin: auto;
-  background: var(--reader-surface);
-  border: 1px solid var(--reader-border);
+  background: #18222b;
+  border: 1px solid #283441;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -469,18 +455,18 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--reader-border);
+  border-bottom: 1px solid #283441;
 }
 
 .reader-chapter-overlay-header h3 {
   margin: 0;
-  color: var(--reader-text);
+  color: #e8e4dd;
   font-size: 1rem;
 }
 
 .reader-chapter-overlay-search {
   padding: 10px 16px;
-  border-bottom: 1px solid var(--reader-border);
+  border-bottom: 1px solid #283441;
 }
 
 .reader-chapter-overlay-search-input {
@@ -488,9 +474,9 @@
   box-sizing: border-box;
   padding: 8px 10px;
   background: #0f1820;
-  border: 1px solid var(--reader-border);
+  border: 1px solid #283441;
   border-radius: 6px;
-  color: var(--reader-text);
+  color: #e8e4dd;
   font-size: 0.875rem;
 }
 
@@ -500,20 +486,20 @@
 
 .reader-chapter-overlay-search-input:focus {
   outline: none;
-  border-color: var(--reader-accent);
+  border-color: #0f6f5c;
 }
 
 .reader-overlay-empty {
   padding: 24px 16px;
   text-align: center;
-  color: var(--reader-text-secondary);
+  color: #8a8278;
   font-size: 0.875rem;
 }
 
 .reader-close-overlay {
   border: 0;
   background: transparent;
-  color: var(--reader-text-secondary);
+  color: #8a8278;
   font-size: 1.4rem;
   padding: 4px 8px;
   cursor: pointer;
@@ -522,8 +508,8 @@
 
 .reader-close-overlay:hover,
 .reader-close-overlay:focus-visible {
-  color: var(--reader-text);
-  background: var(--reader-surface-raised);
+  color: #e8e4dd;
+  background: #1f2a35;
 }
 
 .reader-chapter-overlay-list {
@@ -537,41 +523,29 @@
   gap: 12px;
   padding: 10px 16px;
   cursor: pointer;
-  color: var(--reader-text);
-}
-
-/* Rows are <button>s for keyboard focus; strip UA chrome so they render like
-   the former divs. Hover/current rules below still win by source order. */
-.reader-overlay-chapter-row {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  border: none;
-  background: none;
-  font: inherit;
-  text-align: left;
+  color: #e8e4dd;
 }
 
 .reader-overlay-chapter-row:hover,
 .reader-overlay-chapter-row:focus-visible {
-  background: var(--reader-surface-raised);
+  background: #1f2a35;
 }
 
 .reader-overlay-chapter-current {
-  background: var(--reader-surface-raised);
-  color: var(--reader-accent-fg);
+  background: #1f2a35;
+  color: #0f6f5c;
 }
 
 .reader-overlay-chapter-num {
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--reader-text-secondary);
+  color: #8a8278;
   white-space: nowrap;
   min-width: 50px;
 }
 
 .reader-overlay-chapter-current .reader-overlay-chapter-num {
-  color: var(--reader-accent-fg);
+  color: #0f6f5c;
 }
 
 .reader-overlay-chapter-title {
