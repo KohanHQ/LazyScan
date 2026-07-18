@@ -16,7 +16,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/latoulicious/lazyscan/image-svc/internal/processor"
+	"github.com/KohanHQ/lazyscan/image-svc/internal/processor"
 )
 
 const (

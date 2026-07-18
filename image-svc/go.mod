@@ -1,4 +1,4 @@
-module github.com/latoulicious/lazyscan/image-svc
+module github.com/KohanHQ/lazyscan/image-svc
 
 go 1.26
 

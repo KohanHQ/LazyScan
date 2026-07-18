@@ -13,11 +13,11 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/latoulicious/lazyscan/mail-svc/internal/config"
-	"github.com/latoulicious/lazyscan/mail-svc/internal/consumer"
-	"github.com/latoulicious/lazyscan/mail-svc/internal/mailer"
-	"github.com/latoulicious/lazyscan/mail-svc/internal/processor"
-	"github.com/latoulicious/lazyscan/mail-svc/internal/store"
+	"github.com/KohanHQ/lazyscan/mail-svc/internal/config"
+	"github.com/KohanHQ/lazyscan/mail-svc/internal/consumer"
+	"github.com/KohanHQ/lazyscan/mail-svc/internal/mailer"
+	"github.com/KohanHQ/lazyscan/mail-svc/internal/processor"
+	"github.com/KohanHQ/lazyscan/mail-svc/internal/store"
 )
 
 const shutdownTimeout = 10 * time.Second

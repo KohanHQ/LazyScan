@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/latoulicious/lazyscan/image-svc/internal/convert"
-	"github.com/latoulicious/lazyscan/image-svc/internal/storage"
-	"github.com/latoulicious/lazyscan/image-svc/internal/store"
+	"github.com/KohanHQ/lazyscan/image-svc/internal/convert"
+	"github.com/KohanHQ/lazyscan/image-svc/internal/storage"
+	"github.com/KohanHQ/lazyscan/image-svc/internal/store"
 )
 
 var errTransient = errors.New("connection refused")

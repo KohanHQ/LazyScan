@@ -17,12 +17,12 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/latoulicious/lazyscan/image-svc/internal/config"
-	"github.com/latoulicious/lazyscan/image-svc/internal/consumer"
-	"github.com/latoulicious/lazyscan/image-svc/internal/convert"
-	"github.com/latoulicious/lazyscan/image-svc/internal/processor"
-	"github.com/latoulicious/lazyscan/image-svc/internal/storage"
-	"github.com/latoulicious/lazyscan/image-svc/internal/store"
+	"github.com/KohanHQ/lazyscan/image-svc/internal/config"
+	"github.com/KohanHQ/lazyscan/image-svc/internal/consumer"
+	"github.com/KohanHQ/lazyscan/image-svc/internal/convert"
+	"github.com/KohanHQ/lazyscan/image-svc/internal/processor"
+	"github.com/KohanHQ/lazyscan/image-svc/internal/storage"
+	"github.com/KohanHQ/lazyscan/image-svc/internal/store"
 )
 
 const shutdownTimeout = 10 * time.Second
