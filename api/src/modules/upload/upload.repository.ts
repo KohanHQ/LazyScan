@@ -51,7 +51,7 @@ export async function create(
       ${input.type},
       'pending',
       ${input.originalKey},
-      ${input.metadata ? JSON.stringify(input.metadata) : null}
+      ${input.metadata ? client.json(input.metadata) : null}
     )
     RETURNING ${client([...UPLOAD_COLUMNS])}
   `;

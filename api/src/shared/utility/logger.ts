@@ -7,6 +7,7 @@ import {
   error,
 } from "@rasla/logify";
 import { getDbClient } from "@/shared/database/client";
+import type postgres from "postgres";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
@@ -32,7 +33,7 @@ export async function saveLog(
         ${level},
         ${message},
         'lazyscan-api',
-        ${context ? JSON.stringify(context) : null},
+        ${context ? db.json(context as postgres.JSONValue) : null},
         ${err?.name ?? null},
         ${err?.message ?? null},
         ${err?.stack ?? null}
