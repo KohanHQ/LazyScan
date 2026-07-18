@@ -181,6 +181,17 @@ h1 {
   line-height: 1.05;
 }
 
+/* Native number spinners can't be themed; keyboard arrows and typing remain. */
+input[type="number"] {
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
 h2 {
   margin-bottom: 0;
   font-size: 1.35rem;
@@ -1462,6 +1473,7 @@ img.user-avatar {
 
 .auth-screen .auth-panel h1 {
   color: #17201b;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
 }
 
 [data-theme="dark"] .auth-screen .auth-panel h1 {
@@ -1606,7 +1618,8 @@ img.user-avatar {
 
 .manage-form input,
 .manage-form textarea,
-.manage-form select {
+.manage-form select,
+.manage-form .popup-select-trigger {
   width: 100%;
   min-height: 44px;
   border: 1px solid var(--border-strong);
@@ -1623,7 +1636,8 @@ img.user-avatar {
 
 .manage-form input:focus-visible,
 .manage-form textarea:focus-visible,
-.manage-form select:focus-visible {
+.manage-form select:focus-visible,
+.manage-form .popup-select-trigger:focus-visible {
   border-color: var(--accent-fg);
   outline: 3px solid var(--accent-fg);
 }
@@ -2263,6 +2277,27 @@ img.user-avatar {
 .library-filter-option.is-active {
   font-weight: 700;
   color: var(--accent-fg);
+}
+
+/* Themed select: PopupSelect wraps a trigger button (styled via the caller's
+   select class) and reuses the .library-filter-pop menu. Grid stretches the
+   trigger to the wrapper so it fills full-width form/grid parents. */
+.popup-select {
+  position: relative;
+  display: grid;
+}
+
+.popup-select-trigger {
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Grow rightward from the trigger's left edge and never sit narrower than it. */
+.popup-select .library-filter-pop {
+  left: 0;
+  right: auto;
+  min-width: 100%;
 }
 
 /* Tag filter section inside the filter popup: chips wrap and scroll when the

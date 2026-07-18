@@ -17,6 +17,7 @@ import type { Manga, MangaInput, MangaStatus } from "@/api/manga";
 import { ConfirmDialog } from "@/components/react/confirm-dialog";
 import { Cover } from "@/components/react/cover";
 import { PageHeading } from "@/components/react/page-heading";
+import { PopupSelect } from "@/components/react/popup-select";
 import { RequireSession } from "@/components/react/require-session";
 import { ErrorState, Loading } from "@/components/react/states";
 import {
@@ -171,9 +172,9 @@ function MangaForm({
 }): ReactElement {
   const heading = mode === "create" ? "New manga" : "Edit manga";
   const submitLabel = mode === "create" ? "Create manga" : "Save changes";
-  const status = manga?.status ?? "ongoing";
   const maxYear = new Date().getFullYear() + 1;
 
+  const [status, setStatus] = useState<MangaStatus>(manga?.status ?? "ongoing");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -346,13 +347,16 @@ function MangaForm({
           </label>
           <label>
             <span>Status</span>
-            <select name="status" defaultValue={status}>
-              {MANGA_STATUSES.map((option) => (
-                <option key={option} value={option}>
-                  {option.replace(/^\w/, (c) => c.toUpperCase())}
-                </option>
-              ))}
-            </select>
+            <PopupSelect
+              name="status"
+              ariaLabel="Status"
+              value={status}
+              options={MANGA_STATUSES.map((option) => ({
+                value: option,
+                label: option.replace(/^\w/, (c) => c.toUpperCase()),
+              }))}
+              onChange={(value) => setStatus(value as MangaStatus)}
+            />
           </label>
           <label>
             <span>Total chapters</span>

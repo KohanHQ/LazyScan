@@ -24,6 +24,7 @@ import { Cover } from "@/components/react/cover";
 import { MangaCard } from "@/components/react/manga-card";
 import { Page } from "@/components/react/page";
 import { PageHeading } from "@/components/react/page-heading";
+import { PopupSelect } from "@/components/react/popup-select";
 import { RequireSession } from "@/components/react/require-session";
 import { ErrorState, Loading } from "@/components/react/states";
 import { navigateTo } from "@/router";
@@ -278,6 +279,10 @@ function ProfileEditContent(): ReactElement {
 function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [profileVisibility, setProfileVisibility] = useState(
+    profile.profileVisibility
+  );
+  const [shelfVisibility, setShelfVisibility] = useState(profile.shelfVisibility);
 
   // Avatar upload is exclusive to the instance owner (the API 403s everyone
   // else); the owner badge is the UI's ownership signal.
@@ -364,29 +369,32 @@ function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
           ) : null}
           <label>
             <span>Profile visibility</span>
-            <select
+            <PopupSelect
               name="profileVisibility"
-              defaultValue={profile.profileVisibility}
-            >
-              <option value="public">
-                Public — others can find your profile
-              </option>
-              <option value="private">
-                Private — hidden from username lookup
-              </option>
-            </select>
+              ariaLabel="Profile visibility"
+              value={profileVisibility}
+              options={[
+                { value: "public", label: "Public — others can find your profile" },
+                { value: "private", label: "Private — hidden from username lookup" },
+              ]}
+              onChange={(value) =>
+                setProfileVisibility(value as ProfileVisibility)
+              }
+            />
             <small>Private hides your profile from username lookups.</small>
           </label>
           <label>
             <span>Library shelf</span>
-            <select name="shelfVisibility" defaultValue={profile.shelfVisibility}>
-              <option value="private">
-                Private — keep your favorites to yourself
-              </option>
-              <option value="public">
-                Public — show favorites on your profile
-              </option>
-            </select>
+            <PopupSelect
+              name="shelfVisibility"
+              ariaLabel="Library shelf"
+              value={shelfVisibility}
+              options={[
+                { value: "private", label: "Private — keep your favorites to yourself" },
+                { value: "public", label: "Public — show favorites on your profile" },
+              ]}
+              onChange={(value) => setShelfVisibility(value as ProfileVisibility)}
+            />
             <small>
               Controls whether your favorites appear on your public profile.
               Reading stats stay private.

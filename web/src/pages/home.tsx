@@ -19,6 +19,7 @@ import type { MangaHistoryEntry } from "@/api/reader";
 import { statusLabel } from "@/components/manga-card";
 import { Cover } from "@/components/react/cover";
 import { MangaCard } from "@/components/react/manga-card";
+import { PopupSelect } from "@/components/react/popup-select";
 import { Empty, ErrorState, Loading } from "@/components/react/states";
 import { clickable } from "@/lib/clickable";
 import {
@@ -879,29 +880,33 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
               </div>
               <div className="library-advanced-field">
                 <label htmlFor="adv-sort">Sort</label>
-                <select
+                <PopupSelect
                   id="adv-sort"
                   className="library-advanced-select"
+                  ariaLabel="Sort"
                   value={adv.sort}
-                  onChange={(e) => setAdv({ ...adv, sort: e.target.value })}
-                >
-                  <option value="created_at">Newest</option>
-                  <option value="updated_at">Updated</option>
-                  <option value="title">Title</option>
-                  <option value="published_year">Year</option>
-                </select>
+                  options={[
+                    { value: "created_at", label: "Newest" },
+                    { value: "updated_at", label: "Updated" },
+                    { value: "title", label: "Title" },
+                    { value: "published_year", label: "Year" },
+                  ]}
+                  onChange={(value) => setAdv({ ...adv, sort: value })}
+                />
               </div>
               <div className="library-advanced-field">
                 <label htmlFor="adv-order">Order</label>
-                <select
+                <PopupSelect
                   id="adv-order"
                   className="library-advanced-select"
+                  ariaLabel="Order"
                   value={adv.order}
-                  onChange={(e) => setAdv({ ...adv, order: e.target.value })}
-                >
-                  <option value="desc">Descending</option>
-                  <option value="asc">Ascending</option>
-                </select>
+                  options={[
+                    { value: "desc", label: "Descending" },
+                    { value: "asc", label: "Ascending" },
+                  ]}
+                  onChange={(value) => setAdv({ ...adv, order: value })}
+                />
               </div>
             </div>
             <div className="library-advanced-actions">

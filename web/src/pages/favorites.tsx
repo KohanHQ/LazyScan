@@ -9,6 +9,7 @@ import { getLibrary, removeFromLibrary } from "@/api/library";
 import type { LibraryEntry, LibraryList } from "@/api/library";
 import { MangaCard } from "@/components/react/manga-card";
 import { PageHeading } from "@/components/react/page-heading";
+import { PopupSelect } from "@/components/react/popup-select";
 import { RequireSession } from "@/components/react/require-session";
 import { Empty, ErrorState, Loading } from "@/components/react/states";
 
@@ -133,16 +134,18 @@ function FavoritesContent(): ReactElement {
           <label className="library-filter-label" htmlFor="library-sort">
             Sort
           </label>
-          <select
+          <PopupSelect
             className="library-filter-select"
             id="library-sort"
+            ariaLabel="Sort"
             value={sort}
-            onChange={(event) => onSortChange(event.target.value)}
-          >
-            <option value="newest">Newest</option>
-            <option value="title">Title (A-Z)</option>
-            <option value="year">Year</option>
-          </select>
+            options={[
+              { value: "newest", label: "Newest" },
+              { value: "title", label: "Title (A-Z)" },
+              { value: "year", label: "Year" },
+            ]}
+            onChange={onSortChange}
+          />
         </div>
         <div className="library-filter-group">
           <label className="library-filter-label" htmlFor="library-year">
