@@ -5,7 +5,7 @@ import {
   type ChangeEvent,
   type ReactElement,
 } from "react";
-import { Funnel } from "lucide-react";
+import { Funnel, Pause, Play } from "lucide-react";
 import {
   listManga,
   listMangaTags,
@@ -266,6 +266,13 @@ function Hero({
   const pausedRef = useRef(false);
   // Bumped on manual steps so the full interval elapses before an auto-advance.
   const [timerEpoch, setTimerEpoch] = useState(0);
+  // User-controlled auto-advance toggle (WCAG 2.2.2), additive to the existing
+  // hover/focus pause. Reduced motion disables auto-advance outright, so the
+  // pause/play control only appears when motion is allowed.
+  const [playing, setPlaying] = useState(true);
+  const reduceMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const advance = (delta: number): void => {
     setSlide((s) => {
@@ -293,7 +300,7 @@ function Hero({
     if (items.length <= 1) {
       return;
     }
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (reduceMotion || !playing) {
       return;
     }
     const timer = window.setInterval(() => {
@@ -302,7 +309,7 @@ function Hero({
       }
     }, HERO_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [items.length, timerEpoch]);
+  }, [items.length, timerEpoch, playing, reduceMotion]);
 
   if (items.length === 0) {
     return null;
@@ -349,6 +356,21 @@ function Hero({
           <span className="hero-index" data-role="hero-index">
             NO. {slide.current + 1}
           </span>
+          {!reduceMotion ? (
+            <button
+              className="hero-arrow"
+              type="button"
+              aria-label={playing ? "Pause auto-advance" : "Resume auto-advance"}
+              aria-pressed={!playing}
+              onClick={() => setPlaying((prev) => !prev)}
+            >
+              {playing ? (
+                <Pause size={18} aria-hidden="true" />
+              ) : (
+                <Play size={18} aria-hidden="true" />
+              )}
+            </button>
+          ) : null}
           <button
             className="hero-arrow"
             type="button"
@@ -454,6 +476,9 @@ type AdvancedFields = typeof ADVANCED_DEFAULTS;
 function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
   const [items, setItems] = useState<Manga[]>(firstPage);
   const [message, setMessage] = useState<string | null>(null);
+  // A failed page fetch during infinite scroll; drives an inline retry affordance
+  // that re-attempts the same page without resetting the loaded list.
+  const [pageError, setPageError] = useState<string | null>(null);
   const [moreHidden, setMoreHidden] = useState(
     HAS_OBSERVER || firstPage.length < PAGE_SIZE
   );
@@ -515,6 +540,7 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
     offsetRef.current = 0;
     doneRef.current = false;
     loadingRef.current = true;
+    setPageError(null);
     syncMore();
     try {
       const list = await listManga(queryParams());
@@ -563,15 +589,29 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
       setItems((current) => [...current, ...list]);
       offsetRef.current += list.length;
       doneRef.current = list.length < PAGE_SIZE;
-    } catch {
-      // Stop auto-loading on error; the search box can reset the state.
+    } catch (queryError) {
+      if (mySeq !== seqRef.current) {
+        return;
+      }
+      // Halt auto-loading (so the observer doesn't retry-loop) and surface an
+      // inline retry that re-arms this same page.
       doneRef.current = true;
+      setPageError(
+        queryError instanceof Error ? queryError.message : "Couldn't load more titles."
+      );
     } finally {
       if (mySeq === seqRef.current) {
         loadingRef.current = false;
         syncMore();
       }
     }
+  };
+
+  // Clears the error and re-arms the halted page fetch, keeping the loaded list.
+  const retryLoadMore = (): void => {
+    setPageError(null);
+    doneRef.current = false;
+    void loadMore();
   };
 
   // Latest loadMore for the mount-once observer below.
@@ -768,16 +808,18 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
               >
                 <Funnel className="icon" size={20} aria-hidden="true" />
               </button>
+              {/* Plain toggle buttons (aria-pressed), not a menu: the popup mixes a
+                  status single-select with a tag group, so ARIA menu semantics
+                  (roving focus, menuitemradio) don't fit — downgrade over-claims. */}
               <div
                 ref={filterPopRef}
                 className="library-filter-pop"
-                role="menu"
                 hidden={!popOpen}
               >
                 <button
                   className={`library-filter-option${statusFilter === "" ? " is-active" : ""}`}
                   type="button"
-                  role="menuitemradio"
+                  aria-pressed={statusFilter === ""}
                   onClick={() => chooseStatus("")}
                 >
                   All status
@@ -787,7 +829,7 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
                     key={status}
                     className={`library-filter-option${statusFilter === status ? " is-active" : ""}`}
                     type="button"
-                    role="menuitemradio"
+                    aria-pressed={statusFilter === status}
                     onClick={() => chooseStatus(status)}
                   >
                     {statusLabel(status)}
@@ -803,6 +845,7 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
                     <button
                       className={`library-filter-tag${tagFilter === "" ? " is-active" : ""}`}
                       type="button"
+                      aria-pressed={tagFilter === ""}
                       onClick={() => chooseTag("")}
                     >
                       All
@@ -812,6 +855,7 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
                         key={tag}
                         className={`library-filter-tag${tagFilter === tag ? " is-active" : ""}`}
                         type="button"
+                        aria-pressed={tagFilter === tag}
                         onClick={() => chooseTag(tag)}
                       >
                         {tag}
@@ -936,14 +980,27 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
         )}
       </section>
       <div ref={sentinelRef} className="library-sentinel" aria-hidden="true" />
-      <button
-        className="secondary-button library-more"
-        type="button"
-        hidden={moreHidden}
-        onClick={() => void loadMore()}
-      >
-        Load more
-      </button>
+      {pageError !== null ? (
+        <>
+          <ErrorState message={pageError} />
+          <button
+            className="secondary-button library-more"
+            type="button"
+            onClick={retryLoadMore}
+          >
+            Retry
+          </button>
+        </>
+      ) : (
+        <button
+          className="secondary-button library-more"
+          type="button"
+          hidden={moreHidden}
+          onClick={() => void loadMore()}
+        >
+          Load more
+        </button>
+      )}
     </>
   );
 }
