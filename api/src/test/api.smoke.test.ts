@@ -282,6 +282,7 @@ describe("API smoke baseline", () => {
       "025_reading_status.sql",
       "026_logs_prune.sql",
       "027_chapter_pages_original_pruned.sql",
+      "028_jsonb_unwrap_string_scalars.sql",
     ]);
   });
 
