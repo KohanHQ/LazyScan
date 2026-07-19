@@ -2,6 +2,7 @@ name: lazyscan
 
 services:
   image-svc:
+    image: ghcr.io/kohanhq/lazyscan-image-svc:${TAG:-main}
     build: ./image-svc
     environment:
       DATABASE_URL: ${DATABASE_URL}
@@ -20,6 +21,7 @@ services:
     restart: unless-stopped
 
   mail-svc:
+    image: ghcr.io/kohanhq/lazyscan-mail-svc:${TAG:-main}
     build: ./mail-svc
     environment:
       DATABASE_URL: ${DATABASE_URL}
@@ -37,6 +39,7 @@ services:
     restart: unless-stopped
 
   api:
+    image: ghcr.io/kohanhq/lazyscan-api:${TAG:-main}
     build: ./api
     depends_on:
       image-svc: { condition: service_started }
@@ -66,6 +69,7 @@ services:
     restart: unless-stopped
 
   web:
+    image: ghcr.io/kohanhq/lazyscan-web:${TAG:-main}
     build:                              # nginx: SPA + proxy /api
       context: ./web
       args:
