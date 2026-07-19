@@ -88,28 +88,35 @@ export function enforceRateLimit(ctx: any, options: RateLimitOptions): void {
   set.headers["X-RateLimit-Reset"] = String(entry.resetAt);
 }
 
-// The import-progress poll: GET …/chapter/uploads/:uploadId (nothing after the
-// id, so /complete, /retry, /pages are excluded). Prefix-agnostic — matches with
-// or without the /api/v1 mount. Carries its own bucket (uploadStatusLimit), so the
-// global hook skips it to keep a large upload from draining the global cap (F-006).
+// Routes exempt from the global cap because one chapter import legitimately
+// fires hundreds of them; each carries its own bucket instead
+// (uploadStatusLimit for the GET poll, uploadPageLimit for page POSTs).
+// Prefix-agnostic — matches with or without the /api/v1 mount.
 const UPLOAD_STATUS_POLL = /\/manga\/[^/]+\/chapter\/uploads\/[^/]+$/;
-function isUploadStatusPoll(request: Request): boolean {
-  if (request.method !== "GET") {
-    return false;
-  }
+const UPLOAD_PAGE_POST =
+  /\/manga\/[^/]+\/chapter\/uploads\/[^/]+\/pages\/[^/]+\/upload$/;
+function isUploadExempt(request: Request): boolean {
+  let pathname: string;
   try {
-    return UPLOAD_STATUS_POLL.test(new URL(request.url).pathname);
+    pathname = new URL(request.url).pathname;
   } catch {
     return false;
   }
+  if (request.method === "GET") {
+    return UPLOAD_STATUS_POLL.test(pathname);
+  }
+  if (request.method === "POST") {
+    return UPLOAD_PAGE_POST.test(pathname);
+  }
+  return false;
 }
 
 // App-wide. `as:"global"` so the hook fires for sibling routes (default local
 // scope is stripped on `.use()`); `seed` avoids Elysia name+seed dedup. See findings.md.
 export const globalRateLimit = new Elysia({ name: "rateLimit", seed: "global" })
   .onBeforeHandle({ as: "global" }, (ctx: any) => {
-    if (isUploadStatusPoll(ctx.request)) {
-      return; // own bucket (uploadStatusLimit) handles this high-frequency poll
+    if (isUploadExempt(ctx.request)) {
+      return; // own buckets (uploadStatusLimit / uploadPageLimit) apply instead
     }
     enforceRateLimit(ctx, {
       windowMs: staticConfig.rateLimit.windowMs,
@@ -149,4 +156,13 @@ export const uploadStatusLimit = (ctx: any): void =>
     windowMs: staticConfig.rateLimit.uploadStatus.windowMs,
     maxRequests: staticConfig.rateLimit.uploadStatus.maxRequests,
     keyPrefix: "upload:status",
+  });
+
+// Per-page upload POSTs. Exempt from the global cap (see isUploadExempt);
+// this bucket alone bounds abuse without starving a bulk chapter import.
+export const uploadPageLimit = (ctx: any): void =>
+  enforceRateLimit(ctx, {
+    windowMs: staticConfig.rateLimit.uploadPages.windowMs,
+    maxRequests: staticConfig.rateLimit.uploadPages.maxRequests,
+    keyPrefix: "upload:pages",
   });

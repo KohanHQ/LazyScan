@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import * as service from "@/modules/chapter/chapter.service";
 import { success, fail, httpStatusFromError } from "@/shared/http/response";
 import { requireAuth, resolveRequiredUser } from "@/middleware/auth";
-import { uploadStatusLimit } from "@/middleware/rate.limit";
+import { uploadStatusLimit, uploadPageLimit } from "@/middleware/rate.limit";
 import {
   ChapterValidator,
   chapterTransportSchemas,
@@ -273,6 +273,9 @@ export const chapterHandler = new Elysia()
       return success(result);
     },
     {
+      // Exempt from the global cap (see isUploadExempt); this bucket alone
+      // limits per-page uploads so a bulk chapter can't 429 the whole IP.
+      beforeHandle: uploadPageLimit,
       params: t.Object({
         id: t.String(),
         uploadId: t.String(),
