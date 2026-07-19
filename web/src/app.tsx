@@ -103,7 +103,7 @@ export function App(): ReactElement {
     // "true" only when it actually mounts a hero (not on its empty state).
     shell.setAttribute("data-hero", "false");
     shell.setAttribute("data-drawer", "closed");
-    main.scrollTo({ top: 0 });
+    window.scrollTo({ top: 0 });
     // Auth screens run their own mount fade (they're position:fixed, so a
     // transform on <main> would reparent that fixed box). Every other route
     // gets a subtle enter fade on each navigation.
