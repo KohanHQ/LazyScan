@@ -257,8 +257,11 @@ export const staticConfig = {
   },
 
   rateLimit: {
+    // Abuse backstop, not the primary control (per-route buckets below are).
+    // Must absorb real SPA traffic: ~6 calls per page view plus one progress
+    // PUT per reader page flip — 100/15min starved a normal reading session.
     windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 100,
+    maxRequests: 600,
     // Per-route auth buckets (per IP). Strict = SMTP-cost register/resend; loose
     // = verify/login (OTP attempt cap is the real brute-force control).
     auth: {
@@ -271,6 +274,9 @@ export const staticConfig = {
     // generous bucket + exempt from the global cap so a large chapter's polling
     // can't drain the IP's global budget (F-006).
     uploadStatus: { windowMs: 60 * 1000, maxRequests: 120 },
+    // Per-page upload POSTs during a chapter import; exempt from the global cap
+    // for the same reason. 300/min covers a large chapter at client concurrency.
+    uploadPages: { windowMs: 60 * 1000, maxRequests: 300 },
   },
 
   // Email verification OTP (Herald pipeline).
