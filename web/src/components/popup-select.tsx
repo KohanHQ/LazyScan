@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ReactElement } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactElement,
+} from "react";
 
 type Option = { value: string; label: string };
 
@@ -44,10 +50,15 @@ export function PopupSelect({
     const onKey = (event: KeyboardEvent): void => {
       if (event.key === "Escape") {
         setOpen(false);
+        btnRef.current?.focus();
       }
     };
     document.addEventListener("click", onDocClick);
     document.addEventListener("keydown", onKey);
+    const active = popRef.current?.querySelector<HTMLButtonElement>(
+      ".is-active",
+    );
+    (active ?? popRef.current?.querySelector("button"))?.focus();
     return () => {
       document.removeEventListener("click", onDocClick);
       document.removeEventListener("keydown", onKey);
@@ -58,9 +69,26 @@ export function PopupSelect({
 
   const choose = (next: string): void => {
     setOpen(false);
+    btnRef.current?.focus();
     if (next !== value) {
       onChange?.(next);
     }
+  };
+
+  const onMenuKey = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
+      return;
+    }
+    event.preventDefault();
+    const items = popRef.current
+      ? Array.from(popRef.current.querySelectorAll("button"))
+      : [];
+    if (items.length === 0) {
+      return;
+    }
+    const index = items.indexOf(document.activeElement as HTMLButtonElement);
+    const step = event.key === "ArrowDown" ? 1 : -1;
+    items[(index + step + items.length) % items.length]?.focus();
   };
 
   return (
@@ -77,7 +105,13 @@ export function PopupSelect({
       >
         <span>{current?.label ?? ""}</span>
       </button>
-      <div ref={popRef} className="library-filter-pop" role="menu" hidden={!open}>
+      <div
+        ref={popRef}
+        className="library-filter-pop"
+        role="menu"
+        hidden={!open}
+        onKeyDown={onMenuKey}
+      >
         {options.map((option) => (
           <button
             key={option.value}
