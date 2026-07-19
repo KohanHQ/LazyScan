@@ -350,10 +350,21 @@ function ReaderView({
     [onEndCard, mangaId, chapter]
   );
 
-  // «/» jump straight to the adjacent chapter; » with no next chapter shows the
-  // end card instead of doing nothing, « with no previous stays a no-op.
+  // « rewinds to page 1 first, then (already there) jumps to the previous
+  // chapter — like a player's ⏮, and never a silent no-op mid-chapter.
+  // » jumps to the next chapter; with no next it shows the end card.
   const goToAdjacentChapter = useCallback(
     async (dir: "prev" | "next"): Promise<void> => {
+      if (dir === "prev") {
+        if (onEndCard) {
+          setOnEndCard(false);
+          return;
+        }
+        if (!isFirstPage()) {
+          goToPage(0);
+          return;
+        }
+      }
       const adjacent = await findAdjacentChapter(mangaId, chapter, dir);
       if (!mountedRef.current) return;
       if (adjacent) navigateTo(chapterPath(mangaId, adjacent.id));
@@ -563,8 +574,8 @@ function ReaderView({
             className="reader-ctrl"
             type="button"
             onClick={() => void goToAdjacentChapter("prev")}
-            title="Previous chapter"
-            aria-label="Previous chapter"
+            title="First page / previous chapter"
+            aria-label="First page, or previous chapter when on first page"
           >
             {"«"}
           </button>
