@@ -2,6 +2,7 @@ const DIRECTION_KEY = "lazyscan:reader:direction";
 const DIRECTION_BY_MANGA_KEY = "lazyscan:reader:directionByManga";
 const FIT_MODE_KEY = "lazyscan:reader:fit";
 const PRELOAD_KEY = "lazyscan:reader:preload";
+const TAP_ZONES_KEY = "lazyscan:reader:tapZones";
 
 export type ReaderDirection = "ltr" | "rtl" | "vertical";
 export type ReaderFitMode = "width" | "height" | "original";
@@ -107,5 +108,15 @@ export function cycleReaderPreloadCount(): ReaderPreloadCount {
   const idx = PRELOAD_ORDER.indexOf(current);
   const next = PRELOAD_ORDER[(idx + 1) % PRELOAD_ORDER.length];
   setReaderPreloadCount(next);
+  return next;
+}
+
+export function getReaderTapZonesEnabled(): boolean {
+  return localStorage.getItem(TAP_ZONES_KEY) !== "off";
+}
+
+export function toggleReaderTapZones(): boolean {
+  const next = !getReaderTapZonesEnabled();
+  localStorage.setItem(TAP_ZONES_KEY, next ? "on" : "off");
   return next;
 }
