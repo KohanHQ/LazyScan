@@ -35,6 +35,8 @@ import {
   getReaderDirection,
   getReaderFitMode,
   getReaderPreloadCount,
+  getReaderTapZonesEnabled,
+  toggleReaderTapZones,
 } from "@/state/settings";
 import type { ReaderFitMode } from "@/state/settings";
 
@@ -229,6 +231,7 @@ function ReaderView({
   );
   const gearRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
+  const jumpFrameRef = useRef<number | null>(null);
 
   const chapter = detail.chapter;
   const pages = detail.pages;
@@ -238,6 +241,7 @@ function ReaderView({
   const direction = getReaderDirection(mangaId);
   const fitMode = getReaderFitMode();
   const preloadCount = getReaderPreloadCount();
+  const tapZonesEnabled = getReaderTapZonesEnabled();
 
   // Progress save status chip. Successful saves are silent (a per-page "Saved"
   // flash reads as noise — user feedback); only "Save failed" surfaces, and the
@@ -280,6 +284,9 @@ function ReaderView({
   useEffect(() => {
     return () => {
       mountedRef.current = false;
+      if (jumpFrameRef.current !== null) {
+        cancelAnimationFrame(jumpFrameRef.current);
+      }
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
@@ -387,6 +394,24 @@ function ReaderView({
     void handleStep(semantic);
   };
 
+  // Direct jump from the page-number select. Vertical mode also scrolls, since
+  // its position is the scroll offset, not the store index.
+  const jumpToPage = (idx: number): void => {
+    setOnEndCard(false);
+    goToPage(idx);
+    if (getReaderDirection(mangaId) === "vertical") {
+      if (jumpFrameRef.current !== null) {
+        cancelAnimationFrame(jumpFrameRef.current);
+      }
+      jumpFrameRef.current = requestAnimationFrame(() => {
+        jumpFrameRef.current = null;
+        document
+          .querySelector(`[data-page-index="${idx}"]`)
+          ?.scrollIntoView({ block: "start" });
+      });
+    }
+  };
+
   // IntersectionObserver in vertical mode reports the visible page; the save
   // effect above persists it after the store index updates.
   const onVisiblePage = useCallback((idx: number): void => {
@@ -490,18 +515,22 @@ function ReaderView({
 
   const tapZones = (
     <>
-      <div
-        className="reader-tap-zone reader-tap-left"
-        onClick={() => tapStep("prev")}
-      />
+      {tapZonesEnabled ? (
+        <div
+          className="reader-tap-zone reader-tap-left"
+          onClick={() => tapStep("prev")}
+        />
+      ) : null}
       <div
         className="reader-tap-zone reader-tap-center"
         onClick={openOverlay}
       />
-      <div
-        className="reader-tap-zone reader-tap-right"
-        onClick={() => tapStep("next")}
-      />
+      {tapZonesEnabled ? (
+        <div
+          className="reader-tap-zone reader-tap-right"
+          onClick={() => tapStep("next")}
+        />
+      ) : null}
     </>
   );
 
@@ -589,7 +618,20 @@ function ReaderView({
             {"‹"}
           </button>
           <span className="reader-page-counter">
-            {currentIndex + 1} / {pages.length}
+            <select
+              className="reader-page-select"
+              value={currentIndex}
+              onChange={(e) => jumpToPage(Number(e.target.value))}
+              aria-label="Jump to page"
+            >
+              {pages.map((p, i) => (
+                <option key={p.id} value={i}>
+                  {i + 1}
+                </option>
+              ))}
+            </select>
+            {" / "}
+            {pages.length}
           </span>
           <button
             className="reader-ctrl"
@@ -691,6 +733,21 @@ function ReaderView({
             <span className="reader-settings-name">Preload</span>
             <span className="reader-settings-value">
               {preloadCount} page{preloadCount === 1 ? "" : "s"}
+            </span>
+          </button>
+          <button
+            className="reader-settings-row"
+            type="button"
+            role="menuitem"
+            title="Tap left/right edges to turn pages"
+            onClick={() => {
+              toggleReaderTapZones();
+              bumpSettings();
+            }}
+          >
+            <span className="reader-settings-name">Tap zones</span>
+            <span className="reader-settings-value">
+              {tapZonesEnabled ? "On" : "Off"}
             </span>
           </button>
         </div>

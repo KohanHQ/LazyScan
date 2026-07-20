@@ -414,6 +414,26 @@
   padding: 0 10px;
 }
 
+/* Native select disguised as the counter's page number; the OS picker is the
+   jump UI, so no custom dropdown. */
+.reader-page-select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  padding: 2px 0;
+  background: transparent;
+  color: var(--reader-text);
+  font: inherit;
+  cursor: pointer;
+  text-align: right;
+}
+
+.reader-page-select:hover,
+.reader-page-select:focus-visible {
+  color: var(--reader-text);
+  text-decoration: underline;
+}
+
 /* Progress save status chip. Successful saves are silent (per-page "Saved"
    read as noise); only "Save failed" surfaces, cleared by the next successful
    save. Empty (no state) collapses so the control bar keeps its compact width. */

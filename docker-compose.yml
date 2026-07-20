@@ -1,7 +1,7 @@
 name: lazyscan
 
 services:
-  image-svc:
+  image:
     image: ghcr.io/kohanhq/lazyscan-image-svc:${TAG:-main}
     build: ./image-svc
     environment:
@@ -20,7 +20,7 @@ services:
     mem_limit: 256m           
     restart: unless-stopped
 
-  mail-svc:
+  mail:
     image: ghcr.io/kohanhq/lazyscan-mail-svc:${TAG:-main}
     build: ./mail-svc
     environment:
@@ -42,7 +42,7 @@ services:
     image: ghcr.io/kohanhq/lazyscan-api:${TAG:-main}
     build: ./api
     depends_on:
-      image-svc: { condition: service_started }
+      image: { condition: service_started }
     environment:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
@@ -56,7 +56,7 @@ services:
       STORAGE_FORCE_PATH_STYLE: "true"
       STORAGE_PUBLIC_DOMAIN: ${STORAGE_PUBLIC_DOMAIN}
       # avatars/covers sync convert
-      IMAGE_SVC_URL: http://image-svc:8001    
+      IMAGE_SVC_URL: http://image:8001
       STORAGE_QUOTA_BYTES: ${STORAGE_QUOTA_BYTES:-8589934592}   # 8 GiB
       ENABLE_STORAGE_PRUNE: ${ENABLE_STORAGE_PRUNE:-false}      # reclaim staged page originals under the cap
       ENABLE_RATE_LIMIT: ${ENABLE_RATE_LIMIT:-false}            # per-IP limiter (all routes + auth/public buckets)
