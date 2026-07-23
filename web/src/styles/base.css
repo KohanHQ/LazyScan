@@ -1390,14 +1390,6 @@ img.user-avatar {
   margin-right: -50vw;
   margin-top: -88px;
   border-radius: 0;
-  /* Overlap the next section into the fade's near-opaque tail so the art-to-page
-     dissolve is never seen bare (bare fade reads as a gray band over light bg). */
-  margin-bottom: -56px;
-}
-
-.app-shell[data-hero="true"] .hero + * {
-  position: relative;
-  z-index: 1;
 }
 
 .app-shell[data-hero="true"] .hero-stage {
@@ -2825,9 +2817,9 @@ img.user-avatar {
   margin-bottom: 28px;
   border-radius: 14px;
   overflow: hidden;
-  /* Fixed dark surface (the hero is always light-on-dark art): keeps the brief
-     mid-crossfade alpha dip from flashing the near-white light-theme surface. */
-  background: #0b0e13;
+  /* Theme surface behind the slides; the incoming slide fades in over the still
+     -opaque outgoing one, so no gap ever exposes this layer mid-crossfade. */
+  background: var(--bg);
 }
 
 .hero-stage {
@@ -2873,8 +2865,8 @@ img.user-avatar {
     linear-gradient(
       180deg,
       transparent 28%,
-      color-mix(in srgb, var(--bg) 55%, transparent) 70%,
-      var(--bg) 100%
+      color-mix(in srgb, var(--bg) 55%, transparent) 62%,
+      var(--bg) 88%
     ),
     linear-gradient(
       90deg,
