@@ -5,7 +5,7 @@ import {
   type ChangeEvent,
   type ReactElement,
 } from "react";
-import { Funnel, Pause, Play } from "lucide-react";
+import { Funnel } from "lucide-react";
 import {
   listManga,
   listMangaTags,
@@ -266,10 +266,6 @@ function Hero({
   const pausedRef = useRef(false);
   // Bumped on manual steps so the full interval elapses before an auto-advance.
   const [timerEpoch, setTimerEpoch] = useState(0);
-  // User-controlled auto-advance toggle (WCAG 2.2.2), additive to the existing
-  // hover/focus pause. Reduced motion disables auto-advance outright, so the
-  // pause/play control only appears when motion is allowed.
-  const [playing, setPlaying] = useState(true);
   const reduceMotion =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -300,7 +296,7 @@ function Hero({
     if (items.length <= 1) {
       return;
     }
-    if (reduceMotion || !playing) {
+    if (reduceMotion) {
       return;
     }
     const timer = window.setInterval(() => {
@@ -309,7 +305,7 @@ function Hero({
       }
     }, HERO_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [items.length, timerEpoch, playing, reduceMotion]);
+  }, [items.length, timerEpoch, reduceMotion]);
 
   if (items.length === 0) {
     return null;
@@ -356,21 +352,6 @@ function Hero({
           <span className="hero-index" data-role="hero-index">
             NO. {slide.current + 1}
           </span>
-          {!reduceMotion ? (
-            <button
-              className="hero-arrow"
-              type="button"
-              aria-label={playing ? "Pause auto-advance" : "Resume auto-advance"}
-              aria-pressed={!playing}
-              onClick={() => setPlaying((prev) => !prev)}
-            >
-              {playing ? (
-                <Pause size={18} aria-hidden="true" />
-              ) : (
-                <Play size={18} aria-hidden="true" />
-              )}
-            </button>
-          ) : null}
           <button
             className="hero-arrow"
             type="button"
