@@ -277,6 +277,9 @@ export const staticConfig = {
     // Per-page upload POSTs during a chapter import; exempt from the global cap
     // for the same reason. 300/min covers a large chapter at client concurrency.
     uploadPages: { windowMs: 60 * 1000, maxRequests: 300 },
+    // Comment writes (post/edit/delete) per IP — throttles spam without
+    // affecting the public comment reads (those ride publicRead).
+    comment: { windowMs: 60 * 1000, maxRequests: 5 },
   },
 
   // Email verification OTP (Herald pipeline).

@@ -7,7 +7,7 @@ import {
   type ReactElement,
   type SetStateAction,
 } from "react";
-import { Bookmark, Heart, Inbox, MessageSquare } from "lucide-react";
+import { Bookmark, Heart, Inbox } from "lucide-react";
 import { listReadyChapters } from "@/api/chapter";
 import type { ReaderChapter } from "@/api/chapter";
 import {
@@ -33,6 +33,7 @@ import {
 } from "@/api/reading-status";
 import type { ReadingStatus } from "@/api/reading-status";
 import { statusLabel } from "@/components/manga-card";
+import { Comments } from "@/components/comments";
 import { Cover } from "@/components/cover";
 import { Empty, ErrorState, Loading } from "@/components/states";
 import { clickable } from "@/lib/clickable";
@@ -51,9 +52,9 @@ type LoadState =
   | { kind: "error"; message: string }
   | { kind: "ready"; data: MangaData };
 
-// Public manga detail page (/manga/:id). Logged-in users additionally get
-// favorite/queue toggles, a reading-status selector, per-chapter read toggles,
-// mark-all-read, and a comments placeholder.
+// Public manga detail page (/manga/:id). The comment section is public;
+// logged-in users additionally get favorite/queue toggles, a reading-status
+// selector, per-chapter read toggles, mark-all-read, and the comment compose form.
 export function MangaPage({ id }: { id: string }): ReactElement {
   const loggedIn = Boolean(useSession().user);
   const [state, setState] = useState<LoadState>({ kind: "loading" });
@@ -144,21 +145,7 @@ export function MangaPage({ id }: { id: string }): ReactElement {
           icon={<Inbox className="icon" size={20} />}
         />
       )}
-      {loggedIn ? (
-        <>
-          <section className="section-heading">
-            <div>
-              <p className="eyebrow">Community</p>
-              <h2>Comments</h2>
-            </div>
-          </section>
-          <Empty
-            title="Comments coming soon"
-            message="Discussion on titles is not open yet. Check back later."
-            icon={<MessageSquare className="icon" size={20} />}
-          />
-        </>
-      ) : null}
+      <Comments mangaId={id} />
     </>
   );
 }

@@ -166,3 +166,11 @@ export const uploadPageLimit = (ctx: any): void =>
     maxRequests: staticConfig.rateLimit.uploadPages.maxRequests,
     keyPrefix: "upload:pages",
   });
+
+// Comment write POST/PUT/DELETE. Tight per-IP bucket to bound spam.
+export const commentWriteLimit = (ctx: any): void =>
+  enforceRateLimit(ctx, {
+    windowMs: staticConfig.rateLimit.comment.windowMs,
+    maxRequests: staticConfig.rateLimit.comment.maxRequests,
+    keyPrefix: "comment:write",
+  });
