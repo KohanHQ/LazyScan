@@ -9,6 +9,9 @@ export interface CommentResponse {
   mangaId: UUID;
   userId: UUID;
   authorName: string;
+  // Stored avatar_url pass-through (like the profile response); null when unset,
+  // in which case the web derives a ui-avatars fallback from the author name.
+  authorAvatar: string | null;
   body: string;
   createdAt: string;
   updatedAt: string;

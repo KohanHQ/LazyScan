@@ -15,6 +15,7 @@ const commentSchema = t.Object({
   mangaId: t.String(),
   userId: t.String(),
   authorName: t.String(),
+  authorAvatar: t.Union([t.String(), t.Null()]),
   body: t.String(),
   createdAt: t.String(),
   updatedAt: t.String(),

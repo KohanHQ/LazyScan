@@ -3592,9 +3592,19 @@ img.user-avatar {
 
 .comment-meta {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
+}
+
+.comment-avatar {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--surface-accent);
+  display: grid;
+  place-items: center;
 }
 
 .comment-author {
@@ -3604,6 +3614,7 @@ img.user-avatar {
 }
 
 .comment-date {
+  margin-left: auto;
   font-size: 0.8rem;
   color: var(--text-secondary);
 }

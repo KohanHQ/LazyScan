@@ -7,6 +7,7 @@ export type Comment = {
   mangaId: string;
   userId: string;
   authorName: string;
+  authorAvatar: string | null;
   body: string;
   createdAt: string;
   updatedAt: string;

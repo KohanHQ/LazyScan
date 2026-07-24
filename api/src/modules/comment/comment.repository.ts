@@ -6,13 +6,17 @@ const db = getDbClient();
 
 // The author name is the profile display name, falling back to username; the
 // profile row always exists (created at registration), so LEFT JOIN + COALESCE
-// is defensive rather than expected to hit the 'Unknown' arm.
+// is defensive rather than expected to hit the 'Unknown' arm. `authorAvatar` is
+// the stored avatar_url pass-through (currently always null — the web derives a
+// ui-avatars fallback from the name via resolveAvatar), matching the profile
+// response shape.
 function mapRow(row: any): CommentResponse {
   return {
     id: row.id as UUID,
     mangaId: row.manga_id as UUID,
     userId: row.user_id as UUID,
     authorName: row.author_name,
+    authorAvatar: row.author_avatar ?? null,
     body: row.body,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
@@ -26,7 +30,8 @@ export async function listByManga(
 ): Promise<CommentResponse[]> {
   const rows = await db`
     SELECT c.id, c.manga_id, c.user_id, c.body, c.created_at, c.updated_at,
-           COALESCE(p.display_name, p.username, 'Unknown') AS author_name
+           COALESCE(p.display_name, p.username, 'Unknown') AS author_name,
+           p.avatar_url AS author_avatar
     FROM manga_comments c
     LEFT JOIN profiles p ON p.user_id = c.user_id
     WHERE c.manga_id = ${mangaId}
@@ -47,7 +52,8 @@ export async function countByManga(mangaId: UUID): Promise<number> {
 export async function findById(id: UUID): Promise<CommentResponse | null> {
   const rows = await db`
     SELECT c.id, c.manga_id, c.user_id, c.body, c.created_at, c.updated_at,
-           COALESCE(p.display_name, p.username, 'Unknown') AS author_name
+           COALESCE(p.display_name, p.username, 'Unknown') AS author_name,
+           p.avatar_url AS author_avatar
     FROM manga_comments c
     LEFT JOIN profiles p ON p.user_id = c.user_id
     WHERE c.id = ${id}

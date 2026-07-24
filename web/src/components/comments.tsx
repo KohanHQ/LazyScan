@@ -7,8 +7,10 @@ import {
   updateComment,
   type Comment,
 } from "@/api/comments";
+import { Cover } from "@/components/cover";
 import { Empty, ErrorState } from "@/components/states";
 import { useSession } from "@/state/hooks";
+import { resolveAvatar } from "@/utils/avatar";
 import { formatDate } from "@/utils/format";
 
 const PAGE_SIZE = 20;
@@ -289,6 +291,14 @@ function CommentRow({
   return (
     <li className="comment-row">
       <div className="comment-meta">
+        <span className="comment-avatar" aria-hidden="true">
+          <Cover
+            url={resolveAvatar(comment.authorAvatar, comment.authorName)}
+            seed={comment.authorName}
+            placeholderClass="user-avatar"
+            imgClassName="user-avatar"
+          />
+        </span>
         <span className="comment-author">{comment.authorName}</span>
         <span className="comment-date">
           {formatDate(comment.createdAt)}
