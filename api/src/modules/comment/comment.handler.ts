@@ -84,18 +84,18 @@ export const commentHandler = new Elysia()
 
   // Public read: anyone can list a manga's comments, newest first.
   .get(
-    "/manga/:mangaId/comments",
+    "/manga/:id/comments",
     async (ctx: any) => {
       const {
-        params: { mangaId },
+        params: { id },
         query,
       } = ctx as {
-        params: { mangaId: string };
+        params: { id: string };
         query: { limit?: string; offset?: string };
       };
       const { limit, offset } = parseListQuery(query);
       const result = await service.listComments(
-        mangaId as UUID,
+        id as UUID,
         limit,
         offset
       );
@@ -103,7 +103,7 @@ export const commentHandler = new Elysia()
     },
     {
       beforeHandle: publicReadLimit,
-      params: t.Object({ mangaId: t.String() }),
+      params: t.Object({ id: t.String() }),
       query: t.Object({
         limit: t.Optional(t.String()),
         offset: t.Optional(t.String()),
@@ -125,24 +125,24 @@ export const commentHandler = new Elysia()
     app
       .use(requireAuth)
       .post(
-        "/manga/:mangaId/comments",
+        "/manga/:id/comments",
         async (ctx: any) => {
           const {
-            params: { mangaId },
+            params: { id },
             body,
-          } = ctx as { params: { mangaId: string }; body: { body: string } };
+          } = ctx as { params: { id: string }; body: { body: string } };
           const sessionValue = ctx.cookie.session?.value as string | undefined;
           const user = await resolveRequiredUser(sessionValue);
           const result = await service.createComment(
             user.id,
-            mangaId as UUID,
+            id as UUID,
             body.body
           );
           return success(result);
         },
         {
           beforeHandle: commentWriteLimit,
-          params: t.Object({ mangaId: t.String() }),
+          params: t.Object({ id: t.String() }),
           body: t.Object({ body: t.String() }),
           response: {
             200: t.Object({
