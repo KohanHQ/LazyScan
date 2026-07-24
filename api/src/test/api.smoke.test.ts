@@ -72,6 +72,7 @@ function configureTestEnv(databaseUrl: string) {
 async function resetDatabase(db: Sql<{}>) {
   await db`
     DROP TABLE IF EXISTS
+      manga_comments,
       reading_status,
       chapter_reads,
       reading_progress,
@@ -283,6 +284,7 @@ describe("API smoke baseline", () => {
       "026_logs_prune.sql",
       "027_chapter_pages_original_pruned.sql",
       "028_jsonb_unwrap_string_scalars.sql",
+      "029_manga_comments.sql",
     ]);
   });
 

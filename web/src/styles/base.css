@@ -3530,3 +3530,117 @@ img.user-avatar {
   display: flex;
   gap: 4px;
 }
+
+/* Comments (manga detail community section) */
+.comment-form {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.comment-input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: 0.95rem;
+  resize: vertical;
+}
+
+.comment-input:focus-visible {
+  border-color: var(--accent-fg);
+  outline: 3px solid var(--accent-fg);
+}
+
+.comment-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.comment-login,
+.comment-status {
+  margin: 0 0 20px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.comment-error {
+  margin: 0;
+  color: var(--danger-fg);
+  font-size: 0.85rem;
+}
+
+.comment-list {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 0 0 8px;
+  list-style: none;
+}
+
+.comment-row {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.comment-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.comment-author {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.comment-date {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.comment-body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.comment-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.comment-action {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.comment-action:hover:not(:disabled) {
+  color: var(--accent-fg);
+}
+
+.comment-action-danger:hover:not(:disabled) {
+  color: var(--danger-fg);
+}
+
+.comment-action:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

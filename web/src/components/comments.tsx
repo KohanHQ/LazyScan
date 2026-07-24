@@ -1,0 +1,364 @@
+import { useEffect, useRef, useState, type ReactElement } from "react";
+import { MessageSquare } from "lucide-react";
+import {
+  createComment,
+  listComments,
+  removeComment,
+  updateComment,
+  type Comment,
+} from "@/api/comments";
+import { Empty, ErrorState } from "@/components/states";
+import { useSession } from "@/state/hooks";
+import { formatDate } from "@/utils/format";
+
+const PAGE_SIZE = 20;
+const MAX_BODY = 1000;
+
+// Public comment section. The list renders for everyone; the compose form shows
+// only when logged in, and edit/delete controls only on the viewer's own rows
+// (plus delete for the admin role, mirroring the API).
+export function Comments({ mangaId }: { mangaId: string }): ReactElement {
+  const session = useSession();
+  const currentUserId = session.user?.userId ?? null;
+  const isAdmin = session.user?.role === "superuser";
+
+  const [comments, setComments] = useState<Comment[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [moreHidden, setMoreHidden] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const offsetRef = useRef(0);
+  // Tracks the currently mounted manga so an in-flight loadMore from a previous
+  // mangaId can discard its late response instead of appending to the new list.
+  const activeMangaRef = useRef(mangaId);
+
+  useEffect(() => {
+    let ignore = false;
+    setComments(null);
+    setError(null);
+    offsetRef.current = 0;
+    activeMangaRef.current = mangaId;
+    listComments(mangaId, 0, PAGE_SIZE)
+      .then((page) => {
+        if (ignore) {
+          return;
+        }
+        setComments(page.comments);
+        setTotal(page.total);
+        offsetRef.current = page.comments.length;
+        setMoreHidden(page.comments.length >= page.total);
+      })
+      .catch((loadError) => {
+        if (!ignore) {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Unable to load comments."
+          );
+        }
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [mangaId]);
+
+  const loadMore = async (): Promise<void> => {
+    const requestedManga = mangaId;
+    setLoadingMore(true);
+    try {
+      const page = await listComments(requestedManga, offsetRef.current, PAGE_SIZE);
+      // Manga switched mid-fetch: drop this response so it can't append to the
+      // now-different list.
+      if (activeMangaRef.current !== requestedManga) {
+        return;
+      }
+      setComments((current) => [...(current ?? []), ...page.comments]);
+      setTotal(page.total);
+      offsetRef.current += page.comments.length;
+      setMoreHidden(offsetRef.current >= page.total);
+    } catch {
+      // Keep the current list; the Load more button stays for a retry.
+    } finally {
+      if (activeMangaRef.current === requestedManga) {
+        setLoadingMore(false);
+      }
+    }
+  };
+
+  const onCreated = (comment: Comment): void => {
+    setComments((current) => [comment, ...(current ?? [])]);
+    setTotal((value) => value + 1);
+    offsetRef.current += 1;
+  };
+
+  const onUpdated = (comment: Comment): void => {
+    setComments(
+      (current) =>
+        current?.map((item) => (item.id === comment.id ? comment : item)) ??
+        current
+    );
+  };
+
+  const onRemoved = (id: string): void => {
+    setComments((current) => current?.filter((item) => item.id !== id) ?? current);
+    setTotal((value) => Math.max(0, value - 1));
+    offsetRef.current = Math.max(0, offsetRef.current - 1);
+  };
+
+  return (
+    <>
+      <section className="section-heading">
+        <div>
+          <p className="eyebrow">Community</p>
+          <h2>Comments</h2>
+        </div>
+        <p className="heading-meta">
+          {total} comment{total === 1 ? "" : "s"}
+        </p>
+      </section>
+
+      {currentUserId ? (
+        <CommentForm mangaId={mangaId} onCreated={onCreated} />
+      ) : (
+        <p className="comment-login">Log in to comment.</p>
+      )}
+
+      {error !== null ? (
+        <ErrorState message={error} />
+      ) : comments === null ? (
+        <p className="comment-status">Loading comments…</p>
+      ) : comments.length === 0 ? (
+        <Empty
+          title="No comments yet"
+          message="Be the first to share your thoughts on this title."
+          icon={<MessageSquare className="icon" size={20} />}
+        />
+      ) : (
+        <>
+          <ol className="comment-list">
+            {comments.map((comment) => (
+              <CommentRow
+                key={comment.id}
+                comment={comment}
+                canEdit={comment.userId === currentUserId}
+                canDelete={comment.userId === currentUserId || isAdmin}
+                onUpdated={onUpdated}
+                onRemoved={onRemoved}
+              />
+            ))}
+          </ol>
+          <button
+            className="secondary-button library-more"
+            type="button"
+            hidden={moreHidden}
+            disabled={loadingMore}
+            onClick={() => void loadMore()}
+          >
+            {loadingMore ? "Loading…" : "Load more"}
+          </button>
+        </>
+      )}
+    </>
+  );
+}
+
+function CommentForm({
+  mangaId,
+  onCreated,
+}: {
+  mangaId: string;
+  onCreated: (comment: Comment) => void;
+}): ReactElement {
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = (): void => {
+    const trimmed = body.trim();
+    if (trimmed.length === 0 || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    createComment(mangaId, trimmed)
+      .then((comment) => {
+        onCreated(comment);
+        setBody("");
+      })
+      .catch((submitError) => {
+        setError(
+          submitError instanceof Error
+            ? submitError.message
+            : "Unable to post comment."
+        );
+      })
+      .finally(() => setBusy(false));
+  };
+
+  return (
+    <form
+      className="comment-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        submit();
+      }}
+    >
+      <textarea
+        className="comment-input"
+        aria-label="Add a comment"
+        placeholder="Add a comment…"
+        maxLength={MAX_BODY}
+        rows={3}
+        value={body}
+        disabled={busy}
+        onChange={(event) => setBody(event.target.value)}
+      />
+      {error !== null ? <p className="comment-error">{error}</p> : null}
+      <div className="comment-form-actions">
+        <button
+          className="primary-button"
+          type="submit"
+          disabled={busy || body.trim().length === 0}
+        >
+          {busy ? "Posting…" : "Post comment"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function CommentRow({
+  comment,
+  canEdit,
+  canDelete,
+  onUpdated,
+  onRemoved,
+}: {
+  comment: Comment;
+  canEdit: boolean;
+  canDelete: boolean;
+  onUpdated: (comment: Comment) => void;
+  onRemoved: (id: string) => void;
+}): ReactElement {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(comment.body);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const save = (): void => {
+    const trimmed = draft.trim();
+    if (trimmed.length === 0 || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    updateComment(comment.id, trimmed)
+      .then((updated) => {
+        onUpdated(updated);
+        setEditing(false);
+      })
+      .catch((saveError) => {
+        // Keep edit mode open so the draft is not lost.
+        setError(
+          saveError instanceof Error ? saveError.message : "Unable to save comment."
+        );
+      })
+      .finally(() => setBusy(false));
+  };
+
+  const remove = (): void => {
+    if (busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    removeComment(comment.id)
+      .then(() => onRemoved(comment.id))
+      .catch((removeError) => {
+        setError(
+          removeError instanceof Error
+            ? removeError.message
+            : "Unable to delete comment."
+        );
+        setBusy(false);
+      });
+  };
+
+  const edited = comment.updatedAt !== comment.createdAt;
+
+  return (
+    <li className="comment-row">
+      <div className="comment-meta">
+        <span className="comment-author">{comment.authorName}</span>
+        <span className="comment-date">
+          {formatDate(comment.createdAt)}
+          {edited ? " · edited" : ""}
+        </span>
+      </div>
+      {editing ? (
+        <>
+          <textarea
+            className="comment-input"
+            aria-label="Edit comment"
+            maxLength={MAX_BODY}
+            rows={3}
+            value={draft}
+            disabled={busy}
+            onChange={(event) => setDraft(event.target.value)}
+          />
+          <div className="comment-actions">
+            <button
+              className="primary-button"
+              type="button"
+              disabled={busy || draft.trim().length === 0}
+              onClick={save}
+            >
+              {busy ? "Saving…" : "Save"}
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setDraft(comment.body);
+                setEditing(false);
+                setError(null);
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="comment-body">{comment.body}</p>
+          {canEdit || canDelete ? (
+            <div className="comment-actions">
+              {canEdit ? (
+                <button
+                  className="comment-action"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setEditing(true)}
+                >
+                  Edit
+                </button>
+              ) : null}
+              {canDelete ? (
+                <button
+                  className="comment-action comment-action-danger"
+                  type="button"
+                  disabled={busy}
+                  onClick={remove}
+                >
+                  Delete
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </>
+      )}
+      {error !== null ? <p className="comment-error">{error}</p> : null}
+    </li>
+  );
+}

@@ -9,6 +9,7 @@ import { chapterHandler } from "@/modules/chapter/chapter.handler";
 import { readerHandler } from "@/modules/reader/reader.handler";
 import { libraryHandler } from "@/modules/library/library.handler";
 import { readingStatusHandler } from "@/modules/reading-status/reading-status.handler";
+import { commentHandler } from "@/modules/comment/comment.handler";
 import { adminHandler } from "@/modules/admin/admin.handler";
 import { globalRateLimit } from "@/middleware/rate.limit";
 import { authMiddleware } from "@/middleware/auth";
@@ -86,6 +87,7 @@ export function createApp() {
           .use(readerHandler)
           .use(libraryHandler)
           .use(readingStatusHandler)
+          .use(commentHandler)
           .use(adminHandler),
       )
 
