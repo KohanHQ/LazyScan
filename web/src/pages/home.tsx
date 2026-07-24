@@ -264,8 +264,6 @@ function Hero({
   // covered it. z-index is bounded to 0/1/2 so it never climbs above the nav.
   const [slide, setSlide] = useState({ current: 0, prev: null as number | null });
   const pausedRef = useRef(false);
-  // Bumped on manual steps so the full interval elapses before an auto-advance.
-  const [timerEpoch, setTimerEpoch] = useState(0);
   const reduceMotion =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -305,17 +303,13 @@ function Hero({
       }
     }, HERO_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [items.length, timerEpoch, reduceMotion]);
+  }, [items.length, reduceMotion]);
 
   if (items.length === 0) {
     return null;
   }
 
   const eyebrow = kind === "popular" ? "Popular this week" : "New titles";
-  const step = (delta: number): void => {
-    advance(delta);
-    setTimerEpoch((epoch) => epoch + 1);
-  };
 
   return (
     <section
@@ -347,29 +341,6 @@ function Hero({
           />
         ))}
       </div>
-      {items.length > 1 ? (
-        <div className="hero-nav">
-          <span className="hero-index" data-role="hero-index">
-            NO. {slide.current + 1}
-          </span>
-          <button
-            className="hero-arrow"
-            type="button"
-            aria-label="Previous title"
-            onClick={() => step(-1)}
-          >
-            <Chevron direction="left" />
-          </button>
-          <button
-            className="hero-arrow"
-            type="button"
-            aria-label="Next title"
-            onClick={() => step(1)}
-          >
-            <Chevron direction="right" />
-          </button>
-        </div>
-      ) : null}
     </section>
   );
 }
@@ -417,25 +388,6 @@ function HeroSlide(props: {
         </div>
       </div>
     </article>
-  );
-}
-
-function Chevron({ direction }: { direction: "left" | "right" }): ReactElement {
-  const path = direction === "left" ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6";
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="20"
-      height="20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d={path} />
-    </svg>
   );
 }
 

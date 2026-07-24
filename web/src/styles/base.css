@@ -2967,54 +2967,6 @@ img.user-avatar {
   overflow: hidden;
 }
 
-.hero-nav {
-  /* Right-aligned within the centred content column (matches the title/cover
-     gutter) instead of the full-bleed viewport edge. */
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 24px;
-  width: 100%;
-  max-width: 1120px;
-  padding: 0 32px;
-  /* Above the slides (which use z 0/1/2) so the active slide's blend never covers
-     the nav. */
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.hero-index {
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  /* Sits in the hero's blend-to-body zone, so it must contrast the *body* colour:
-     light text in dark mode, dark text in light mode (token + light fallback). */
-  color: var(--text);
-}
-
-.hero-arrow {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px;
-  border: 0;
-  background: transparent;
-  /* Same as .hero-index: contrast the body colour the nav blends over. */
-  color: var(--text);
-  cursor: pointer;
-  opacity: 0.75;
-  transition: opacity 0.15s ease;
-}
-
-.hero-arrow:hover,
-.hero-arrow:focus-visible {
-  opacity: 1;
-  background: transparent;
-}
-
 .hero-slide:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -3px;
