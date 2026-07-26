@@ -39,9 +39,9 @@ export const envSchema = z.object({
   // Hard storage byte cap (lite self-host): chapter-import admission rejects 507
   // when projected usage exceeds it. 8 GiB default (under R2's free 10 GB).
   STORAGE_QUOTA_BYTES: z.coerce.number().int().positive().default(8_589_934_592),
-  // Sync image worker (ex-Kiln) base URL. The API POSTs avatar/cover bytes to
+  // Sync image worker base URL. The API POSTs avatar/cover bytes to
   // `{IMAGE_SVC_URL}/convert` (replaces the inline `sharp` dependency).
-  IMAGE_SVC_URL: z.string().url().default("http://image-svc:8001"),
+  IMAGE_SVC_URL: z.string().url().default("http://image:8001"),
   REDIS_URL: z.string().url().default("redis://localhost:6379"),
   APP_URL: z.string().url().default("http://localhost:3000"),
   ENABLE_RATE_LIMIT: z
@@ -63,7 +63,7 @@ export const envSchema = z.object({
   // prune_logs function deletes rows older than this. Floor of 1 day.
   LOG_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
   // Storage prune (lite self-host): periodically delete staged page originals
-  // that Kiln has already converted, reclaiming ~half of page storage so usage
+  // that the image service has already converted, reclaiming ~half of page storage so usage
   // stays under the MinIO bucket quota. Off by default so existing (R2)
   // deployments are unchanged; the bundled compose turns it on.
   ENABLE_STORAGE_PRUNE: z

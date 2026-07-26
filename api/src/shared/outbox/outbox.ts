@@ -2,16 +2,16 @@ import type { JSONValue } from "postgres";
 import type { TransactionClient } from "@/shared/database/transaction";
 import type { UUID } from "@/shared/types/id";
 
-// Kiln event contract (Kiln/docs/wiki/event-contract.md). The outbox row's
+// image service event contract (see its event contract docs). The outbox row's
 // id/occurred_at come from DB defaults; the dispatcher builds the envelope
 // from the row, so the column values here ARE the contract values.
 export const CHAPTER_PAGE_PROCESSING_REQUESTED =
   "chapter.page.processing_requested";
 export const CHAPTER_PAGE_EVENT_SCHEMA_VERSION = 1;
 
-// Herald event contract. The payload carries
-// the plaintext OTP code — the one exception to "IDs, not snapshots": Herald
-// is a pure email projector with nothing to look up. Never log the code.
+// mail service event contract. The payload carries
+// the plaintext OTP code — the one exception to "IDs, not snapshots": the mail
+// service is a pure email projector with nothing to look up. Never log the code.
 export const AUTH_EMAIL_VERIFICATION_REQUESTED =
   "auth.email.verification_requested";
 export const AUTH_EMAIL_EVENT_SCHEMA_VERSION = 1;

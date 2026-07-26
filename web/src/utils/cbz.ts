@@ -5,7 +5,12 @@ import { unzip } from "fflate";
 
 // Hard cap before unzip — the archive is held in memory, so this is the real OOM
 // guard (the desktop gate below is only UX).
-export const MAX_ARCHIVE_BYTES = 250 * 1024 * 1024; // 250 MB
+export const MAX_ARCHIVE_BYTES = 400 * 1024 * 1024; // 400 MB
+
+// Bomb guard: fflate allocates each entry's header-declared originalSize before
+// inflating, so the declared total is what actually drives memory.
+export const MAX_INFLATED_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
+export const MAX_ARCHIVE_ENTRIES = 1000;
 
 const ARCHIVE_EXTENSIONS = [".cbz", ".zip"];
 const IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
@@ -37,8 +42,35 @@ export async function extractCbz(file: File): Promise<File[]> {
   }
 
   const buffer = new Uint8Array(await file.arrayBuffer());
+  let entries = 0;
+  let inflatedBytes = 0;
+  // Returning false (not throwing) keeps fflate's pending-entry bookkeeping
+  // intact, so the callback still fires and skipped entries never inflate.
+  let bombError = "";
+
   const unzipped = await new Promise<Record<string, Uint8Array>>((resolve, reject) => {
-    unzip(buffer, { filter: (entry) => isImageEntry(entry.name) }, (err, data) => {
+    const filter = (entry: { name: string; originalSize: number }): boolean => {
+      if (bombError || !isImageEntry(entry.name)) {
+        return false;
+      }
+      entries += 1;
+      inflatedBytes += entry.originalSize;
+      if (entries > MAX_ARCHIVE_ENTRIES) {
+        bombError = `Too many pages in the archive. Maximum is ${MAX_ARCHIVE_ENTRIES}.`;
+        return false;
+      }
+      if (inflatedBytes > MAX_INFLATED_BYTES) {
+        bombError = `Archive expands too large. Maximum is ${formatMb(MAX_INFLATED_BYTES)}.`;
+        return false;
+      }
+      return true;
+    };
+
+    unzip(buffer, { filter }, (err, data) => {
+      if (bombError) {
+        reject(new Error(bombError));
+        return;
+      }
       if (err) {
         reject(new Error("Could not read the archive. Is it a valid CBZ/ZIP file?"));
         return;

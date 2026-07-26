@@ -15,8 +15,8 @@ build/
 *.exe
 *.test
 *.out
-/image-svc/image-svc
-/mail-svc/mail-svc
+/image/image
+/mail/mail
 
 # Logs + OS cruft
 *.log

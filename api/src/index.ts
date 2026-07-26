@@ -24,7 +24,7 @@ async function pingDatabase(): Promise<boolean> {
 }
 
 // Boot guard: Redis backs the outbox dispatcher (events:chapter-page stream to
-// Kiln) and the popularity cache. Probes once and gives up fast instead of
+// the image service) and the popularity cache. Probes once and gives up fast instead of
 // reconnecting forever, so a dead Redis is detected at boot rather than
 // surfacing later as silently-stalled chapter processing.
 async function pingRedis(): Promise<boolean> {
@@ -67,7 +67,7 @@ interface StoragePrune {
   stop(): void;
 }
 
-// Periodic storage prune (lite self-host): reclaims staged page originals Kiln
+// Periodic storage prune (lite self-host): reclaims staged page originals the image service
 // has already converted so MinIO usage stays under its bucket quota. Lives here
 // (not in createApp) so tests never start it; gated by ENABLE_STORAGE_PRUNE. A
 // failed run logs and waits for the next tick. The admin endpoint runs the same
@@ -116,7 +116,7 @@ async function startServer() {
   }
 
   // Hard dependency: abort the boot if Redis is unreachable. Without it chapter
-  // page events never reach Kiln and the popularity cache is dead, so running on
+  // page events never reach the image service and the popularity cache is dead, so running on
   // is worse than failing loudly.
   const redisOk = await pingRedis();
   console.log(`[Redis] dispatcher/cache: ${redisOk ? "✓ connected" : "✗ unreachable"}`);

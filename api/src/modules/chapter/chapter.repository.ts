@@ -552,7 +552,7 @@ export async function findPageStorageKeysByChapterId(
 }
 
 // Ready pages whose staged original has not yet been reclaimed. Drives the
-// storage prune (migration 027): the original is dead weight once Kiln has
+// storage prune (migration 027): the original is dead weight once the image service has
 // written the final WebP, so it is safe to delete for ready pages only. Failed
 // pages keep their original (the retry path re-reads it). Oldest-first via the
 // partial idx_chapter_pages_prunable.

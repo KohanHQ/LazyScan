@@ -1,8 +1,8 @@
 -- Chapter lifecycle (Cluster A): API-owned publish visibility, orthogonal to the
--- Kiln-owned processing `status`. Reader visibility becomes
+-- image-service-owned processing `status`. Reader visibility becomes
 -- `status = 'ready' AND published_at IS NOT NULL`.
 --
--- `status` (importing|processing|ready|failed) is written by the Kiln worker and
+-- `status` (importing|processing|ready|failed) is written by the image worker and
 -- means "processing lifecycle". `published_at` is written only by the API and
 -- means "the owner has made this chapter reader-visible". A draft-held chapter is
 -- processed normally (status reaches 'ready') but stays invisible until published.

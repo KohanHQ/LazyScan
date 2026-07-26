@@ -12,7 +12,7 @@ export interface Chapter {
   volume: number | null;
   sortOrder: number;
   status: ChapterStatus;
-  // API-owned reader-visibility timestamp, orthogonal to `status` (Kiln-owned).
+  // API-owned reader-visibility timestamp, orthogonal to `status` (image-service-owned).
   // null = not published (draft/hidden); reader visibility = status 'ready' AND
   // published_at IS NOT NULL.
   publishedAt: Date | null;

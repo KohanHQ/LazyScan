@@ -1,5 +1,5 @@
 -- Storage prune bookkeeping (lite self-host): mark when a page's staged original
--- has been reclaimed. Kiln downloads the staged original
+-- has been reclaimed. The image service downloads the staged original
 -- (imports/{importId}/originals/...) and writes the final WebP (storage_key) but
 -- never deletes the original, so a processed page keeps BOTH objects (~2x page
 -- storage). The prune job deletes the original of ready pages and stamps

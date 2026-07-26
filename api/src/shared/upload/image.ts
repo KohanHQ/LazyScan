@@ -2,7 +2,7 @@ import { badRequest, AppError } from "@/shared/http/error";
 import { envSchema } from "@/env";
 import { createConfig, type AppConfig } from "@/config";
 
-// image-svc (ex-Kiln) URL, resolved lazily + memoized so the size-limit guard
+// Image service URL, resolved lazily + memoized so the size-limit guard
 // below stays usable without a fully-populated env (e.g. the unit test).
 let cachedConfig: AppConfig | undefined;
 function imageSvcUrl(): string {
@@ -79,7 +79,7 @@ export async function processImageBuffer(
   const maxHeight = options.maxHeight || VERTICAL_READER_IMAGE_OPTIONS.maxHeight;
   const quality = options.quality || VERTICAL_READER_IMAGE_OPTIONS.quality;
 
-  // Delegate decode/rotate/fit/encode to image-svc (ex-Kiln) over HTTP; it emits
+  // Delegate decode/rotate/fit/encode to the image service over HTTP; it emits
   // WebP regardless of the requested format, matching every caller's profile.
   let response: Response;
   try {
@@ -100,7 +100,7 @@ export async function processImageBuffer(
     });
   }
 
-  // image-svc returns 422 for an undecodable image (the old null-metadata case).
+  // The image service returns 422 for an undecodable image (the old null-metadata case).
   if (response.status === 422) {
     throw badRequest("Invalid image file", { code: "INVALID_IMAGE" });
   }

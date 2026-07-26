@@ -1,6 +1,6 @@
--- Forge/Kiln phase F1: outbox + worker bookkeeping tables (additive only).
+-- Forge/image service phase F1: outbox + worker bookkeeping tables (additive only).
 -- Nothing reads or writes these until F2 (outbox writes) / F3 (dispatcher) /
--- F4+ (Kiln consumer). Contract: Kiln/docs/wiki/event-contract.md.
+-- F4+ (image service consumer). Contract: its event contract docs.
 
 -- Transactional outbox. One row per domain event; id becomes the envelope
 -- eventId. The dispatcher (F3) reads unpublished rows, XADDs to Redis
