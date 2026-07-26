@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { zipSync } from "fflate";
 import {
   MAX_ARCHIVE_BYTES,
+  MAX_ARCHIVE_ENTRIES,
   extractCbz,
   isArchiveFile,
   isImageEntry,
@@ -14,6 +15,19 @@ function bytes(n = 8): Uint8Array<ArrayBuffer> {
 
 function archive(entries: Record<string, Uint8Array>, name = "chapter.cbz"): File {
   return new File([zipSync(entries)], name, { type: "application/zip" });
+}
+
+// Overwrite the uncompressed-size field (+24) of every central-directory record
+// (sig 0x02014b50) — the value fflate reports as originalSize.
+function withDeclaredSize(entries: Record<string, Uint8Array>, declared: number): File {
+  const zip = zipSync(entries);
+  const view = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
+  for (let i = 0; i + 4 <= zip.length; i += 1) {
+    if (view.getUint32(i, true) === 0x02014b50) {
+      view.setUint32(i + 24, declared, true);
+    }
+  }
+  return new File([zip], "bomb.cbz", { type: "application/zip" });
 }
 
 describe("isArchiveFile", () => {
@@ -93,5 +107,34 @@ describe("extractCbz", () => {
     const file = archive({ "001.jpg": bytes() });
     Object.defineProperty(file, "size", { value: MAX_ARCHIVE_BYTES + 1 });
     await expect(extractCbz(file)).rejects.toThrow("too large");
+  });
+
+  test("throws when declared inflated size exceeds the bomb cap", async () => {
+    const file = withDeclaredSize(
+      { "001.jpg": bytes(), "002.jpg": bytes(), "003.jpg": bytes() },
+      1_500_000_000
+    );
+    await expect(extractCbz(file)).rejects.toThrow("expands too large");
+  });
+
+  test("accepts an archive whose declared inflated size stays under the cap", async () => {
+    const file = withDeclaredSize({ "001.jpg": bytes(), "002.jpg": bytes() }, 1000);
+    await expect(extractCbz(file)).resolves.toHaveLength(2);
+  });
+
+  test("throws when the archive exceeds the entry cap", async () => {
+    const entries: Record<string, Uint8Array> = {};
+    for (let i = 0; i <= MAX_ARCHIVE_ENTRIES; i += 1) {
+      entries[`${i}.jpg`] = bytes(1);
+    }
+    await expect(extractCbz(archive(entries))).rejects.toThrow("Too many pages");
+  });
+
+  test("counts only image entries toward the entry cap", async () => {
+    const entries: Record<string, Uint8Array> = { "notes.txt": bytes() };
+    for (let i = 0; i < MAX_ARCHIVE_ENTRIES; i += 1) {
+      entries[`${i}.jpg`] = bytes(1);
+    }
+    await expect(extractCbz(archive(entries))).resolves.toHaveLength(MAX_ARCHIVE_ENTRIES);
   });
 });
