@@ -5,12 +5,12 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 
-// 6-digit numeric one-time code for email verification (Herald pipeline).
+// 6-digit numeric one-time code for email verification (mail service pipeline).
 // The brute-force control is the verify attempt cap
 // (staticConfig.emailVerification), not hash work factor, so
 // salted SHA-256 at rest is deliberate: verify stays cheap and no second
 // bcrypt round lands on the auth hot path. Plaintext codes exist only in the
-// outbox payload on their way to Herald — never log them.
+// outbox payload on their way to the mail service — never log them.
 export const OTP_CODE_LENGTH = 6;
 
 export function generateOtpCode(): string {

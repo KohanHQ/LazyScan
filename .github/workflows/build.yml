@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [api, web, image-svc, mail-svc]
+        service: [api, web, image, mail]
     steps:
       - uses: actions/checkout@v4
 

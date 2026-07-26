@@ -83,7 +83,7 @@ export interface AppConfig {
     retentionDays: number;
   };
 
-  // Storage prune (lite self-host): reclaim staged page originals Kiln already
+  // Storage prune (lite self-host): reclaim staged page originals the image service already
   // converted. `enabled` gates the in-process periodic run; the admin endpoint
   // works regardless.
   storagePrune: {
@@ -91,7 +91,7 @@ export interface AppConfig {
     intervalMs: number;
   };
 
-  // Sync image worker (ex-Kiln): avatars/covers POST to `${url}/convert`.
+  // Sync image worker: avatars/covers POST to `${url}/convert`.
   imageSvc: {
     url: string;
   };
@@ -282,7 +282,7 @@ export const staticConfig = {
     comment: { windowMs: 60 * 1000, maxRequests: 5 },
   },
 
-  // Email verification OTP (Herald pipeline).
+  // Email verification OTP (mail service pipeline).
   // The attempt cap is the real brute-force control for a 6-digit space; the
   // cooldown bounds resend spam alongside the auth rate limiter.
   emailVerification: {
@@ -299,7 +299,7 @@ export const staticConfig = {
     popularTtlMs: 60 * 1000, // 1 minute
     // Reader chapter list/detail. Mutations (publish/edit/delete/reorder)
     // invalidate explicitly; the short TTL bounds the one gap we can't hook —
-    // Kiln flipping a chapter to ready is external to the API (see
+    // the image service flipping a chapter to ready is external to the API (see
     // known-constraints.md).
     readerTtlMs: 30 * 1000, // 30 seconds
     // Manga metadata detail (by id and slug). Invalidated on manga update/delete.

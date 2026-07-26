@@ -1,6 +1,6 @@
--- Herald phase H1: email verification + Herald worker bookkeeping (additive
+-- Mail phase H1: email verification + mail service worker bookkeeping (additive
 -- only). Nothing reads or writes these until H2 (auth flow, flag-gated) /
--- H4+ (Herald consumer). Contract: docs/wiki/herald-otp-plan.md.
+-- H4+ (mail service consumer). Contract: its OTP plan docs.
 
 -- Hard-verify column. DEFAULT false applies to NEW rows; the backfill below
 -- grandfathers every EXISTING account to true so nobody is locked out when
@@ -31,7 +31,7 @@ CREATE INDEX IF NOT EXISTS idx_email_verifications_user_active
   ON email_verifications (user_id, created_at DESC)
   WHERE consumed_at IS NULL;
 
--- Herald-side delivery dedup (mirrors chapter_worker_processed_events). A
+-- mail-service-side delivery dedup (mirrors chapter_worker_processed_events). A
 -- row here means the email was sent. PK makes duplicate inserts a no-op
 -- conflict. Deliberately no FK to outbox_events so outbox rows stay
 -- prunable without losing dedup history.

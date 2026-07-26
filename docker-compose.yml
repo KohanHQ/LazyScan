@@ -2,8 +2,8 @@ name: lazyscan
 
 services:
   image:
-    image: ghcr.io/kohanhq/lazyscan-image-svc:${TAG:-main}
-    build: ./image-svc
+    image: ghcr.io/kohanhq/lazyscan-image:${TAG:-main}
+    build: ./image
     environment:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
@@ -21,8 +21,8 @@ services:
     restart: unless-stopped
 
   mail:
-    image: ghcr.io/kohanhq/lazyscan-mail-svc:${TAG:-main}
-    build: ./mail-svc
+    image: ghcr.io/kohanhq/lazyscan-mail:${TAG:-main}
+    build: ./mail
     environment:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}

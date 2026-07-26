@@ -6,8 +6,8 @@ import { recordDispatched } from "@/shared/metrics/outbox";
 import { logInfo, logWarn, logError } from "@/shared/utility/logger";
 
 // Publishes unpublished outbox rows to the Redis Stream their consumer
-// reads, routed by event-type prefix: chapter events to Kiln (binding
-// contract: Kiln/docs/wiki/event-contract.md), auth email events to Herald.
+// reads, routed by event-type prefix: chapter events to the image service
+// (binding contract: its event contract docs), auth email events to mail.
 // Runs inside the API process.
 //
 // Delivery is at-least-once: a crash between XADD and the published_at
@@ -16,7 +16,7 @@ import { logInfo, logWarn, logError } from "@/shared/utility/logger";
 // eventId, so both are benign by design.
 
 // First matching prefix wins. The chapter stream key is byte-identical to
-// the pre-routing dispatcher so Kiln's contract is untouched.
+// the pre-routing dispatcher so the image service's contract is untouched.
 const STREAM_BY_PREFIX: Array<[prefix: string, stream: string]> = [
   ["chapter.", "events:chapter-page"],
   ["auth.email.", "events:email"],

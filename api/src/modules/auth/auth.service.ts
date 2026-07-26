@@ -73,7 +73,7 @@ async function promoteConfiguredSuperuser(
   return promoted ?? user;
 }
 
-// Issue (or rotate) the user's active OTP and write the Herald outbox event in
+// Issue (or rotate) the user's active OTP and write the mail outbox event in
 // the SAME transaction as the row change — the transactional-outbox guarantee.
 // Returns false when the resend cooldown swallowed the request (callers stay
 // silent about it: uniform responses, no enumeration or spam lever).

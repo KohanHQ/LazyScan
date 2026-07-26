@@ -88,8 +88,8 @@ async function resetDatabase(db: Sql<{}>) {
       chapter_worker_processed_events,
       chapter_worker_failures,
       email_verifications,
-      herald_processed_events,
-      herald_failures,
+      mail_processed_events,
+      mail_failures,
       schema_migrations
     CASCADE
   `;

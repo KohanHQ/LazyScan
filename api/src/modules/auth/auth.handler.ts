@@ -42,7 +42,7 @@ export const authHandler = new Elysia({ prefix: "/auth" })
   })
 
   // Hard verify: register never sets the session cookie. The pending OTP is
-  // delivered by Herald (outbox -> events:email); the session is minted by
+  // delivered by the mail service (outbox -> events:email); the session is minted by
   // /verify-email below.
   .post(
     "/register",

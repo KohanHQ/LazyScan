@@ -88,7 +88,7 @@ export async function getStorageStats(
   return repo.getStorageStats();
 }
 
-// Manual storage prune: reclaim staged page originals Kiln has already
+// Manual storage prune: reclaim staged page originals the image service has already
 // converted. Same job the periodic in-process prune runs; exposed so an admin
 // can reclaim space on demand. Mirrors pruneLogs (superuser-only, returns a
 // summary).

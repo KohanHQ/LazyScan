@@ -388,11 +388,11 @@ export async function completeChapterImport(
     }
   }
 
-  // Publish intent is set here (the owner's finalize step), not at Kiln's
+  // Publish intent is set here (the owner's finalize step), not at the image service's
   // ready flip — so the visibility transition is API-observable (auto-feed
   // hooks it in Phase 2). Default publishes; holdAsDraft leaves published_at
   // NULL so the owner can preview and publish later. Visibility still also
-  // requires status 'ready' (Kiln), so an auto-published chapter only appears
+  // requires status 'ready' (image service), so an auto-published chapter only appears
   // once processing finishes.
   const publishNow = options.holdAsDraft !== true;
   // Only a NULL -> published transition triggers auto-feed (a re-complete of an
@@ -401,7 +401,7 @@ export async function completeChapterImport(
 
   // The outbox is the only processing backend. Rows are written in the same
   // tx as the status flips (the transactional-outbox guarantee); the
-  // dispatcher publishes to Kiln after commit, and a failed insert rolls the
+  // dispatcher publishes to the image service after commit, and a failed insert rolls the
   // whole completion back. Ready pages no-op at the consumer.
   await withTransaction(async (tx) => {
     await repo.markImportProcessing(found.import.id, found.chapter.id, tx);
@@ -553,7 +553,7 @@ export async function requeueChapterImport(
 
   // The retry mints fresh events — a new outbox row per non-ready page (new
   // eventId from the DB default, same pageId), in the same tx as the status
-  // flips. Kiln's processed-events dedup is keyed by eventId, so a reused id
+  // flips. The image service's processed-events dedup is keyed by eventId, so a reused id
   // would no-op; a fresh one reprocesses.
   await withTransaction(async (tx) => {
     await insertOutboxEvents(
@@ -636,7 +636,7 @@ async function deleteStorageKeysBestEffort(keys: (string | null)[]): Promise<voi
 }
 
 // Storage prune (lite self-host): reclaim staged originals of already-processed
-// (ready) pages. Kiln writes the final WebP (storage_key) but never deletes the
+// (ready) pages. The image service writes the final WebP (storage_key) but never deletes the
 // staged original, so each processed page keeps both objects (~2x page storage);
 // the 10 GB MinIO quota is the hard backstop and this keeps usage under it.
 // Best-effort and idempotent: each original is deleted, then the row is stamped

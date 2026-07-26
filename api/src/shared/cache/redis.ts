@@ -5,7 +5,7 @@ import { logWarn } from "@/shared/utility/logger";
 
 // Redis-backed cache for hot, recomputable reads (e.g. popularity ranking),
 // reusing the Redis already in the stack for the chapter-page event stream
-// (outbox dispatcher -> Kiln) rather than adding infra.
+// (outbox dispatcher -> the image service) rather than adding infra.
 //
 // This layer is strictly optional and degrades gracefully: a missing/broken
 // Redis is swallowed and treated as a cache miss, and callers recompute from
