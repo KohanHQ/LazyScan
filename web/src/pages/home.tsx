@@ -22,6 +22,7 @@ import { MangaCard } from "@/components/manga-card";
 import { PopupSelect } from "@/components/popup-select";
 import { Empty, ErrorState, Loading } from "@/components/states";
 import { clickable } from "@/lib/clickable";
+import { usePopupDismiss } from "@/lib/use-popup-dismiss";
 import {
   historyChapterLabel,
   historyProgressPercent,
@@ -601,51 +602,10 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
     debounceRef.current = window.setTimeout(() => void loadFirst(next), 300);
   };
 
-  // Status filter popup anchored to the search bar's filter icon. Mirrors the
-  // topbar dropdown: toggle, close on outside click or ESC.
-  useEffect(() => {
-    if (!popOpen) {
-      return;
-    }
-    const onDocClick = (event: MouseEvent): void => {
-      const target = event.target as Node;
-      if (
-        !filterPopRef.current?.contains(target) &&
-        !filterBtnRef.current?.contains(target)
-      ) {
-        setPopOpen(false);
-      }
-    };
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") {
-        setPopOpen(false);
-      }
-    };
-    document.addEventListener("click", onDocClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("click", onDocClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [popOpen]);
-
-  // Close the advanced panel when clicking outside it.
-  useEffect(() => {
-    if (!advOpen) {
-      return;
-    }
-    const onDocClick = (event: MouseEvent): void => {
-      const target = event.target as Node;
-      if (
-        !advPanelRef.current?.contains(target) &&
-        !advBtnRef.current?.contains(target)
-      ) {
-        setAdvOpen(false);
-      }
-    };
-    document.addEventListener("click", onDocClick);
-    return () => document.removeEventListener("click", onDocClick);
-  }, [advOpen]);
+  // Status filter popup anchored to the search bar's filter icon; the advanced
+  // panel dismisses the same way (click-outside + Escape).
+  usePopupDismiss(popOpen, [filterPopRef, filterBtnRef], () => setPopOpen(false));
+  usePopupDismiss(advOpen, [advPanelRef, advBtnRef], () => setAdvOpen(false));
 
   const toggleFilterPop = (): void => {
     if (popOpen) {
