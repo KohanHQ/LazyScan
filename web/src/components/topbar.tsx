@@ -1,25 +1,8 @@
-import { Moon, Sun } from "lucide-react";
-import { useState, type ReactElement } from "react";
-import { getTheme, toggleTheme, type ThemeMode } from "@/state/theme";
+import type { ReactElement } from "react";
 
-// Topbar holds only the theme toggle; the account avatar + login/logout live in
-// the sidebar footer.
-export function Topbar(): ReactElement {
-  const [theme, setTheme] = useState<ThemeMode>(getTheme);
-  return (
-    <div className="topbar-actions">
-      <button
-        className="topbar-icon-button"
-        type="button"
-        aria-label="Toggle dark mode"
-        onClick={() => setTheme(toggleTheme())}
-      >
-        {theme === "dark" ? (
-          <Sun className="icon" size={20} />
-        ) : (
-          <Moon className="icon" size={20} />
-        )}
-      </button>
-    </div>
-  );
+// ponytail: dark-only — the theme toggle is hidden and dark is enforced
+// (state/theme.ts). Topbar renders nothing until chrome returns here; the
+// account avatar + login/logout live in the sidebar footer.
+export function Topbar(): ReactElement | null {
+  return null;
 }

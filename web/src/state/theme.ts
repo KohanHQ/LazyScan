@@ -2,10 +2,13 @@ const THEME_KEY = "lazyscan:theme";
 
 export type ThemeMode = "light" | "dark";
 
+// ponytail: dark-only cut-corner. Dark is enforced and the theme toggles are
+// hidden (topbar/login render nothing); the light :root token set in base.css,
+// the toggle CSS, and the data-theme-transition block stay until the full
+// light-mode removal pass. toggleTheme/enableThemeTransition were removed here
+// (git history has them) — restore with the light theme if it ever returns.
 export function getTheme(): ThemeMode {
-  const stored = localStorage.getItem(THEME_KEY);
-  if (stored === "dark" || stored === "light") return stored;
-  return "light";
+  return "dark";
 }
 
 export function setTheme(theme: ThemeMode): void {
@@ -13,30 +16,7 @@ export function setTheme(theme: ThemeMode): void {
   document.documentElement.setAttribute("data-theme", theme);
 }
 
+// Always writes "dark": also migrates anyone with a stored "light" on next boot.
 export function initTheme(): void {
   setTheme(getTheme());
-}
-
-// Enables a brief color transition only while the theme flips. Scoping it to a
-// temporary attribute (rather than a permanent transition on every element)
-// avoids a color sweep on initial load and the repaint cost the rest of the time.
-let transitionTimer: number | undefined;
-
-function enableThemeTransition(): void {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    return;
-  }
-  const root = document.documentElement;
-  root.setAttribute("data-theme-transition", "");
-  window.clearTimeout(transitionTimer);
-  transitionTimer = window.setTimeout(() => {
-    root.removeAttribute("data-theme-transition");
-  }, 260);
-}
-
-export function toggleTheme(): ThemeMode {
-  const next = getTheme() === "light" ? "dark" : "light";
-  enableThemeTransition();
-  setTheme(next);
-  return next;
 }

@@ -1,10 +1,9 @@
 import { useEffect, useState, type FormEvent, type ReactElement } from "react";
-import { Eye, EyeOff, Moon, Sun } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import * as authApi from "@/api/auth";
 import { ApiClientError } from "@/api/client";
 import { navigateTo } from "@/router";
 import * as session from "@/state/session";
-import { getTheme, toggleTheme } from "@/state/theme";
 import bundledLoginArt from "../../assets/login.png";
 
 // Baked at build time; swap the image by overwriting the same R2 key (no rebuild).
@@ -34,24 +33,6 @@ export function LoginPage({ mode }: { mode: AuthMode }): ReactElement {
         setView({ kind: "verify", email, cooldownActive })
       }
     />
-  );
-}
-
-function AuthThemeToggle(): ReactElement {
-  const [theme, setTheme] = useState(getTheme);
-  return (
-    <button
-      className="auth-theme-toggle"
-      type="button"
-      aria-label="Toggle theme"
-      onClick={() => setTheme(toggleTheme())}
-    >
-      {theme === "dark" ? (
-        <Sun className="icon" size={20} aria-hidden="true" />
-      ) : (
-        <Moon className="icon" size={20} aria-hidden="true" />
-      )}
-    </button>
   );
 }
 
@@ -113,7 +94,6 @@ function AuthForm({
 
   return (
     <div className="auth-screen">
-      <AuthThemeToggle />
       <img className="auth-art" src={loginArt} alt="" aria-hidden="true" />
       <section className="auth-panel" aria-labelledby="auth-title">
         <div>
@@ -234,7 +214,6 @@ function VerifyView({
 
   return (
     <div className="auth-screen">
-      <AuthThemeToggle />
       <img className="auth-art" src={loginArt} alt="" aria-hidden="true" />
       <section className="auth-panel" aria-labelledby="auth-title">
         <div>
