@@ -992,11 +992,11 @@ img.user-avatar {
 
 /* Dark palette. Light values + rationale live on :root. */
 [data-theme="dark"] {
-  /* Surfaces */
-  --bg: #141a22;
-  --surface: #18222b;
-  --surface-raised: #1f2a35;
-  --surface-accent: #1f3330;
+  /* Surfaces — cold graphite, hue 220° sat 8% (de-blued slate, faint blue tint) */
+  --bg: #17181b;
+  --surface: #1e2024;
+  --surface-raised: #26282c;
+  --surface-accent: #222b2a;
 
   /* Text */
   --text: #e8e4dd;
@@ -1013,8 +1013,8 @@ img.user-avatar {
   --accent-fg: #2dd4a8;
 
   /* Borders */
-  --border: #283441;
-  --border-strong: #283441;
+  --border: #31343a;
+  --border-strong: #3d4148;
   --border-overlay: rgba(255, 255, 255, 0.12);
 
   /* Danger */
@@ -1419,9 +1419,10 @@ img.user-avatar {
   background: linear-gradient(90deg, #f5f2ec 0%, #edf7f2 100%);
 }
 
-/* Dark theme: blue-dark gradient matching the dark base palette. */
+/* Dark theme: gradient across the dark base palette (token-driven, follows the
+   palette automatically). */
 [data-theme="dark"] .auth-screen {
-  background: linear-gradient(90deg, #141a22 0%, #18222b 100%);
+  background: linear-gradient(90deg, var(--bg) 0%, var(--surface) 100%);
 }
 
 /* Login/register mount fade. Opacity only (the screen is position:fixed). */
@@ -1466,8 +1467,8 @@ img.user-avatar {
 }
 
 [data-theme="dark"] .auth-screen .auth-panel {
-  background: rgba(24, 34, 43, 0.82);
-  
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+
   color: #f5f2ec;
 }
 
@@ -1567,8 +1568,8 @@ img.user-avatar {
 }
 
 [data-theme="dark"] .auth-theme-toggle {
-  
-  background: rgba(24, 34, 43, 0.82);
+
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
   color: #f5f2ec;
 }
 
@@ -2820,7 +2821,7 @@ img.user-avatar {
   margin-bottom: 28px;
   border-radius: 14px;
   overflow: hidden;
-  --hero-bg: #141a22;
+  --hero-bg: #17181b;
   /* Dark base behind the slides; the incoming slide fades in over the still
      -opaque outgoing one, so no gap ever exposes this layer mid-crossfade. */
   background: var(--hero-bg);
