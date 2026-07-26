@@ -161,6 +161,21 @@
   max-height: calc(100vh - 120px);
   object-fit: contain;
   margin: 0 auto;
+  /* Faded in on load; opacity-only so the gesture layer's transforms stay
+     unaffected. */
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+}
+
+.reader-page-image.is-loaded,
+.reader-page-image[data-loaded] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reader-page-image {
+    transition: none;
+  }
 }
 
 .reader-fit-width {

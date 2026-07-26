@@ -241,6 +241,54 @@ h3 {
   scroll-snap-type: x proximity;
 }
 
+/* Marquee variant: one animated track carrying two identical copies of the card
+   list, so translating -50% lands copy 2 exactly where copy 1 started. */
+/* clip, not hidden: hidden makes this a scroll container, so tabbing to a card
+   that drifted off-screen leaves scrollLeft offset after blur. */
+.rail-marquee {
+  overflow: hidden;
+  overflow: clip;
+}
+
+/* padding-right gives the track a trailing gap, making each copy exactly half of
+   it — without that, -50% stops 7px short and the wrap visibly hitches. */
+.rail-marquee-track {
+  display: flex;
+  gap: 14px;
+  width: max-content;
+  padding-right: 14px;
+  animation: rail-marquee var(--rail-marquee-duration) linear infinite;
+}
+
+.rail-marquee-copy {
+  display: flex;
+  gap: 14px;
+}
+
+@keyframes rail-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* WCAG 2.2.2: auto-moving content must be pausable. .is-paused is the off-screen
+   stop the Rail component toggles from its IntersectionObserver. */
+.rail-marquee-track:hover,
+.rail-marquee-track:focus-within,
+.rail-marquee-track.is-paused {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-marquee-track {
+    animation: none;
+  }
+}
+
 .rail-card {
   flex: 0 0 132px;
   scroll-snap-align: start;
@@ -254,9 +302,13 @@ h3 {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #24322d;
+  transition: border-color 0.2s ease;
 }
 
-.rail-card:hover .rail-cover,
+.rail-card:hover .rail-cover {
+  border-color: var(--accent);
+}
+
 .rail-card:focus-visible .rail-cover {
   border-color: var(--accent-fg);
 }
@@ -271,6 +323,19 @@ h3 {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Cover zoom on card hover; the covers' overflow:hidden crops the growth. */
+@media (prefers-reduced-motion: no-preference) {
+  .rail-cover img,
+  .manga-cover img {
+    transition: transform 0.26s ease-out;
+  }
+
+  .rail-card:hover .rail-cover img,
+  .manga-card:hover .manga-cover img {
+    transform: scale(1.03);
+  }
 }
 
 .rail-cover .cover-placeholder {
@@ -302,10 +367,11 @@ h3 {
   border-radius: 8px;
   background: var(--surface);
   outline: none;
+  transition: border-color 0.2s ease;
 }
 
 .manga-card:hover {
-  border-color: var(--accent-fg);
+  border-color: var(--accent);
 }
 
 .manga-card:focus-visible {
@@ -328,9 +394,16 @@ h3 {
   color: var(--text-label);
   font-weight: 700;
   cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
-.manga-card-add:hover,
+.manga-card-add:hover {
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+
 .manga-card-add:focus-visible {
   border-color: var(--accent-fg);
   color: var(--accent-fg);
@@ -1441,7 +1514,7 @@ img.user-avatar {
   }
 }
 
-/* Transparent PNG figure pinned to the right over the dark backdrop. */
+/* Transparent art figure pinned to the right over the dark backdrop. */
 .auth-screen .auth-art {
   position: absolute;
   top: 0;
@@ -2256,10 +2329,30 @@ img.user-avatar {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   z-index: 100;
   padding: 6px 0;
+  /* Closed state: visibility keeps it out of the tab order and a11y tree while
+     allowing a fade transition; the delayed visibility swap lets the close
+     fade finish first. Components toggle .is-open (the old hidden attr could
+     not transition). */
+  opacity: 0;
+  transform: translateY(-4px);
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out,
+    visibility 0s linear 0.2s;
 }
 
-.library-filter-pop[hidden] {
-  display: none;
+.library-filter-pop.is-open {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .library-filter-pop {
+    transition: none;
+  }
 }
 
 .library-filter-option {
@@ -2855,6 +2948,23 @@ img.user-avatar {
      right to let it show), scaled up to hide the blurred soft edges. */
   filter: blur(8px) saturate(1.15) brightness(0.95);
   transform: scale(1.1);
+}
+
+/* Slow drift on the active slide's backdrop (Ken Burns). Replays whenever a
+   slide gains .is-active; the static scale(1.1) above is the rest state. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-slide.is-active .hero-bg {
+    animation: hero-kenburns 8s ease-out forwards;
+  }
+}
+
+@keyframes hero-kenburns {
+  from {
+    transform: scale(1.1);
+  }
+  to {
+    transform: scale(1.16);
+  }
 }
 
 .hero-fade {
@@ -3659,4 +3769,174 @@ img.user-avatar {
 .comment-action:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+/* ===== Motion additions (2026-07-26) =====
+   All opacity/transform only; every effect has a reduced-motion fallback. */
+
+/* Radix dialog enter/exit. Presence reads animation-name off [data-state], so
+   these hand-rolled keyframes gate mount/unmount exactly like tw-animate-css
+   would — without the dependency. Under reduced motion no animation is named,
+   so Presence unmounts instantly (previous behavior). Tailwind v4 centers the
+   content via the `translate` property, so keyframing `transform` scale does
+   not disturb centering. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-slot="dialog-overlay"][data-state="open"] {
+    animation: dialog-fade-in 0.2s ease-out;
+  }
+  [data-slot="dialog-overlay"][data-state="closed"] {
+    animation: dialog-fade-out 0.14s ease-out;
+  }
+  [data-slot="dialog-content"][data-state="open"] {
+    animation: dialog-content-in 0.2s ease-out;
+  }
+  [data-slot="dialog-content"][data-state="closed"] {
+    animation: dialog-content-out 0.14s ease-out;
+  }
+}
+
+@keyframes dialog-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-content-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes dialog-content-out {
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+/* Cover images fade in once loaded (softens R2 pop-in). The Cover component
+   adds .is-loaded on load, or immediately for cache-complete images. */
+img.cover-fade {
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+}
+
+img.cover-fade.is-loaded {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  img.cover-fade {
+    transition: none;
+  }
+}
+
+/* Skeleton placeholders for card grids (states.tsx CardGridSkeleton). Same
+   delayed reveal as .state-loading so fast fetches never flash it. */
+.skeleton-grid {
+  opacity: 0;
+  animation: state-loading-reveal 0.2s ease 0.25s forwards;
+}
+
+.skeleton-card {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.skeleton-block {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-raised);
+}
+
+.skeleton-block::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 70%
+  );
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-cover {
+  aspect-ratio: 3 / 4;
+}
+
+.skeleton-line {
+  height: 10px;
+  border-radius: 5px;
+  margin: 12px 14px 0;
+}
+
+.skeleton-line-short {
+  width: 55%;
+  margin-bottom: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-block::after {
+    animation: none;
+  }
+}
+
+/* Home rails fade + rise into view; the Rail component adds .is-visible from
+   an IntersectionObserver and renders visible outright when IO or motion
+   preference rules it out. */
+.rail-reveal {
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.32s ease-out,
+    transform 0.32s ease-out;
+}
+
+.rail-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Route curtain for home↔auth navigation (lib/curtain.ts drives the transform
+   via WAAPI). The 60vh overhang per side covers the skew's horizontal offset
+   (tan30° × 100vh ≈ 58vh); border-right becomes the 30° leading edge. Clicks
+   are swallowed while it is on screen so mid-wipe taps can't double-navigate. */
+.route-curtain {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: -60vh;
+  right: -60vh;
+  z-index: 2000;
+  background: var(--bg);
+  border-right: 2px solid var(--accent-fg);
+  will-change: transform;
 }

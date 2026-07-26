@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 import { Inbox } from "lucide-react";
 import {
   clearReadingStatus,
@@ -8,11 +8,12 @@ import type {
   ReadingStatus,
   ReadingStatusEntry,
 } from "@/api/reading-status";
+import { animateIn } from "@/lib/animate-in";
 import { useCached } from "@/lib/use-cached";
 import { MangaCard } from "@/components/manga-card";
 import { PageHeading } from "@/components/page-heading";
 import { RequireSession } from "@/components/require-session";
-import { Empty, ErrorState, Loading } from "@/components/states";
+import { CardGridSkeleton, Empty, ErrorState } from "@/components/states";
 
 const TABS: { key: ReadingStatus; label: string }[] = [
   { key: "reading", label: "Reading" },
@@ -41,6 +42,17 @@ function StatusContent(): ReactElement {
 
   const label = TABS.find((entry) => entry.key === tab)?.label ?? tab;
 
+  // Keyed on the tab too: a cached tab keeps `loaded` true, so the flag alone
+  // wouldn't fire on switch-back.
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const loaded = entries !== null;
+  useEffect(() => {
+    const results = resultsRef.current;
+    if (results) {
+      animateIn(results);
+    }
+  }, [tab, loaded]);
+
   return (
     <>
       <PageHeading title="Tracking" />
@@ -58,11 +70,11 @@ function StatusContent(): ReactElement {
           </button>
         ))}
       </div>
-      <div className="library-content">
+      <div ref={resultsRef} className="library-content">
         {error !== null ? (
           <ErrorState message={error} />
         ) : entries === null ? (
-          <Loading message="Loading" />
+          <CardGridSkeleton />
         ) : entries.length === 0 ? (
           <Empty
             title={`Nothing marked "${label}"`}

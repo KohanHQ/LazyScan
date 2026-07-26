@@ -1,8 +1,10 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ChangeEvent,
+  type CSSProperties,
   type ReactElement,
 } from "react";
 import { Funnel } from "lucide-react";
@@ -20,7 +22,8 @@ import { statusLabel } from "@/components/manga-card";
 import { Cover } from "@/components/cover";
 import { MangaCard } from "@/components/manga-card";
 import { PopupSelect } from "@/components/popup-select";
-import { Empty, ErrorState, Loading } from "@/components/states";
+import { CardGridSkeleton, Empty, ErrorState } from "@/components/states";
+import { animateIn } from "@/lib/animate-in";
 import { clickable } from "@/lib/clickable";
 import { usePopupDismiss } from "@/lib/use-popup-dismiss";
 import {
@@ -33,6 +36,7 @@ const PAGE_SIZE = 50;
 const HERO_SIZE = 10;
 const HERO_INTERVAL_MS = 6000;
 const RAIL_SIZE = 10;
+const MARQUEE_PX_PER_SECOND = 30;
 
 type HomeData = {
   firstPage: Manga[];
@@ -123,6 +127,18 @@ export function HomePage(): ReactElement {
     }
   }, [hasHero]);
 
+  // The shell's navigation fade already ran while this page was still loading, so
+  // the skeleton→content swap would otherwise slam in with no transition.
+  const loaded = data !== null;
+  useEffect(() => {
+    if (loaded) {
+      const main = document.querySelector("main");
+      if (main) {
+        animateIn(main);
+      }
+    }
+  }, [loaded]);
+
   if (error !== null) {
     return <ErrorState message={error} />;
   }
@@ -135,7 +151,7 @@ export function HomePage(): ReactElement {
             <h1>Library</h1>
           </div>
         </section>
-        <Loading message="Loading manga" />
+        <CardGridSkeleton count={12} />
       </>
     );
   }
@@ -174,6 +190,7 @@ export function HomePage(): ReactElement {
         role="recent-rail"
         eyebrow="Recently updated"
         title="Fresh chapters"
+        marquee
         cards={data.updates.map((manga) => (
           <RailCard key={manga.id} manga={manga} />
         ))}
@@ -185,22 +202,109 @@ export function HomePage(): ReactElement {
 
 // Horizontal card rail (e.g. "Recently updated"). Renders nothing when there are
 // no cards, so an empty feed leaves no gap between the hero and the library.
+// Rails fade + rise into view on scroll (.rail-reveal in base.css); without
+// IntersectionObserver or under reduced motion they render visible outright.
+// `marquee` opts a rail into the auto-scrolling variant (.rail-marquee).
 function Rail(props: {
   role: string;
   eyebrow: string;
   title: string;
   cards: ReactElement[];
+  marquee?: boolean;
 }): ReactElement | null {
+  const sectionRef = useRef<HTMLElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [revealed, setRevealed] = useState(
+    () =>
+      !HAS_OBSERVER ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+  const [offscreen, setOffscreen] = useState(false);
+  const [contentWidth, setContentWidth] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const reduceMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Card widths are fixed, so layout time is enough — no waiting on covers. The
+  // content width is only honest before the marquee viewport clips the track,
+  // so the first reading is kept and only the container is re-measured.
+  useLayoutEffect(() => {
+    const track = trackRef.current;
+    if (props.marquee !== true || !track) {
+      return;
+    }
+    const measure = (): void => {
+      setContainerWidth(track.clientWidth);
+      setContentWidth((width) => (width > 0 ? width : track.scrollWidth));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [props.marquee]);
+
+  // A thin feed and reduced motion deliberately share the fallback: plain track.
+  const marqueeOn =
+    props.marquee === true && !reduceMotion && contentWidth > containerWidth;
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || !HAS_OBSERVER || (revealed && !marqueeOn)) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.some((entry) => entry.isIntersecting);
+        if (visible) {
+          setRevealed(true);
+        }
+        // A marquee keeps the observer past the reveal: an infinite animation
+        // running while the reader scrolls past is spent battery.
+        if (marqueeOn) {
+          setOffscreen(!visible);
+        } else if (visible) {
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [revealed, marqueeOn]);
+
   if (props.cards.length === 0) {
     return null;
   }
   return (
-    <section className="manga-rail" aria-label={props.eyebrow} data-role={props.role}>
+    <section
+      ref={sectionRef}
+      className={`manga-rail rail-reveal${revealed ? " is-visible" : ""}`}
+      aria-label={props.eyebrow}
+      data-role={props.role}
+    >
       <div className="rail-heading">
         <p className="eyebrow">{props.eyebrow}</p>
         <h2>{props.title}</h2>
       </div>
-      <div className="rail-track">{props.cards}</div>
+      <div ref={trackRef} className={`rail-track${marqueeOn ? " rail-marquee" : ""}`}>
+        {marqueeOn ? (
+          <div
+            className={`rail-marquee-track${offscreen ? " is-paused" : ""}`}
+            style={
+              {
+                "--rail-marquee-duration": `${contentWidth / MARQUEE_PX_PER_SECOND}s`,
+              } as CSSProperties
+            }
+          >
+            <div className="rail-marquee-copy">{props.cards}</div>
+            <div className="rail-marquee-copy" aria-hidden="true" inert>
+              {props.cards}
+            </div>
+          </div>
+        ) : (
+          props.cards
+        )}
+      </div>
     </section>
   );
 }
@@ -706,8 +810,7 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
                   (roving focus, menuitemradio) don't fit — downgrade over-claims. */}
               <div
                 ref={filterPopRef}
-                className="library-filter-pop"
-                hidden={!popOpen}
+                className={`library-filter-pop${popOpen ? " is-open" : ""}`}
               >
                 <button
                   className={`library-filter-option${statusFilter === "" ? " is-active" : ""}`}

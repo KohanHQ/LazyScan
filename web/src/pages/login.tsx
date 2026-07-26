@@ -4,7 +4,7 @@ import * as authApi from "@/api/auth";
 import { ApiClientError } from "@/api/client";
 import { navigateTo } from "@/router";
 import * as session from "@/state/session";
-import bundledLoginArt from "../../assets/login.png";
+import bundledLoginArt from "../../assets/login.webp";
 
 // Baked at build time; swap the image by overwriting the same R2 key (no rebuild).
 const loginArt = import.meta.env.VITE_LOGIN_ART_URL || bundledLoginArt;
@@ -94,7 +94,13 @@ function AuthForm({
 
   return (
     <div className="auth-screen">
-      <img className="auth-art" src={loginArt} alt="" aria-hidden="true" />
+      <img
+        className="auth-art"
+        src={loginArt}
+        alt=""
+        aria-hidden="true"
+        decoding="async"
+      />
       <section className="auth-panel" aria-labelledby="auth-title">
         <div>
           <h1 id="auth-title">{title}</h1>
@@ -214,7 +220,13 @@ function VerifyView({
 
   return (
     <div className="auth-screen">
-      <img className="auth-art" src={loginArt} alt="" aria-hidden="true" />
+      <img
+        className="auth-art"
+        src={loginArt}
+        alt=""
+        aria-hidden="true"
+        decoding="async"
+      />
       <section className="auth-panel" aria-labelledby="auth-title">
         <div>
           <h1 id="auth-title">Verify your email</h1>

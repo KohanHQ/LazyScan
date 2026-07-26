@@ -9,25 +9,17 @@ import {
 } from "react";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
-import { navigateTo, routeElement, useLocationPath } from "@/router";
+import { animateIn } from "@/lib/animate-in";
+import { curtainWipe } from "@/lib/curtain";
+import {
+  navigateTo,
+  routeElement,
+  setRouteTransition,
+  useLocationPath,
+} from "@/router";
 import { READER_ROUTE } from "@/router/match";
 import { useSession } from "@/state/hooks";
 import { bootstrapSession } from "@/state/session";
-
-// Subtle enter animation for a freshly-rendered route. Web Animations re-triggers
-// on every call without a reflow hack and is a no-op under reduced motion.
-function animateIn(el: HTMLElement): void {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    return;
-  }
-  el.animate(
-    [
-      { opacity: 0, transform: "translateY(6px)" },
-      { opacity: 1, transform: "translateY(0)" },
-    ],
-    { duration: 200, easing: "ease-out" }
-  );
-}
 
 // Route render failures land here instead of tearing down the whole shell.
 class RouteErrorBoundary extends Component<
@@ -88,6 +80,21 @@ export function App(): ReactElement {
     void bootstrapSession().catch((error) => {
       console.error("Session bootstrap failed:", error);
     });
+  }, []);
+
+  useEffect(() => {
+    // Curtain wipe only on the home↔auth pair; every other navigation commits
+    // immediately. Registered here so all navigateTo callers inherit it.
+    setRouteTransition((from, to, proceed) => {
+      const toAuth = to === "/login" || to === "/register";
+      const fromAuth = from === "/login" || from === "/register";
+      if ((from === "/" && toAuth) || (fromAuth && to === "/")) {
+        curtainWipe(proceed);
+        return;
+      }
+      proceed();
+    });
+    return () => setRouteTransition(null);
   }, []);
 
   useEffect(() => {

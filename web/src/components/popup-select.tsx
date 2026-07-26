@@ -107,9 +107,8 @@ export function PopupSelect({
       </button>
       <div
         ref={popRef}
-        className="library-filter-pop"
+        className={`library-filter-pop${open ? " is-open" : ""}`}
         role="menu"
-        hidden={!open}
         onKeyDown={onMenuKey}
       >
         {options.map((option) => (

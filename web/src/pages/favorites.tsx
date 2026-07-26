@@ -1,13 +1,20 @@
-import { useState, type KeyboardEvent, type ReactElement } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactElement,
+} from "react";
 import { Bookmark, Heart } from "lucide-react";
 import { getLibrary, removeFromLibrary } from "@/api/library";
 import type { LibraryEntry, LibraryList } from "@/api/library";
+import { animateIn } from "@/lib/animate-in";
 import { useCached } from "@/lib/use-cached";
 import { MangaCard } from "@/components/manga-card";
 import { PageHeading } from "@/components/page-heading";
 import { PopupSelect } from "@/components/popup-select";
 import { RequireSession } from "@/components/require-session";
-import { Empty, ErrorState, Loading } from "@/components/states";
+import { CardGridSkeleton, Empty, ErrorState } from "@/components/states";
 
 const TABS: { key: LibraryList; label: string }[] = [
   { key: "favorite", label: "Favorites" },
@@ -35,8 +42,9 @@ function FavoritesContent(): ReactElement {
   const [committedYear, setCommittedYear] = useState(() =>
     initialParam("year", "")
   );
+  const cacheKey = `${tab}|${sort}|${committedYear}`;
   const { data: entries, error, reload } = useCached<LibraryEntry[]>(
-    `${tab}|${sort}|${committedYear}`,
+    cacheKey,
     () => getLibrary(tab, sort, committedYear || undefined)
   );
 
@@ -84,6 +92,17 @@ function FavoritesContent(): ReactElement {
   };
 
   const label = tab === "favorite" ? "Favorites" : "Queue";
+
+  // Keyed on the cache key too: a cached key keeps `loaded` true, so the flag
+  // alone wouldn't fire on switch-back.
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const loaded = entries !== null;
+  useEffect(() => {
+    const results = resultsRef.current;
+    if (results) {
+      animateIn(results);
+    }
+  }, [cacheKey, loaded]);
 
   return (
     <>
@@ -143,11 +162,11 @@ function FavoritesContent(): ReactElement {
           Clear
         </button>
       </div>
-      <div className="library-content">
+      <div ref={resultsRef} className="library-content">
         {error !== null ? (
           <ErrorState message={error} />
         ) : entries === null ? (
-          <Loading message="Loading" />
+          <CardGridSkeleton />
         ) : entries.length === 0 ? (
           tab === "favorite" ? (
             <Empty

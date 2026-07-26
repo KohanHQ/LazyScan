@@ -18,7 +18,32 @@ import { matchRoute, type Route } from "./match";
 
 export type { Route } from "./match";
 
+// Pre-navigation hook: the app shell registers the home↔auth curtain wipe
+// here. `proceed` performs the actual commit, so the hook controls timing.
+// Back/forward (popstate) bypasses the hook — instant, native-feeling.
+export type RouteTransition = (
+  from: string,
+  to: string,
+  proceed: () => void
+) => void;
+
+let routeTransition: RouteTransition | null = null;
+
+export function setRouteTransition(hook: RouteTransition | null): void {
+  routeTransition = hook;
+}
+
 export function navigateTo(path: string): void {
+  if (routeTransition !== null) {
+    routeTransition(window.location.pathname, path, () =>
+      commitNavigate(path)
+    );
+    return;
+  }
+  commitNavigate(path);
+}
+
+function commitNavigate(path: string): void {
   window.history.pushState({}, "", path);
   window.dispatchEvent(new Event("app:navigate"));
 }
