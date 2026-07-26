@@ -252,8 +252,11 @@ h3 {
 
 /* padding-right gives the track a trailing gap, making each copy exactly half of
    it — without that, -50% stops 7px short and the wrap visibly hitches. */
+/* flex: 0 0 auto on both: each is a flex item of the box above it, and a flex
+   item's default shrink overrides width/max-content and squashes the copies. */
 .rail-marquee-track {
   display: flex;
+  flex: 0 0 auto;
   gap: 14px;
   width: max-content;
   padding-right: 14px;
@@ -262,6 +265,7 @@ h3 {
 
 .rail-marquee-copy {
   display: flex;
+  flex: 0 0 auto;
   gap: 14px;
 }
 
