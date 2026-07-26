@@ -800,7 +800,7 @@ function PagedImage({
       ) : null}
       <img
         ref={ref}
-        className={`reader-page-image reader-fit-${fitMode}`}
+        className={`reader-page-image reader-fit-${fitMode}${loaded ? " is-loaded" : ""}`}
         src={page.imageUrl}
         alt={`Page ${index + 1}`}
         loading="eager"
@@ -865,6 +865,16 @@ function VerticalReader({
           alt={`Page ${i + 1}`}
           data-page-index={i}
           loading={i < 3 ? "eager" : "lazy"}
+          /* Fade-in via a data attribute (no per-page state) so a fitMode
+             re-render can't strip it; the ref catches cache-complete pages. */
+          ref={(img) => {
+            if (img?.complete) {
+              img.dataset.loaded = "1";
+            }
+          }}
+          onLoad={(event) => {
+            event.currentTarget.dataset.loaded = "1";
+          }}
         />
       ))}
       <div className="reader-vertical-hint">Scroll to read</div>

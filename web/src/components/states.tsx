@@ -34,3 +34,28 @@ export function ErrorState({ message }: { message: string }): ReactElement {
     </section>
   );
 }
+
+// Card-grid loading placeholder: cover + title blocks with a shimmer sweep
+// (base.css). Mirrors .manga-grid's layout so the swap doesn't shift the page;
+// the grid class carries the delayed reveal so fast fetches never flash it.
+export function CardGridSkeleton({
+  count = 10,
+}: {
+  count?: number;
+}): ReactElement {
+  return (
+    <section
+      className="manga-grid skeleton-grid"
+      role="status"
+      aria-label="Loading"
+    >
+      {Array.from({ length: count }, (_, index) => (
+        <div className="skeleton-card" key={index} aria-hidden="true">
+          <div className="skeleton-block skeleton-cover" />
+          <div className="skeleton-block skeleton-line" />
+          <div className="skeleton-block skeleton-line skeleton-line-short" />
+        </div>
+      ))}
+    </section>
+  );
+}

@@ -411,7 +411,7 @@ function AuditTrailPanel({ initial }: { initial: AdminLogsResult }): ReactElemen
             >
               <Funnel className="icon" size={20} aria-hidden="true" />
             </button>
-            <div ref={filterPopRef} className="library-filter-pop" role="menu" hidden={!popOpen}>
+            <div ref={filterPopRef} className={`library-filter-pop${popOpen ? " is-open" : ""}`} role="menu">
               <button
                 className={`library-filter-option${level === undefined ? " is-active" : ""}`}
                 type="button"

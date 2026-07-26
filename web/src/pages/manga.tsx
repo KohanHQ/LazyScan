@@ -437,7 +437,7 @@ function ReadingStatusControl({
       >
         <span>{labelFor(current)}</span>
       </button>
-      <div ref={popRef} className="library-filter-pop" role="menu" hidden={!popOpen}>
+      <div ref={popRef} className={`library-filter-pop${popOpen ? " is-open" : ""}`} role="menu">
         {options.map((option) => (
           <button
             key={option.value ?? ""}
