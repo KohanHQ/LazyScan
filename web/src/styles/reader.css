@@ -1,13 +1,14 @@
 :root {
   /* Reader chrome — INVARIANT: the immersive reader stays dark in BOTH themes so
-     it never fights the page art. Values coincide with the dark palette but mean
-     "reader chrome", not "theme surface" — never point these at --bg/--surface. */
-  --reader-bg: #141a22;
-  --reader-surface: #18222b;
-  --reader-surface-raised: #1f2a35;
-  --reader-border: #283441;
+     it never fights the page art. Values track the cold-graphite dark palette
+     (hue 220° sat 8%) but mean "reader chrome", not "theme surface" — never
+     point these at --bg/--surface. */
+  --reader-bg: #17181b;
+  --reader-surface: #1e2024;
+  --reader-surface-raised: #26282c;
+  --reader-border: #31343a;
   --reader-text: #e8e4dd;
-  --reader-text-secondary: #8a8278;
+  --reader-text-secondary: #a29a8c;
   --reader-accent: #0f6f5c;
   --reader-accent-fg: #2dd4a8;
 }
@@ -38,7 +39,7 @@
   transform: translateX(-50%);
   color: var(--reader-text-secondary);
   font-size: 0.78rem;
-  background: rgba(24, 34, 43, 0.85);
+  background: color-mix(in srgb, var(--reader-surface) 85%, transparent);
   padding: 6px 12px;
   border-radius: 4px;
   pointer-events: none;
@@ -507,7 +508,7 @@
   width: 100%;
   box-sizing: border-box;
   padding: 8px 10px;
-  background: #0f1820;
+  background: color-mix(in srgb, var(--reader-bg) 65%, black);
   border: 1px solid var(--reader-border);
   border-radius: 6px;
   color: var(--reader-text);
@@ -515,7 +516,7 @@
 }
 
 .reader-chapter-overlay-search-input::placeholder {
-  color: #5f6b75;
+  color: color-mix(in srgb, var(--reader-text) 55%, var(--reader-bg));
 }
 
 .reader-chapter-overlay-search-input:focus {
