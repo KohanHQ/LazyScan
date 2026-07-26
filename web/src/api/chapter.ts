@@ -111,7 +111,8 @@ export function createChapterUpload(
 // Uploads page bytes straight to R2 via the presigned URL. This is a
 // cross-origin PUT to the storage host, not the API, so it bypasses the
 // envelope client and must not send credentials. The Content-Type must match
-// what the URL was signed with (the file's type).
+// what the URL was signed with (the file's type). The thrown error carries the
+// HTTP status so callers can tell an expired-URL 403 apart from a generic failure.
 export async function putToPresignedUrl(
   uploadUrl: string,
   file: File
@@ -123,9 +124,11 @@ export async function putToPresignedUrl(
   });
 
   if (!response.ok) {
-    throw new Error(
+    const error = new Error(
       `Upload failed for ${file.name} (${response.status} ${response.statusText})`
-    );
+    ) as Error & { status: number };
+    error.status = response.status;
+    throw error;
   }
 }
 

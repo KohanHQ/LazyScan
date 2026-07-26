@@ -12,6 +12,7 @@ import type { ChapterPage, ReaderChapter } from "@/api/chapter";
 import type { Manga } from "@/api/manga";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ErrorState, Loading } from "@/components/states";
+import { validateChapterNumbers } from "@/utils/validation";
 import {
   Dialog,
   DialogContent,
@@ -59,26 +60,6 @@ function chapterLabel(chapter: ReaderChapter): string {
   const number =
     chapter.chapterNumber === null ? "" : `Ch. ${chapter.chapterNumber} · `;
   return `${number}${chapter.title}`;
-}
-
-// Numeric-field backstop shared by the edit dialog: chapter number / volume must
-// be non-negative, sort order a whole number. Empty raw values are optional and
-// pass (the caller decides how to send them).
-function validateChapterNumbers(
-  numberRaw: string,
-  volumeRaw: string,
-  sortRaw: string
-): string | null {
-  if (numberRaw && !(Number(numberRaw) >= 0)) {
-    return "Chapter number must be zero or greater.";
-  }
-  if (volumeRaw && !(Number(volumeRaw) >= 0)) {
-    return "Volume must be zero or greater.";
-  }
-  if (sortRaw && !Number.isInteger(Number(sortRaw))) {
-    return "Sort order must be a whole number.";
-  }
-  return null;
 }
 
 export function ChaptersPanel({ manga }: { manga: Manga }): ReactElement {

@@ -992,11 +992,11 @@ img.user-avatar {
 
 /* Dark palette. Light values + rationale live on :root. */
 [data-theme="dark"] {
-  /* Surfaces */
-  --bg: #141a22;
-  --surface: #18222b;
-  --surface-raised: #1f2a35;
-  --surface-accent: #1f3330;
+  /* Surfaces — cold graphite, hue 220° sat 8% (de-blued slate, faint blue tint) */
+  --bg: #17181b;
+  --surface: #1e2024;
+  --surface-raised: #26282c;
+  --surface-accent: #222b2a;
 
   /* Text */
   --text: #e8e4dd;
@@ -1013,8 +1013,8 @@ img.user-avatar {
   --accent-fg: #2dd4a8;
 
   /* Borders */
-  --border: #283441;
-  --border-strong: #283441;
+  --border: #31343a;
+  --border-strong: #3d4148;
   --border-overlay: rgba(255, 255, 255, 0.12);
 
   /* Danger */
@@ -1419,9 +1419,10 @@ img.user-avatar {
   background: linear-gradient(90deg, #f5f2ec 0%, #edf7f2 100%);
 }
 
-/* Dark theme: blue-dark gradient matching the dark base palette. */
+/* Dark theme: gradient across the dark base palette (token-driven, follows the
+   palette automatically). */
 [data-theme="dark"] .auth-screen {
-  background: linear-gradient(90deg, #141a22 0%, #18222b 100%);
+  background: linear-gradient(90deg, var(--bg) 0%, var(--surface) 100%);
 }
 
 /* Login/register mount fade. Opacity only (the screen is position:fixed). */
@@ -1466,8 +1467,8 @@ img.user-avatar {
 }
 
 [data-theme="dark"] .auth-screen .auth-panel {
-  background: rgba(24, 34, 43, 0.82);
-  
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+
   color: #f5f2ec;
 }
 
@@ -1567,8 +1568,8 @@ img.user-avatar {
 }
 
 [data-theme="dark"] .auth-theme-toggle {
-  
-  background: rgba(24, 34, 43, 0.82);
+
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
   color: #f5f2ec;
 }
 
@@ -2810,16 +2811,20 @@ img.user-avatar {
   color: #ffffff;
 }
 
-/* Home popularity hero. Text sits on a darkened, gradient-faded cover, so it is
-   light-on-dark in both themes and needs no per-theme overrides. */
+/* Home popularity hero. Always-dark island, light-on-dark in both themes: the
+   fade melts art → --hero-bg (dark→dark, so light mode never crosses the full
+   luminance span that produced the gray band) and the island ends in a clean
+   cut on the page. --hero-bg equals the dark theme's --bg, so dark mode renders
+   pixel-identically to a var(--bg) melt. */
 .hero {
   position: relative;
   margin-bottom: 28px;
   border-radius: 14px;
   overflow: hidden;
-  /* Theme surface behind the slides; the incoming slide fades in over the still
+  --hero-bg: #17181b;
+  /* Dark base behind the slides; the incoming slide fades in over the still
      -opaque outgoing one, so no gap ever exposes this layer mid-crossfade. */
-  background: var(--bg);
+  background: var(--hero-bg);
 }
 
 .hero-stage {
@@ -2855,18 +2860,18 @@ img.user-avatar {
 .hero-fade {
   position: absolute;
   inset: 0;
-  /* Bottom layer (painted on top) melts the hero into the page background colour so
-     there's no seam where it meets the body. The fallback (#f5f2ec) matters: the
-     `--bg-*` tokens are only defined for the dark theme, so light mode needs the
-     literal page colour or the layer would be invalid (hard edge). The mid color-mix
-     stop eases the ramp so the transition isn't a perceptible line over bright art.
-     The left-to-right layer keeps text contrast while the art reads through right. */
+  /* Bottom layer (painted on top) melts the art into the hero's dark base, so the
+     dissolve is dark→dark in both themes; the island edge below is the page
+     transition. Mid stops carry the base early (72% at 58%) and the 90% stop at
+     74% eases the ramp into solid at 88% — no slope "elbow" edge. The
+     left-to-right layer keeps text contrast while the art reads through right. */
   background:
     linear-gradient(
       180deg,
       transparent 28%,
-      color-mix(in srgb, var(--bg) 55%, transparent) 62%,
-      var(--bg) 88%
+      color-mix(in srgb, var(--hero-bg) 72%, transparent) 58%,
+      color-mix(in srgb, var(--hero-bg) 90%, transparent) 74%,
+      var(--hero-bg) 88%
     ),
     linear-gradient(
       90deg,

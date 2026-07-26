@@ -16,6 +16,7 @@ import { retryChapterUpload } from "@/api/chapter";
 import { PageHeading } from "@/components/page-heading";
 import { Empty, ErrorState, Loading } from "@/components/states";
 import { RequireSession } from "@/components/require-session";
+import { usePopupDismiss } from "@/lib/use-popup-dismiss";
 import { formatDate } from "@/utils/format";
 
 const IMPORTS_LIMIT = 50;
@@ -345,33 +346,8 @@ function AuditTrailPanel({ initial }: { initial: AdminLogsResult }): ReactElemen
   const filterBtnRef = useRef<HTMLButtonElement>(null);
   const filterPopRef = useRef<HTMLDivElement>(null);
 
-  // Catalog-style popup filter (mirrors the home library filter): click-outside
-  // and Escape close it.
-  useEffect(() => {
-    if (!popOpen) {
-      return;
-    }
-    const onDocClick = (event: MouseEvent): void => {
-      const target = event.target as Node;
-      if (
-        !filterPopRef.current?.contains(target) &&
-        !filterBtnRef.current?.contains(target)
-      ) {
-        setPopOpen(false);
-      }
-    };
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") {
-        setPopOpen(false);
-      }
-    };
-    document.addEventListener("click", onDocClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("click", onDocClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [popOpen]);
+  // Catalog-style popup filter (mirrors the home library filter).
+  usePopupDismiss(popOpen, [filterPopRef, filterBtnRef], () => setPopOpen(false));
 
   // Offset paging: each page replaces (not appends) the rows. `offset` and
   // `level` are committed only on a successful fetch (so a failed filter change
