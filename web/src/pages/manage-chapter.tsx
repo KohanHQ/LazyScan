@@ -10,6 +10,7 @@ import {
   completeChapterUpload,
   createChapterUpload,
   getChapterUpload,
+  putToPresignedUrl,
   retryChapterUpload,
 } from "@/api/chapter";
 import type {
@@ -23,6 +24,7 @@ import { PageHeading } from "@/components/page-heading";
 import { RequireSession } from "@/components/require-session";
 import { ErrorState, Loading } from "@/components/states";
 import { cbzSupported, extractCbz, isArchiveFile } from "@/utils/cbz";
+import { validateChapterNumbers } from "@/utils/validation";
 import { navigateTo } from "@/router";
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -421,7 +423,7 @@ function UploadingPhase({
           if (useApiFallback) {
             await uploadPageViaApi(mangaId, uploadId, target.pageId, file);
           } else {
-            await putPresigned(target.uploadUrl, file);
+            await putToPresignedUrl(target.uploadUrl, file);
           }
           if (cancelled) {
             return;
@@ -763,25 +765,6 @@ function pageCountLabel(count: number): string {
   return count === 1 ? "1 file selected" : `${count} files selected`;
 }
 
-// Numeric-field backstop for the noValidate form: chapter number / volume must
-// be non-negative, sort order a whole number. Empty raw values are optional.
-function validateChapterNumbers(
-  chapterNumberRaw: string,
-  volumeRaw: string,
-  sortOrderRaw: string
-): string | null {
-  if (chapterNumberRaw && !(Number(chapterNumberRaw) >= 0)) {
-    return "Chapter number must be zero or greater.";
-  }
-  if (volumeRaw && !(Number(volumeRaw) >= 0)) {
-    return "Volume must be zero or greater.";
-  }
-  if (sortOrderRaw && !Number.isInteger(Number(sortOrderRaw))) {
-    return "Sort order must be a whole number.";
-  }
-  return null;
-}
-
 function validateSelection(title: string, files: File[]): string | null {
   if (!title) {
     return "Chapter title is required.";
@@ -801,24 +784,6 @@ function validateSelection(title: string, files: File[]): string | null {
     }
   }
   return null;
-}
-
-// Presigned PUT to storage that surfaces the HTTP status, so the upload loop can
-// tell an expired-URL 403 apart from a generic failure. Mirrors
-// api/chapter.putToPresignedUrl but keeps the status for expiry detection.
-async function putPresigned(url: string, file: File): Promise<void> {
-  const response = await fetch(url, {
-    method: "PUT",
-    body: file,
-    headers: { "Content-Type": file.type },
-  });
-  if (!response.ok) {
-    const error = new Error(
-      `Upload failed for ${file.name} (${response.status} ${response.statusText})`
-    ) as Error & { status: number };
-    error.status = response.status;
-    throw error;
-  }
 }
 
 // Fallback for when presigned URLs expire mid-batch: stream the page

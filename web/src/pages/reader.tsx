@@ -16,6 +16,7 @@ import {
 } from "@/api/reader";
 import type { ReaderChapterDetail, ReaderChapterPage } from "@/api/reader";
 import { ErrorState, Loading } from "@/components/states";
+import { usePopupDismiss } from "@/lib/use-popup-dismiss";
 import { navigateTo } from "@/router";
 import {
   getReaderState,
@@ -109,22 +110,28 @@ function toggleFullscreen(): void {
 }
 
 // Prefetch <link> tags for the next N pages (Preload setting). Paged mode only;
-// vertical renders every page with native lazy loading. Deduped by href.
+// vertical renders every page with native lazy loading. Deduped by href. Added
+// hrefs are recorded so the chapter can drop them on unmount instead of piling
+// hints up in <head> across a long reading session.
 function preloadAdjacentImages(
   pages: ReaderChapterPage[],
-  currentIndex: number
+  currentIndex: number,
+  added: Set<string>
 ): void {
   const count = getReaderPreloadCount();
   for (let offset = 1; offset <= count; offset++) {
     const i = currentIndex + offset;
     if (i >= pages.length) break;
     const href = pages[i].imageUrl;
-    if (document.querySelector(`link[href="${href}"]`)) continue;
+    if (added.has(href) || document.querySelector(`link[href="${href}"]`)) {
+      continue;
+    }
     const link = document.createElement("link");
     link.rel = "prefetch";
     link.as = "image";
     link.href = href;
     document.head.appendChild(link);
+    added.add(href);
   }
 }
 
@@ -232,6 +239,8 @@ function ReaderView({
   const gearRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
   const jumpFrameRef = useRef<number | null>(null);
+  // Prefetch hint hrefs this chapter added, removed on unmount.
+  const prefetchedRef = useRef<Set<string>>(new Set());
 
   const chapter = detail.chapter;
   const pages = detail.pages;
@@ -287,6 +296,11 @@ function ReaderView({
       if (jumpFrameRef.current !== null) {
         cancelAnimationFrame(jumpFrameRef.current);
       }
+      for (const link of document.head.querySelectorAll('link[rel="prefetch"]')) {
+        if (prefetchedRef.current.has(link.getAttribute("href") ?? "")) {
+          link.remove();
+        }
+      }
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
@@ -319,7 +333,7 @@ function ReaderView({
   // or direction changes; the end card guard covers cycling settings off the end.
   useEffect(() => {
     if (onEndCard || direction === "vertical") return;
-    preloadAdjacentImages(pages, currentIndex);
+    preloadAdjacentImages(pages, currentIndex, prefetchedRef.current);
   }, [currentIndex, preloadCount, direction]);
 
   const openOverlay = useCallback(() => setOverlayOpen(true), []);
@@ -473,22 +487,11 @@ function ReaderView({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [overlayOpen, settingsOpen, mangaId, handleStep, openOverlay, closeOverlay]);
 
-  // Settings popup: close on a click outside the popup and off the gear. Escape
-  // is handled by the keydown handler above to keep its priority order.
-  useEffect(() => {
-    if (!settingsOpen) return;
-    const onDocClick = (e: MouseEvent): void => {
-      const target = e.target as Node;
-      if (
-        !popRef.current?.contains(target) &&
-        !gearRef.current?.contains(target)
-      ) {
-        setSettingsOpen(false);
-      }
-    };
-    document.addEventListener("click", onDocClick);
-    return () => document.removeEventListener("click", onDocClick);
-  }, [settingsOpen]);
+  // Settings popup: Escape stays with the keydown handler above to keep its
+  // priority order, so the shared dismiss only handles click-outside.
+  usePopupDismiss(settingsOpen, [popRef, gearRef], () => setSettingsOpen(false), {
+    escape: false,
+  });
 
   if (!page) return null;
 

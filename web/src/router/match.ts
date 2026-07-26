@@ -2,6 +2,10 @@
 // without a DOM or the page-module import graph. `index.ts` feeds it
 // `window.location.pathname`; tests feed it plain strings.
 
+// The reader's path shape, shared with the app shell (which hides chrome on it).
+// Capture groups are for matchRoute below; the shell only .test()s.
+export const READER_ROUTE = /^\/manga\/([^/]+)\/chapter\/([^/]+)$/;
+
 export type Route =
   | { name: "home" }
   | { name: "favorites" }
@@ -94,7 +98,7 @@ export function matchRoute(path: string): Route {
     return { name: "manga-edit", id: decodeURIComponent(mangaEditMatch[1]) };
   }
 
-  const readerMatch = path.match(/^\/manga\/([^/]+)\/chapter\/([^/]+)$/);
+  const readerMatch = path.match(READER_ROUTE);
   if (readerMatch?.[1] && readerMatch?.[2]) {
     return {
       name: "reader",

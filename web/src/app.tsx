@@ -10,10 +10,9 @@ import {
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { navigateTo, routeElement, useLocationPath } from "@/router";
+import { READER_ROUTE } from "@/router/match";
 import { useSession } from "@/state/hooks";
 import { bootstrapSession } from "@/state/session";
-
-const READER_ROUTE = /^\/manga\/[^/]+\/chapter\/[^/]+$/;
 
 // Subtle enter animation for a freshly-rendered route. Web Animations re-triggers
 // on every call without a reflow hack and is a no-op under reduced motion.

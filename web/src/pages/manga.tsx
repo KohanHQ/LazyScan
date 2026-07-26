@@ -37,6 +37,7 @@ import { Comments } from "@/components/comments";
 import { Cover } from "@/components/cover";
 import { Empty, ErrorState, Loading } from "@/components/states";
 import { clickable } from "@/lib/clickable";
+import { usePopupDismiss } from "@/lib/use-popup-dismiss";
 import { invalidateChapterCache } from "@/pages/reader";
 import { useSession } from "@/state/hooks";
 import { formatDate } from "@/utils/format";
@@ -388,32 +389,8 @@ function ReadingStatusControl({
     };
   }, [mangaId]);
 
-  // Popup idiom mirrors settings.tsx: close on click-outside or Escape.
-  useEffect(() => {
-    if (!popOpen) {
-      return;
-    }
-    const onDocClick = (event: MouseEvent): void => {
-      const target = event.target as Node;
-      if (
-        !popRef.current?.contains(target) &&
-        !btnRef.current?.contains(target)
-      ) {
-        setPopOpen(false);
-      }
-    };
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") {
-        setPopOpen(false);
-      }
-    };
-    document.addEventListener("click", onDocClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("click", onDocClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [popOpen]);
+  // Popup idiom mirrors settings.tsx.
+  usePopupDismiss(popOpen, [popRef, btnRef], () => setPopOpen(false));
 
   if (phase !== "ready") {
     return null;

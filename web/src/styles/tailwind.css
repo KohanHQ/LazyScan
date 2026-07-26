@@ -1,6 +1,6 @@
-/* Tailwind entry. Preflight is deliberately NOT imported: its global reset would
-   strip base.css from under the 14 unconverted vanilla pages during the rolling
-   React migration. base.css already carries the reset that matters here. */
+/* Tailwind entry. Preflight is deliberately NOT imported: base.css is the app's
+   unlayered global stylesheet, and preflight's reset would fight it on every
+   element. base.css already carries the reset that matters here. */
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
