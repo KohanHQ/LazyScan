@@ -3,10 +3,12 @@ import {
   Component,
   useEffect,
   useRef,
+  useState,
   type ErrorInfo,
   type ReactElement,
   type ReactNode,
 } from "react";
+import { BootSplash } from "@/components/boot-splash";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { animateIn } from "@/lib/animate-in";
@@ -54,6 +56,7 @@ export function App(): ReactElement {
   const session = useSession();
   const shellRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
+  const [booting, setBooting] = useState(true);
 
   const isReader = READER_ROUTE.test(path);
   // Login/register are standalone full-screen pages — hide the app chrome.
@@ -77,9 +80,11 @@ export function App(): ReactElement {
   useEffect(() => {
     // Bootstrap failure (API/network down) leaves the no-user view already
     // rendered; log and stay on it instead of throwing an unhandled rejection.
-    void bootstrapSession().catch((error) => {
-      console.error("Session bootstrap failed:", error);
-    });
+    void bootstrapSession()
+      .catch((error) => {
+        console.error("Session bootstrap failed:", error);
+      })
+      .finally(() => setBooting(false));
   }, []);
 
   useEffect(() => {
@@ -136,48 +141,52 @@ export function App(): ReactElement {
   const routeKey = `${path}::${session.user?.userId ?? "anon"}`;
 
   return (
-    <div
-      ref={shellRef}
-      className="app-shell"
-      data-sidebar="expanded"
-      data-drawer="closed"
-      data-reader="false"
-      data-auth="false"
-    >
-      <header className="app-topbar">
-        <button
-          className="topbar-toggle"
-          type="button"
-          aria-label="Toggle navigation"
-          onClick={toggleDrawer}
-        >
-          <Menu className="icon" size={20} />
-        </button>
-        <button
-          className="brand-button"
-          type="button"
-          onClick={() => navigateTo("/")}
-        >
-          LazyScan
-        </button>
-        <div className="topbar-spacer"></div>
-        <Topbar />
-      </header>
-      <div className="app-body">
-        <aside className="app-sidebar">
-          <Sidebar path={path} />
-        </aside>
-        <div
-          className="app-backdrop"
-          aria-hidden="true"
-          onClick={closeDrawer}
-        ></div>
-        <main ref={mainRef} className="app-main" tabIndex={-1}>
-          <RouteErrorBoundary key={routeKey}>
-            {routeElement(path)}
-          </RouteErrorBoundary>
-        </main>
+    <>
+      <BootSplash done={!booting} />
+      <div
+        ref={shellRef}
+        className="app-shell"
+        inert={booting}
+        data-sidebar="expanded"
+        data-drawer="closed"
+        data-reader="false"
+        data-auth="false"
+      >
+        <header className="app-topbar">
+          <button
+            className="topbar-toggle"
+            type="button"
+            aria-label="Toggle navigation"
+            onClick={toggleDrawer}
+          >
+            <Menu className="icon" size={20} />
+          </button>
+          <button
+            className="brand-button"
+            type="button"
+            onClick={() => navigateTo("/")}
+          >
+            LazyScan
+          </button>
+          <div className="topbar-spacer"></div>
+          <Topbar />
+        </header>
+        <div className="app-body">
+          <aside className="app-sidebar">
+            <Sidebar path={path} />
+          </aside>
+          <div
+            className="app-backdrop"
+            aria-hidden="true"
+            onClick={closeDrawer}
+          ></div>
+          <main ref={mainRef} className="app-main" tabIndex={-1}>
+            <RouteErrorBoundary key={routeKey}>
+              {routeElement(path)}
+            </RouteErrorBoundary>
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

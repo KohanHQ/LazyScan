@@ -23,6 +23,7 @@ import { getManga } from "@/api/manga";
 import { PageHeading } from "@/components/page-heading";
 import { RequireSession } from "@/components/require-session";
 import { ErrorState, Loading } from "@/components/states";
+import { useToast } from "@/components/ui/toast";
 import { cbzSupported, extractCbz, isArchiveFile } from "@/utils/cbz";
 import { validateChapterNumbers } from "@/utils/validation";
 import { navigateTo } from "@/router";
@@ -151,8 +152,8 @@ function ChapterForm({
   const [selection, setSelection] = useState<File[]>([]);
   const [countLabel, setCountLabel] = useState("");
   const [dragover, setDragover] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
   // CBZ extraction is async; while it runs, submit is disabled and this guards a
   // re-pick race — each pick bumps the counter so a superseded extraction's late
   // result can't land its stale pages against the newer selection.
@@ -163,7 +164,6 @@ function ChapterForm({
   // loose files. Archive errors / unsupported devices clear the pick.
   const onFilesChange = async (fileList: FileList | null): Promise<void> => {
     const mySeq = ++pickSeqRef.current;
-    setError(null);
     const picked = fileList ? Array.from(fileList) : [];
     const archive = picked.find(isArchiveFile);
 
@@ -177,7 +177,7 @@ function ChapterForm({
       setExtracting(false);
       setSelection([]);
       setCountLabel("");
-      setError(
+      toast.error(
         "Upload one CBZ/ZIP archive on its own, not mixed with other files."
       );
       return;
@@ -186,7 +186,7 @@ function ChapterForm({
       setExtracting(false);
       setSelection([]);
       setCountLabel("");
-      setError("CBZ/ZIP import is desktop-only. Use individual page images here.");
+      toast.error("CBZ/ZIP import is desktop-only. Use individual page images here.");
       return;
     }
     // Clear any prior selection up front so a stale pick can't be submitted while
@@ -209,7 +209,7 @@ function ChapterForm({
       }
       setSelection([]);
       setCountLabel("");
-      setError(
+      toast.error(
         extractError instanceof Error
           ? extractError.message
           : "Could not read the archive."
@@ -233,11 +233,10 @@ function ChapterForm({
       validateSelection(title, selection) ??
       validateChapterNumbers(chapterNumberRaw, volumeRaw, sortOrderRaw);
     if (validationError) {
-      setError(validationError);
+      toast.error(validationError);
       return;
     }
 
-    setError(null);
     setBusy(true);
     let created: CreateChapterUploadResponse;
     try {
@@ -253,7 +252,7 @@ function ChapterForm({
         })),
       });
     } catch (createError) {
-      setError(
+      toast.error(
         createError instanceof Error
           ? createError.message
           : "Unable to create chapter."
@@ -325,7 +324,6 @@ function ChapterForm({
               won&apos;t see it until you publish)
             </span>
           </label>
-          {error ? <p className="form-error">{error}</p> : null}
           <div className="manage-actions">
             <button
               className="primary-button"
@@ -595,7 +593,7 @@ function ProcessingPhase({
   // prior timer first so two pollers never tick the same view.
   const [pollToken, setPollToken] = useState(0);
   const [retryBusy, setRetryBusy] = useState(false);
-  const [retryError, setRetryError] = useState<string | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     let timeoutId: number | null = null;
@@ -687,11 +685,10 @@ function ProcessingPhase({
 
   const onRetry = async (): Promise<void> => {
     setRetryBusy(true);
-    setRetryError(null);
     try {
       await retryChapterUpload(mangaId, uploadId);
     } catch (error) {
-      setRetryError(error instanceof Error ? error.message : "Retry failed.");
+      toast.error(error instanceof Error ? error.message : "Retry failed.");
       setRetryBusy(false);
       return;
     }
@@ -704,7 +701,6 @@ function ProcessingPhase({
     <>
       <PageHeading eyebrow="Chapter upload" title={heading} />
       <section className="manage-panel">
-        {retryError ? <p className="form-error">{retryError}</p> : null}
         <p className="upload-hint">
           {`Processed ${processed}/${total}${failed ? ` · ${failed} failed` : ""}`}
         </p>

@@ -14,6 +14,7 @@ import { MangaCard } from "@/components/manga-card";
 import { PageHeading } from "@/components/page-heading";
 import { RequireSession } from "@/components/require-session";
 import { CardGridSkeleton, Empty, ErrorState } from "@/components/states";
+import { useToast } from "@/components/ui/toast";
 
 const TABS: { key: ReadingStatus; label: string }[] = [
   { key: "reading", label: "Reading" },
@@ -104,33 +105,29 @@ function RemoveButton(props: {
   onRemoved: () => void;
 }): ReactElement {
   const [busy, setBusy] = useState(false);
-  // Surface a failed remove inline; the button stays enabled so it doubles as
-  // the retry control (success reloads the tab, unmounting this).
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
+  // A failed remove toasts and re-enables the button, so it doubles as the retry
+  // control (success reloads the tab, unmounting this).
   return (
-    <>
-      <button
-        className="library-remove"
-        type="button"
-        disabled={busy}
-        onClick={() => {
-          setBusy(true);
-          setError(null);
-          clearReadingStatus(props.mangaId)
-            .then(props.onRemoved)
-            .catch((removeError) => {
-              setError(
-                removeError instanceof Error
-                  ? removeError.message
-                  : "Couldn't remove. Try again."
-              );
-              setBusy(false);
-            });
-        }}
-      >
-        Remove
-      </button>
-      {error ? <p className="form-error">{error}</p> : null}
-    </>
+    <button
+      className="library-remove"
+      type="button"
+      disabled={busy}
+      onClick={() => {
+        setBusy(true);
+        clearReadingStatus(props.mangaId)
+          .then(props.onRemoved)
+          .catch((removeError) => {
+            toast.error(
+              removeError instanceof Error
+                ? removeError.message
+                : "Couldn't remove. Try again."
+            );
+            setBusy(false);
+          });
+      }}
+    >
+      Remove
+    </button>
   );
 }

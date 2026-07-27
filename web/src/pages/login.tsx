@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactElement } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import * as authApi from "@/api/auth";
 import { ApiClientError } from "@/api/client";
+import { useToast } from "@/components/ui/toast";
 import { navigateTo } from "@/router";
 import * as session from "@/state/session";
 import bundledLoginArt from "../../assets/login.webp";
@@ -67,7 +68,7 @@ function AuthForm({
     : "Need an account?";
   const switchAction = isRegister ? "Login" : "Register";
 
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -77,7 +78,6 @@ function AuthForm({
     const email = String(formData.get("email") || "");
     const password = String(formData.get("password") || "");
 
-    setError(null);
     setBusy(true);
     try {
       if (isRegister) {
@@ -97,7 +97,7 @@ function AuthForm({
         onVerify(email, false);
         return;
       }
-      setError(
+      toast.error(
         authError instanceof Error ? authError.message : "Authentication failed."
       );
     } finally {
@@ -150,7 +150,6 @@ function AuthForm({
               </button>
             </div>
           </label>
-          {error ? <p className="form-error">{error}</p> : null}
           <button className="primary-button" type="submit" disabled={busy}>
             {busy ? busyLabel : actionLabel}
           </button>
@@ -184,7 +183,7 @@ function VerifyView({
   email: string;
   cooldownActive: boolean;
 }): ReactElement {
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [resending, setResending] = useState(false);
   const [remaining, setRemaining] = useState(
@@ -205,7 +204,6 @@ function VerifyView({
     event.preventDefault();
     const code = String(new FormData(event.currentTarget).get("code") || "");
 
-    setError(null);
     setBusy(true);
     try {
       // The API sets the session cookie on verify (not on register), so this
@@ -213,7 +211,8 @@ function VerifyView({
       await session.verifyEmail({ email, code });
       navigateTo("/");
     } catch (verifyError) {
-      setError(
+      // The code field keeps its value so a mistyped digit is a quick fix.
+      toast.error(
         verifyError instanceof Error ? verifyError.message : "Verification failed."
       );
     } finally {
@@ -225,10 +224,9 @@ function VerifyView({
     setResending(true);
     try {
       await authApi.resendVerification(email);
-      setError(null);
       setRemaining(RESEND_COOLDOWN_SECONDS);
     } catch (resendError) {
-      setError(
+      toast.error(
         resendError instanceof Error
           ? resendError.message
           : "Could not resend the code."
@@ -270,7 +268,6 @@ function VerifyView({
               required
             />
           </label>
-          {error ? <p className="form-error">{error}</p> : null}
           <button className="primary-button" type="submit" disabled={busy}>
             {busy ? "Verifying" : "Verify"}
           </button>
@@ -372,8 +369,7 @@ function ResetView({
   email: string;
   onDone: () => void;
 }): ReactElement {
-  const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -383,13 +379,13 @@ function ResetView({
     const code = String(formData.get("code") || "");
     const newPassword = String(formData.get("newPassword") || "");
 
-    setError(null);
     setBusy(true);
     try {
       await authApi.resetPassword({ email, code, newPassword });
-      setDone(true);
+      toast.success("Password updated. Log in with your new password.");
+      onDone();
     } catch (resetError) {
-      setError(
+      toast.error(
         resetError instanceof Error ? resetError.message : "Password reset failed."
       );
     } finally {
@@ -415,68 +411,54 @@ function ResetView({
           </p>
           <p className="auth-hint">Not in your inbox? Check your spam folder.</p>
         </div>
-        {done ? (
-          <>
-            <p className="auth-hint">
-              Password updated. Log in with your new password.
-            </p>
-            <button className="primary-button" type="button" onClick={onDone}>
-              Back to login
-            </button>
-          </>
-        ) : (
-          <>
-            <form className="auth-form" onSubmit={onSubmit}>
-              <label>
-                <span>Reset code</span>
-                <input
-                  name="code"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  pattern="\d{6}"
-                  maxLength={6}
-                  required
-                />
-              </label>
-              <label>
-                <span>New password</span>
-                <div className="password-field">
-                  <input
-                    name="newPassword"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    required
-                    minLength={8}
-                  />
-                  <button
-                    className="password-toggle"
-                    type="button"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    aria-pressed={showPassword}
-                    onClick={() => setShowPassword((reveal) => !reveal)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="icon" size={20} aria-hidden="true" />
-                    ) : (
-                      <Eye className="icon" size={20} aria-hidden="true" />
-                    )}
-                  </button>
-                </div>
-              </label>
-              {error ? <p className="form-error">{error}</p> : null}
-              <button className="primary-button" type="submit" disabled={busy}>
-                {busy ? "Resetting" : "Reset password"}
+        <form className="auth-form" onSubmit={onSubmit}>
+          <label>
+            <span>Reset code</span>
+            <input
+              name="code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="\d{6}"
+              maxLength={6}
+              required
+            />
+          </label>
+          <label>
+            <span>New password</span>
+            <div className="password-field">
+              <input
+                name="newPassword"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                required
+                minLength={8}
+              />
+              <button
+                className="password-toggle"
+                type="button"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((reveal) => !reveal)}
+              >
+                {showPassword ? (
+                  <EyeOff className="icon" size={20} aria-hidden="true" />
+                ) : (
+                  <Eye className="icon" size={20} aria-hidden="true" />
+                )}
               </button>
-            </form>
-            <p className="auth-switch">
-              Wrong address?{" "}
-              <button className="text-button" type="button" onClick={onDone}>
-                Back to login
-              </button>
-            </p>
-          </>
-        )}
+            </div>
+          </label>
+          <button className="primary-button" type="submit" disabled={busy}>
+            {busy ? "Resetting" : "Reset password"}
+          </button>
+        </form>
+        <p className="auth-switch">
+          Wrong address?{" "}
+          <button className="text-button" type="button" onClick={onDone}>
+            Back to login
+          </button>
+        </p>
       </section>
     </div>
   );

@@ -27,6 +27,7 @@ import { PageHeading } from "@/components/page-heading";
 import { PopupSelect } from "@/components/popup-select";
 import { RequireSession } from "@/components/require-session";
 import { ErrorState, Loading } from "@/components/states";
+import { useToast } from "@/components/ui/toast";
 import { navigateTo } from "@/router";
 import { bootstrapSession } from "@/state/session";
 import { resolveAvatar } from "@/utils/avatar";
@@ -278,7 +279,7 @@ function ProfileEditContent(): ReactElement {
 }
 
 function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [profileVisibility, setProfileVisibility] = useState(
     profile.profileVisibility
@@ -302,7 +303,6 @@ function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
       shelfVisibility: data.get("shelfVisibility") as ProfileVisibility,
     };
 
-    setError(null);
     setBusy(true);
 
     // Avatar upload and profile patch are two independent server actions. Run
@@ -337,6 +337,7 @@ function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
       // Both succeeded: re-bootstrap so the sidebar reflects the saved
       // name/avatar without a reload, then leave the form.
       void bootstrapSession();
+      toast.success("Profile saved.");
       navigateTo("/profile");
       return;
     }
@@ -358,7 +359,7 @@ function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
         ? `Avatar uploaded, but saving your profile failed. ${patchError}`
         : (patchError ?? "Unable to save profile.");
     }
-    setError(message);
+    toast.error(message);
     setBusy(false);
   };
 
@@ -453,7 +454,6 @@ function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
               Reading stats stay private.
             </small>
           </label>
-          {error ? <p className="form-error">{error}</p> : null}
           <button className="primary-button" type="submit" disabled={busy}>
             {busy ? "Saving" : "Save changes"}
           </button>
