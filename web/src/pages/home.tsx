@@ -4,7 +4,6 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type CSSProperties,
   type ReactElement,
 } from "react";
 import { Funnel } from "lucide-react";
@@ -36,7 +35,11 @@ const PAGE_SIZE = 50;
 const HERO_SIZE = 10;
 const HERO_INTERVAL_MS = 6000;
 const RAIL_SIZE = 10;
-const MARQUEE_PX_PER_SECOND = 30;
+// One carousel step = one card stride: .rail-card flex-basis 132px + the copy's
+// 14px gap (base.css). Fixed, so carousel geometry is pure arithmetic.
+const RAIL_STRIDE_PX = 146;
+const CAROUSEL_STEP_MS = 3500;
+const CAROUSEL_TRANSITION_MS = 450;
 
 type HomeData = {
   firstPage: Manga[];
@@ -190,7 +193,7 @@ export function HomePage(): ReactElement {
         role="recent-rail"
         eyebrow="Recently updated"
         title="Fresh chapters"
-        marquee
+        carousel
         cards={data.updates.map((manga) => (
           <RailCard key={manga.id} manga={manga} />
         ))}
@@ -204,15 +207,16 @@ export function HomePage(): ReactElement {
 // no cards, so an empty feed leaves no gap between the hero and the library.
 // Rails fade + rise into view on scroll (.rail-reveal in base.css); without
 // IntersectionObserver or under reduced motion they render visible outright.
-// `marquee` opts a rail into the infinite auto-scrolling variant — geometry is
-// measured from the live DOM in two honest steps (see effects below), never
-// derived from hard-coded card widths.
+// `carousel` opts a rail into the infinite auto-stepping variant: one card
+// stride every few seconds with a slide transition, wrapping silently at the
+// copy-2 boundary. Geometry is pure arithmetic from the fixed stride — the
+// only measurement is the viewport width, padded with two spare copies.
 function Rail(props: {
   role: string;
   eyebrow: string;
   title: string;
   cards: ReactElement[];
-  marquee?: boolean;
+  carousel?: boolean;
 }): ReactElement | null {
   const sectionRef = useRef<HTMLElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -221,28 +225,28 @@ function Rail(props: {
       !HAS_OBSERVER ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
-  const [offscreen, setOffscreen] = useState(false);
-  const [contentWidth, setContentWidth] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(0);
-  const [copyWidth, setCopyWidth] = useState(0);
+  const [position, setPosition] = useState(0);
+  const [instant, setInstant] = useState(false);
+  const [hoverPause, setHoverPause] = useState(false);
+  const [focusPause, setFocusPause] = useState(false);
+  const [offscreen, setOffscreen] = useState(false);
   const reduceMotion =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // The loop runs unconditionally once measured (user requirement: the rail
-  // scrolls forever even when the content alone would fit the viewport) —
-  // copyCount pads the track to viewport + one copy so there is never a gap.
-  // Reduced motion keeps the plain static track.
-  const marqueeOn =
-    props.marquee === true && !reduceMotion && viewportWidth > 0 && contentWidth > 0;
+  const total = props.cards.length;
+  const carouselOn =
+    props.carousel === true && !reduceMotion && viewportWidth > 0 && total > 1;
+  const paused = hoverPause || focusPause || offscreen;
 
-  // Loop length is one measured copy; fall back to the plain-track reading
-  // until the copies render. At least 2 copies, enough that the right edge
-  // never enters the viewport mid-loop: N×loop ≥ viewport + loop.
-  const loopWidth = copyWidth > 0 ? copyWidth : contentWidth;
+  // Content width is arithmetic (total × stride), never measured. copyCount
+  // covers the viewport plus two spare loops, so even a badly wrong viewport
+  // reading cannot leave a gap at any position.
+  const contentWidth = total * RAIL_STRIDE_PX;
   const copyCount = Math.max(
     2,
-    Math.ceil((viewportWidth + loopWidth) / Math.max(loopWidth, 1))
+    Math.ceil(viewportWidth / Math.max(contentWidth, 1)) + 2
   );
 
   // Reveal observer: one-shot, disconnects once the rail has faded in.
@@ -264,43 +268,59 @@ function Rail(props: {
     return () => observer.disconnect();
   }, [revealed]);
 
-  // Step 1: the plain track's scrollWidth is the initial copy-width reading
-  // (honest only before the marquee's extra copies render, so the first
-  // reading is kept — card widths and count are fixed for a mounted rail).
-  // The viewport is re-measured on resize, which recomputes copyCount.
+  // The only DOM measurement the carousel needs; re-read on resize to
+  // recompute copyCount (position math is unaffected — it works in strides).
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
-    if (props.marquee !== true || !viewport) {
+    if (props.carousel !== true || !viewport) {
       return;
     }
-    const measure = (): void => {
-      setViewportWidth(viewport.clientWidth);
-      setContentWidth((width) => (width > 0 ? width : viewport.scrollWidth));
-    };
+    const measure = (): void => setViewportWidth(viewport.clientWidth);
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [props.marquee]);
+  }, [props.carousel]);
 
-  // Step 2: with the copies on screen, one copy's outer width is the exact
-  // loop length (each copy pads its own trailing gap — see base.css). Drives
-  // the loop + duration vars; the track stays un-animated (.is-ready gate)
-  // until this lands.
-  useLayoutEffect(() => {
-    if (!marqueeOn) {
+  // Auto-step one stride per tick while visible and unpaused.
+  useEffect(() => {
+    if (!carouselOn || paused) {
       return;
     }
-    const copy = viewportRef.current?.querySelector(".rail-marquee-copy");
-    if (copy instanceof HTMLElement) {
-      setCopyWidth(copy.offsetWidth);
-    }
-  }, [marqueeOn]);
+    const id = window.setInterval(
+      () => setPosition((p) => p + 1),
+      CAROUSEL_STEP_MS
+    );
+    return () => window.clearInterval(id);
+  }, [carouselOn, paused]);
 
-  // Off-screen pause: an infinite animation running past the fold is spent
-  // battery. Separate observer from the reveal one — different lifetimes.
+  // Silent wrap: at position === total the track shows copy 2's first card
+  // exactly where copy 1's was — pixel-identical to position 0 — so after the
+  // slide finishes, jump back with the transition off. The next tick is
+  // seconds away, so the 500ms reset always lands first.
+  useEffect(() => {
+    if (position !== total) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setInstant(true);
+      setPosition(0);
+    }, CAROUSEL_TRANSITION_MS + 50);
+    return () => window.clearTimeout(timer);
+  }, [position, total]);
+
+  useEffect(() => {
+    if (!instant) {
+      return;
+    }
+    const raf = requestAnimationFrame(() => setInstant(false));
+    return () => cancelAnimationFrame(raf);
+  }, [instant]);
+
+  // Off-screen pause: an auto-stepping rail past the fold is spent battery.
+  // Separate observer from the reveal one — different lifetimes.
   useEffect(() => {
     const section = sectionRef.current;
-    if (!marqueeOn || !section || !HAS_OBSERVER) {
+    if (!carouselOn || !section || !HAS_OBSERVER) {
       return;
     }
     const observer = new IntersectionObserver(
@@ -311,7 +331,7 @@ function Rail(props: {
     );
     observer.observe(section);
     return () => observer.disconnect();
-  }, [marqueeOn]);
+  }, [carouselOn]);
 
   if (props.cards.length === 0) {
     return null;
@@ -327,20 +347,22 @@ function Rail(props: {
         <p className="eyebrow">{props.eyebrow}</p>
         <h2>{props.title}</h2>
       </div>
-      {marqueeOn ? (
-        <div ref={viewportRef} className="rail-marquee">
+      {carouselOn ? (
+        <div
+          ref={viewportRef}
+          className="rail-carousel"
+          onMouseEnter={() => setHoverPause(true)}
+          onMouseLeave={() => setHoverPause(false)}
+          onFocus={() => setFocusPause(true)}
+          onBlur={() => setFocusPause(false)}
+        >
           <div
-            className={`rail-marquee-track${offscreen ? " is-paused" : ""}${copyWidth > 0 ? " is-ready" : ""}`}
-            style={
-              {
-                "--rail-marquee-loop": `${copyWidth}px`,
-                "--rail-marquee-duration": `${copyWidth / MARQUEE_PX_PER_SECOND}s`,
-              } as CSSProperties
-            }
+            className={`rail-carousel-track${instant ? " is-instant" : ""}`}
+            style={{ transform: `translateX(${-position * RAIL_STRIDE_PX}px)` }}
           >
             {Array.from({ length: copyCount }, (_, index) => (
               <div
-                className="rail-marquee-copy"
+                className="rail-carousel-copy"
                 key={index}
                 aria-hidden={index > 0 || undefined}
                 inert={index > 0}
