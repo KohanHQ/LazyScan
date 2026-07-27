@@ -229,12 +229,21 @@ function Rail(props: {
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // A thin feed and reduced motion deliberately share the fallback: plain track.
+  // The loop runs unconditionally once measured (user requirement: the rail
+  // scrolls forever even when the content alone would fit the viewport) —
+  // copyCount pads the track to viewport + one copy so there is never a gap.
+  // Reduced motion keeps the plain static track.
   const marqueeOn =
-    props.marquee === true &&
-    !reduceMotion &&
-    viewportWidth > 0 &&
-    contentWidth > viewportWidth;
+    props.marquee === true && !reduceMotion && viewportWidth > 0 && contentWidth > 0;
+
+  // Loop length is one measured copy; fall back to the plain-track reading
+  // until the copies render. At least 2 copies, enough that the right edge
+  // never enters the viewport mid-loop: N×loop ≥ viewport + loop.
+  const loopWidth = copyWidth > 0 ? copyWidth : contentWidth;
+  const copyCount = Math.max(
+    2,
+    Math.ceil((viewportWidth + loopWidth) / Math.max(loopWidth, 1))
+  );
 
   // Reveal observer: one-shot, disconnects once the rail has faded in.
   useEffect(() => {
@@ -255,10 +264,10 @@ function Rail(props: {
     return () => observer.disconnect();
   }, [revealed]);
 
-  // Step 1: the plain track's scrollWidth decides whether the content overflows
-  // (honest only before the marquee's second copy renders, so the first reading
-  // is kept — card widths and count are fixed for a mounted rail). Only the
-  // viewport is re-measured on resize, so a narrower window can still engage.
+  // Step 1: the plain track's scrollWidth is the initial copy-width reading
+  // (honest only before the marquee's extra copies render, so the first
+  // reading is kept — card widths and count are fixed for a mounted rail).
+  // The viewport is re-measured on resize, which recomputes copyCount.
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
     if (props.marquee !== true || !viewport) {
@@ -273,9 +282,10 @@ function Rail(props: {
     return () => window.removeEventListener("resize", measure);
   }, [props.marquee]);
 
-  // Step 2: with the copies on screen, one copy's outer width is the exact loop
-  // length (each copy pads its own trailing gap — see base.css). Drives the
-  // duration var; the track stays un-animated (.is-ready gate) until this lands.
+  // Step 2: with the copies on screen, one copy's outer width is the exact
+  // loop length (each copy pads its own trailing gap — see base.css). Drives
+  // the loop + duration vars; the track stays un-animated (.is-ready gate)
+  // until this lands.
   useLayoutEffect(() => {
     if (!marqueeOn) {
       return;
@@ -323,14 +333,21 @@ function Rail(props: {
             className={`rail-marquee-track${offscreen ? " is-paused" : ""}${copyWidth > 0 ? " is-ready" : ""}`}
             style={
               {
+                "--rail-marquee-loop": `${copyWidth}px`,
                 "--rail-marquee-duration": `${copyWidth / MARQUEE_PX_PER_SECOND}s`,
               } as CSSProperties
             }
           >
-            <div className="rail-marquee-copy">{props.cards}</div>
-            <div className="rail-marquee-copy" aria-hidden="true" inert>
-              {props.cards}
-            </div>
+            {Array.from({ length: copyCount }, (_, index) => (
+              <div
+                className="rail-marquee-copy"
+                key={index}
+                aria-hidden={index > 0 || undefined}
+                inert={index > 0}
+              >
+                {props.cards}
+              </div>
+            ))}
           </div>
         </div>
       ) : (
