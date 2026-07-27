@@ -358,12 +358,16 @@ function Rail(props: {
         >
           <div
             className={`rail-carousel-track${instant ? " is-instant" : ""}`}
-            style={{ transform: `translateX(${-position * RAIL_STRIDE_PX}px)` }}
+            style={{
+              width: `${copyCount * contentWidth}px`,
+              transform: `translateX(${-position * RAIL_STRIDE_PX}px)`,
+            }}
           >
             {Array.from({ length: copyCount }, (_, index) => (
               <div
                 className="rail-carousel-copy"
                 key={index}
+                style={{ width: `${contentWidth}px` }}
                 aria-hidden={index > 0 || undefined}
                 inert={index > 0}
               >

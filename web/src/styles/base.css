@@ -265,7 +265,6 @@ h3 {
    keep the track unpromoted. */
 .rail-carousel-track {
   display: flex;
-  width: max-content;
   transition: transform 0.45s ease;
 }
 
@@ -274,6 +273,8 @@ h3 {
   transition: none;
 }
 
+/* Copy and track widths come inline from stride arithmetic (home.tsx), not
+   max-content: Gecko mis-measures nested-flex max-content and breaks the wrap. */
 .rail-carousel-copy {
   display: flex;
   flex: 0 0 auto;
