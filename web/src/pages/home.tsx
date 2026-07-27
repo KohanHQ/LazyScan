@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type CSSProperties,
   type ReactElement,
 } from "react";
 import { Funnel } from "lucide-react";
@@ -35,9 +36,11 @@ const PAGE_SIZE = 50;
 const HERO_SIZE = 10;
 const HERO_INTERVAL_MS = 6000;
 const RAIL_SIZE = 10;
-// One carousel step = one card stride: .rail-card flex-basis 132px + the copy's
-// 14px gap (base.css). Fixed, so carousel geometry is pure arithmetic.
+// Floor for one carousel step (card 132px + the copy's 14px gap, base.css). The
+// live stride widens to fit 6 whole cards in the container; this is the minimum.
 const RAIL_STRIDE_PX = 146;
+const RAIL_GAP_PX = 14;
+const RAIL_VISIBLE = 6;
 const CAROUSEL_STEP_MS = 3500;
 const CAROUSEL_TRANSITION_MS = 450;
 
@@ -209,8 +212,8 @@ export function HomePage(): ReactElement {
 // IntersectionObserver or under reduced motion they render visible outright.
 // `carousel` opts a rail into the infinite auto-stepping variant: one card
 // stride every few seconds with a slide transition, wrapping silently at the
-// copy-2 boundary. Geometry is pure arithmetic from the fixed stride — the
-// only measurement is the viewport width, padded with two spare copies.
+// copy-2 boundary. Geometry is pure arithmetic from the stride — the only
+// measurement is the container width, padded with two spare copies.
 function Rail(props: {
   role: string;
   eyebrow: string;
@@ -219,7 +222,6 @@ function Rail(props: {
   carousel?: boolean;
 }): ReactElement | null {
   const sectionRef = useRef<HTMLElement>(null);
-  const viewportRef = useRef<HTMLDivElement>(null);
   const [revealed, setRevealed] = useState(
     () =>
       !HAS_OBSERVER ||
@@ -240,10 +242,16 @@ function Rail(props: {
     props.carousel === true && !reduceMotion && viewportWidth > 0 && total > 1;
   const paused = hoverPause || focusPause || offscreen;
 
+  // Stride widens so 6 whole cards span the container; below the 146px floor
+  // (narrow viewports) cards stay 132px and simply fewer of them fit.
+  const stride = Math.max(
+    RAIL_STRIDE_PX,
+    Math.floor(viewportWidth / RAIL_VISIBLE)
+  );
   // Content width is arithmetic (total × stride), never measured. copyCount
   // covers the viewport plus two spare loops, so even a badly wrong viewport
   // reading cannot leave a gap at any position.
-  const contentWidth = total * RAIL_STRIDE_PX;
+  const contentWidth = total * stride;
   const copyCount = Math.max(
     2,
     Math.ceil(viewportWidth / Math.max(contentWidth, 1)) + 2
@@ -268,14 +276,14 @@ function Rail(props: {
     return () => observer.disconnect();
   }, [revealed]);
 
-  // The only DOM measurement the carousel needs; re-read on resize to
-  // recompute copyCount (position math is unaffected — it works in strides).
+  // The only DOM read the carousel needs; re-read on resize. Measured on the
+  // section, not the viewport — the viewport's own width derives from this.
   useLayoutEffect(() => {
-    const viewport = viewportRef.current;
-    if (props.carousel !== true || !viewport) {
+    const section = sectionRef.current;
+    if (props.carousel !== true || !section) {
       return;
     }
-    const measure = (): void => setViewportWidth(viewport.clientWidth);
+    const measure = (): void => setViewportWidth(section.clientWidth);
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
@@ -347,10 +355,17 @@ function Rail(props: {
         <p className="eyebrow">{props.eyebrow}</p>
         <h2>{props.title}</h2>
       </div>
+      {/* max-width, not width: caps the window at exactly 6 strides, yet still
+          shrinks to the container when that is narrower than 6 stride floors. */}
       {carouselOn ? (
         <div
-          ref={viewportRef}
           className="rail-carousel"
+          style={
+            {
+              maxWidth: `${stride * RAIL_VISIBLE}px`,
+              "--rail-card-w": `${stride - RAIL_GAP_PX}px`,
+            } as CSSProperties
+          }
           onMouseEnter={() => setHoverPause(true)}
           onMouseLeave={() => setHoverPause(false)}
           onFocus={() => setFocusPause(true)}
@@ -360,7 +375,7 @@ function Rail(props: {
             className={`rail-carousel-track${instant ? " is-instant" : ""}`}
             style={{
               width: `${copyCount * contentWidth}px`,
-              transform: `translateX(${-position * RAIL_STRIDE_PX}px)`,
+              transform: `translateX(${-position * stride}px)`,
             }}
           >
             {Array.from({ length: copyCount }, (_, index) => (
@@ -377,7 +392,7 @@ function Rail(props: {
           </div>
         </div>
       ) : (
-        <div ref={viewportRef} className="rail-track">
+        <div className="rail-track">
           {props.cards}
         </div>
       )}
