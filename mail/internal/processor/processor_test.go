@@ -53,7 +53,7 @@ func (f *fakeStore) RecordFailure(_ context.Context, failure store.Failure) erro
 }
 
 type sendCall struct {
-	to, code, expiresAt string
+	kind, to, code, expiresAt string
 }
 
 // fakeMailer records sends and returns a scripted error.
@@ -63,10 +63,18 @@ type fakeMailer struct {
 }
 
 func (f *fakeMailer) SendVerificationCode(_ context.Context, to, code, expiresAt string) error {
+	return f.record("verification", to, code, expiresAt)
+}
+
+func (f *fakeMailer) SendPasswordResetCode(_ context.Context, to, code, expiresAt string) error {
+	return f.record("password_reset", to, code, expiresAt)
+}
+
+func (f *fakeMailer) record(kind, to, code, expiresAt string) error {
 	if f.sendErr != nil {
 		return f.sendErr
 	}
-	f.sends = append(f.sends, sendCall{to, code, expiresAt})
+	f.sends = append(f.sends, sendCall{kind, to, code, expiresAt})
 	return nil
 }
 
@@ -88,7 +96,8 @@ func TestHandleSuccess(t *testing.T) {
 	if len(m.sends) != 1 {
 		t.Fatalf("sends = %d, want 1", len(m.sends))
 	}
-	if m.sends[0].to != "person@example.com" || m.sends[0].code != "482917" {
+	if m.sends[0].kind != "verification" || m.sends[0].to != "person@example.com" ||
+		m.sends[0].code != "482917" {
 		t.Errorf("send = %+v", m.sends[0])
 	}
 	if len(st.marked) != 1 || st.marked[0] != testEventID+"|"+EventTypeVerificationRequested {
@@ -143,12 +152,35 @@ func TestHandleWrongSchemaVersion(t *testing.T) {
 	}
 }
 
+func TestHandlePasswordResetSuccess(t *testing.T) {
+	st := newFakeStore()
+	m := &fakeMailer{}
+	h, logs := newHandler(st, m)
+
+	outcome, err := h.Handle(context.Background(), passwordResetRaw())
+	if err != nil || outcome != OutcomeAck {
+		t.Fatalf("Handle = %v, %v; want OutcomeAck, nil", outcome, err)
+	}
+	if len(m.sends) != 1 || m.sends[0].kind != "password_reset" {
+		t.Fatalf("sends = %+v, want one password_reset send", m.sends)
+	}
+	if len(st.marked) != 1 || st.marked[0] != testEventID+"|"+EventTypePasswordResetRequested {
+		t.Errorf("marked = %v", st.marked)
+	}
+	if len(st.failures) != 0 {
+		t.Errorf("failures = %v, want none", st.failures)
+	}
+	if strings.Contains(logs.String(), "482917") {
+		t.Errorf("log output leaks code:\n%s", logs.String())
+	}
+}
+
 func TestHandleUnknownEventType(t *testing.T) {
 	st := newFakeStore()
 	m := &fakeMailer{}
 	h, _ := newHandler(st, m)
 
-	raw := strings.Replace(validRaw(), "auth.email.verification_requested", "auth.email.password_reset_requested", 1)
+	raw := strings.Replace(validRaw(), "auth.email.verification_requested", "auth.email.some_future_type", 1)
 	outcome, err := h.Handle(context.Background(), raw)
 	if err != nil || outcome != OutcomeAck {
 		t.Fatalf("Handle = %v, %v; want OutcomeAck, nil", outcome, err)

@@ -156,6 +156,72 @@ export const authHandler = new Elysia({ prefix: "/auth" })
     }
   )
 
+  // Uniform 200 like resend-verification: unknown email, unverified account,
+  // and cooldown suppression are all indistinguishable to the caller.
+  .post(
+    "/forgot-password",
+    async (ctx: any) => {
+      const { body } = ctx;
+      const validatedData = validateAuthRequest(
+        authTransportSchemas.forgotPassword,
+        body
+      );
+
+      await service.requestPasswordReset(validatedData);
+
+      return success({ ok: true });
+    },
+    {
+      beforeHandle: authStrictLimit,
+      body: t.Object({
+        email: t.String({ format: "email" }),
+      }),
+      response: {
+        200: t.Object({
+          success: t.Literal(true),
+          status: t.Number(),
+          data: t.Object({
+            ok: t.Boolean(),
+          }),
+        }),
+      },
+    }
+  )
+
+  // Consumes the reset code; mints no session (the user logs in again).
+  .post(
+    "/reset-password",
+    async (ctx: any) => {
+      const { body } = ctx;
+      const validatedData = validateAuthRequest(
+        authTransportSchemas.resetPassword,
+        body,
+        AuthValidator.validatePasswordReset
+      );
+
+      await service.resetPassword(validatedData);
+
+      return success({ ok: true });
+    },
+    {
+      beforeHandle: authLooseLimit,
+      body: t.Object({
+        email: t.String({ format: "email" }),
+        code: t.String({ minLength: 6, maxLength: 6 }),
+        newPassword: t.String({ minLength: 8 }),
+      }),
+      response: {
+        200: t.Object({
+          success: t.Literal(true),
+          status: t.Number(),
+          data: t.Object({
+            ok: t.Boolean(),
+          }),
+        }),
+      },
+    }
+  )
+
   .post(
     "/login",
     async (ctx: any) => {

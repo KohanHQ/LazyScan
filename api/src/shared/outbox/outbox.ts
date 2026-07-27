@@ -14,6 +14,8 @@ export const CHAPTER_PAGE_EVENT_SCHEMA_VERSION = 1;
 // service is a pure email projector with nothing to look up. Never log the code.
 export const AUTH_EMAIL_VERIFICATION_REQUESTED =
   "auth.email.verification_requested";
+export const AUTH_EMAIL_PASSWORD_RESET_REQUESTED =
+  "auth.email.password_reset_requested";
 export const AUTH_EMAIL_EVENT_SCHEMA_VERSION = 1;
 
 export interface NewOutboxEvent {

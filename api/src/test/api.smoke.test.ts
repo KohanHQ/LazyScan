@@ -164,10 +164,11 @@ async function userIdByEmail(email: string): Promise<string> {
 // outbox write path.
 async function latestVerificationEvent(
   email: string,
+  eventType = "auth.email.verification_requested",
 ): Promise<{ code: string; userId: string; expiresAt: string }> {
   const rows = await ctx.db`
     SELECT payload FROM outbox_events
-    WHERE event_type = 'auth.email.verification_requested'
+    WHERE event_type = ${eventType}
       AND payload->>'email' = ${email}
     ORDER BY occurred_at DESC, payload->>'expiresAt' DESC
     LIMIT 1
@@ -175,6 +176,12 @@ async function latestVerificationEvent(
 
   expect(rows.length).toBe(1);
   return rows[0].payload;
+}
+
+function latestPasswordResetEvent(
+  email: string,
+): Promise<{ code: string; userId: string; expiresAt: string }> {
+  return latestVerificationEvent(email, "auth.email.password_reset_requested");
 }
 
 // Register + verify in one step for tests that just need a session cookie;
@@ -287,6 +294,7 @@ describe("API smoke baseline", () => {
       "029_manga_comments.sql",
       "030_rename_mail_tables.sql",
       "031_profile_bio.sql",
+      "032_password_reset.sql",
     ]);
   });
 
@@ -555,7 +563,6 @@ describe("API smoke baseline", () => {
       avatarUrl: null,
     });
 
-    // Bio round-trip: set, profanity rejection (reject, never censor), clear.
     const bioProfile = await send(
       "PATCH",
       "/profile/me",
@@ -1642,6 +1649,216 @@ describe("email verification (hard verify)", () => {
     });
     expect(malformed.response.status).toBe(400);
     expect(malformed.json.success).toBe(false);
+  });
+});
+
+// Password reset rides the same OTP table under purpose='password_reset', and
+// login lockout bounds online guessing. Both are exercised end-to-end here:
+// the plaintext code is read back from the outbox payload.
+describe("password reset + login lockout", () => {
+  const PASSWORD = "Correct-password-123!";
+  const NEW_PASSWORD = "Brand-new-password-456!";
+
+  test("forgot-password is uniform and writes the reset event in one tx", async () => {
+    const email = `reset-request-${Date.now()}@example.test`;
+    await registerVerified(email, PASSWORD);
+
+    expectSuccess(
+      (await send("POST", "/auth/forgot-password", { email })).json,
+    );
+
+    const userId = await userIdByEmail(email);
+    const event = await latestPasswordResetEvent(email);
+    expect(event.code).toMatch(/^\d{6}$/);
+    expect(event.userId).toBe(userId);
+
+    const stored = await ctx.db`
+      SELECT purpose, code_hash, attempts, consumed_at
+      FROM email_verifications
+      WHERE user_id = ${userId} AND purpose = 'password_reset'
+    `;
+    expect(stored.length).toBe(1);
+    expect(stored[0].code_hash).not.toBe(event.code);
+    expect(stored[0].consumed_at).toBeNull();
+
+    // The registration code stays its own row: purposes never shadow.
+    const verifyRows = await ctx.db`
+      SELECT purpose FROM email_verifications
+      WHERE user_id = ${userId} AND purpose = 'verify'
+    `;
+    expect(verifyRows.length).toBe(1);
+  });
+
+  test("unknown and unverified emails resolve 200 without issuing a code", async () => {
+    const unknown = `reset-unknown-${Date.now()}@example.test`;
+    expectSuccess(
+      (await send("POST", "/auth/forgot-password", { email: unknown })).json,
+    );
+
+    const unverified = `reset-unverified-${Date.now()}@example.test`;
+    expectSuccess(
+      (await send("POST", "/auth/register", { email: unverified, password: PASSWORD }))
+        .json,
+    );
+    expectSuccess(
+      (await send("POST", "/auth/forgot-password", { email: unverified })).json,
+    );
+
+    const rows = await ctx.db`
+      SELECT 1 FROM outbox_events
+      WHERE event_type = 'auth.email.password_reset_requested'
+        AND payload->>'email' IN (${unknown}, ${unverified})
+    `;
+    expect(rows.length).toBe(0);
+  });
+
+  test("reset-password swaps the password, mints no session, and consumes the code", async () => {
+    const email = `reset-happy-${Date.now()}@example.test`;
+    await registerVerified(email, PASSWORD);
+
+    expectSuccess(
+      (await send("POST", "/auth/forgot-password", { email })).json,
+    );
+    const { code } = await latestPasswordResetEvent(email);
+
+    const reset = await send("POST", "/auth/reset-password", {
+      email,
+      code,
+      newPassword: NEW_PASSWORD,
+    });
+    expectSuccess(reset.json);
+    expect(reset.response.headers.get("set-cookie")).toBeNull();
+
+    const stale = await send("POST", "/auth/login", { email, password: PASSWORD });
+    expect(stale.response.status).toBe(401);
+    expectSuccess(
+      (await send("POST", "/auth/login", { email, password: NEW_PASSWORD })).json,
+    );
+
+    // Replay of a consumed code is indistinguishable from a wrong one.
+    const replay = await send("POST", "/auth/reset-password", {
+      email,
+      code,
+      newPassword: NEW_PASSWORD,
+    });
+    expect(replay.response.status).toBe(400);
+    expect(replay.json.error?.code).toBe("INVALID_CODE");
+  });
+
+  test("wrong reset codes are capped at 5 attempts", async () => {
+    const email = `reset-attempts-${Date.now()}@example.test`;
+    await registerVerified(email, PASSWORD);
+    expectSuccess(
+      (await send("POST", "/auth/forgot-password", { email })).json,
+    );
+    const { code } = await latestPasswordResetEvent(email);
+    const wrongCode = code === "000000" ? "111111" : "000000";
+
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      const wrong = await send("POST", "/auth/reset-password", {
+        email,
+        code: wrongCode,
+        newPassword: NEW_PASSWORD,
+      });
+      expect(wrong.response.status).toBe(400);
+      expect(wrong.json.error?.code).toBe("INVALID_CODE");
+    }
+
+    const capped = await send("POST", "/auth/reset-password", {
+      email,
+      code: wrongCode,
+      newPassword: NEW_PASSWORD,
+    });
+    expect(capped.response.status).toBe(429);
+    expect(capped.json.error?.code).toBe("TOO_MANY_ATTEMPTS");
+
+    // The cap outranks a correct code: the row is spent.
+    const correctAfterCap = await send("POST", "/auth/reset-password", {
+      email,
+      code,
+      newPassword: NEW_PASSWORD,
+    });
+    expect(correctAfterCap.response.status).toBe(429);
+  });
+
+  test("reset-password enforces the registration password rules", async () => {
+    const email = `reset-weak-${Date.now()}@example.test`;
+    await registerVerified(email, PASSWORD);
+    expectSuccess(
+      (await send("POST", "/auth/forgot-password", { email })).json,
+    );
+    const { code } = await latestPasswordResetEvent(email);
+
+    const weak = await send("POST", "/auth/reset-password", {
+      email,
+      code,
+      newPassword: "alllowercase1!",
+    });
+    expect(weak.response.status).toBe(400);
+    expect(weak.json.error?.code).toBe("PASSWORD_UPPERCASE_REQUIRED");
+  });
+
+  test("three wrong passwords lock the account, and a reset clears the lock", async () => {
+    const email = `lockout-${Date.now()}@example.test`;
+    await registerVerified(email, PASSWORD);
+
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const wrong = await send("POST", "/auth/login", {
+        email,
+        password: `${PASSWORD}-wrong`,
+      });
+      expect(wrong.response.status).toBe(401);
+      expect(wrong.json.error?.code).toBe("INVALID_CREDENTIALS");
+    }
+
+    // The correct password is refused while the lock holds.
+    const locked = await send("POST", "/auth/login", { email, password: PASSWORD });
+    expect(locked.response.status).toBe(429);
+    expect(locked.json.error?.code).toBe("ACCOUNT_LOCKED");
+
+    expectSuccess(
+      (await send("POST", "/auth/forgot-password", { email })).json,
+    );
+    const { code } = await latestPasswordResetEvent(email);
+    expectSuccess(
+      (
+        await send("POST", "/auth/reset-password", {
+          email,
+          code,
+          newPassword: NEW_PASSWORD,
+        })
+      ).json,
+    );
+
+    expectSuccess(
+      (await send("POST", "/auth/login", { email, password: NEW_PASSWORD })).json,
+    );
+
+    const rows = await ctx.db`
+      SELECT failed_login_attempts, locked_until FROM users WHERE email = ${email}
+    `;
+    expect(rows[0].failed_login_attempts).toBe(0);
+    expect(rows[0].locked_until).toBeNull();
+  });
+
+  test("a successful login clears a partial failure streak", async () => {
+    const email = `lockout-partial-${Date.now()}@example.test`;
+    await registerVerified(email, PASSWORD);
+
+    const wrong = await send("POST", "/auth/login", {
+      email,
+      password: `${PASSWORD}-wrong`,
+    });
+    expect(wrong.response.status).toBe(401);
+
+    expectSuccess(
+      (await send("POST", "/auth/login", { email, password: PASSWORD })).json,
+    );
+
+    const rows = await ctx.db`
+      SELECT failed_login_attempts FROM users WHERE email = ${email}
+    `;
+    expect(rows[0].failed_login_attempts).toBe(0);
   });
 });
 
