@@ -12,9 +12,9 @@ const COVER_MS = 440;
 // and paints the new route. Raise this if a heavier route ever flashes.
 const DWELL_MS = 120;
 const REVEAL_MS = 480;
-// Both phases share easeInOutCubic: the cover decelerates into the hold and
-// the reveal accelerates out of it, so the wipe reads as one continuous pass
-// instead of accelerate → hard stop → re-accelerate.
+// Both halves of the wipe share easeInOutCubic: the cover decelerates into
+// the hold and the reveal accelerates out of it, so the wipe reads as one
+// continuous pass instead of accelerate → hard stop → re-accelerate.
 const EASE = "cubic-bezier(0.65, 0, 0.35, 1)";
 const SKEW = " skewX(-30deg)";
 
