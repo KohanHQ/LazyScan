@@ -30,6 +30,7 @@ const badgeSchema = t.Object({
 const profileResponseSchema = t.Object({
   username: t.Union([t.String(), t.Null()]),
   displayName: t.Union([t.String(), t.Null()]),
+  bio: t.Union([t.String(), t.Null()]),
   avatarUrl: t.Union([t.String(), t.Null()]),
   profileVisibility: visibilitySchema,
   shelfVisibility: visibilitySchema,
@@ -43,6 +44,7 @@ const profileResponseSchema = t.Object({
 const publicProfileResponseSchema = t.Object({
   username: t.Union([t.String(), t.Null()]),
   displayName: t.Union([t.String(), t.Null()]),
+  bio: t.Union([t.String(), t.Null()]),
   avatarUrl: t.Union([t.String(), t.Null()]),
   createdAt: t.String(),
   badges: t.Array(badgeSchema),
@@ -137,6 +139,7 @@ export const profileHandler = new Elysia({ prefix: "/profile" })
           body: t.Object({
             username: t.Optional(t.String()),
             displayName: t.Optional(t.Union([t.String(), t.Null()])),
+            bio: t.Optional(t.Union([t.String(), t.Null()])),
             profileVisibility: t.Optional(visibilitySchema),
             shelfVisibility: t.Optional(visibilitySchema),
             // avatarUrl is intentionally surfaced here (Elysia strips keys absent

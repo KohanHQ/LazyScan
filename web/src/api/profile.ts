@@ -14,6 +14,8 @@ export type Badge = {
 export type Profile = {
   username: string | null;
   displayName: string | null;
+  // Optional "about me", 256 chars max, profanity-guarded server-side.
+  bio: string | null;
   // Null for everyone except the instance owner, whose owner-gated avatar
   // upload (POST /upload, type=avatar) sets it. Everyone else's avatar stays
   // derived from the display name.
@@ -31,6 +33,8 @@ export type ProfileUpdate = {
   // avatar upload instead), so neither is part of the patch shape.
   // null (or "") clears displayName; undefined leaves a field unchanged.
   displayName?: string | null;
+  // Same null-clears / undefined-unchanged contract as displayName.
+  bio?: string | null;
   profileVisibility?: ProfileVisibility;
   shelfVisibility?: ProfileVisibility;
 };
@@ -53,6 +57,7 @@ export type AvatarUploadResult = {
 export type PublicProfile = {
   username: string | null;
   displayName: string | null;
+  bio: string | null;
   avatarUrl: string | null;
   createdAt: string;
   badges: Badge[];

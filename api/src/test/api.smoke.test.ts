@@ -285,6 +285,8 @@ describe("API smoke baseline", () => {
       "027_chapter_pages_original_pruned.sql",
       "028_jsonb_unwrap_string_scalars.sql",
       "029_manga_comments.sql",
+      "030_rename_mail_tables.sql",
+      "031_profile_bio.sql",
     ]);
   });
 
@@ -552,6 +554,36 @@ describe("API smoke baseline", () => {
       displayName: null,
       avatarUrl: null,
     });
+
+    // Bio round-trip: set, profanity rejection (reject, never censor), clear.
+    const bioProfile = await send(
+      "PATCH",
+      "/profile/me",
+      { bio: "Phase 3 reader." },
+      loginCookie,
+    );
+    expect(
+      expectSuccess<{ bio: string | null }>(bioProfile.json),
+    ).toMatchObject({ bio: "Phase 3 reader." });
+
+    const profaneBio = await send(
+      "PATCH",
+      "/profile/me",
+      { bio: "full of $h!t" },
+      loginCookie,
+    );
+    expect(profaneBio.response.status).toBe(400);
+    expect(profaneBio.json.error?.code).toBe("PROFILE_BIO_PROFANITY");
+
+    const clearedBio = await send(
+      "PATCH",
+      "/profile/me",
+      { bio: "" },
+      loginCookie,
+    );
+    expect(
+      expectSuccess<{ bio: string | null }>(clearedBio.json),
+    ).toMatchObject({ bio: null });
 
     const mangaSlug = `phase3-manga-${unique}`;
     const createdManga = await send(
