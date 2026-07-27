@@ -242,22 +242,20 @@ h3 {
 }
 
 /* Infinite card-stepping carousel (home.tsx Rail, `carousel` prop): JS steps
-   the track one fixed stride (146px = card 132 + gap 14) per tick; N copies
-   make the wrap at the copy-2 boundary pixel-identical to position 0. Pure
-   arithmetic geometry — no content measurement. Structure notes:
+   the track one stride (card + gap 14, ≥146px) per tick; N copies make the
+   wrap at the copy-2 boundary pixel-identical to position 0. Pure arithmetic
+   geometry — no content measurement. Structure notes:
    - The viewport is its own class, NEVER combined with .rail-track — a plain
      block, so the track is not a flex item and cannot be shrink-squashed
      (that interplay broke the first iteration).
    - Each copy pads its own trailing gap, so card positions stay exact stride
      multiples across copy boundaries. */
 /* clip, not hidden: hidden makes this a scroll container, so tabbing to a card
-   that drifted off-screen leaves scrollLeft offset after blur.
-   max-width caps the visible window at 6 strides (146px each — RAIL_STRIDE_PX
-   in home.tsx); narrower viewports just get fewer. */
+   that drifted off-screen leaves scrollLeft offset after blur. The inline
+   max-width from home.tsx caps the window at exactly 6 strides. */
 .rail-carousel {
   overflow: hidden;
   overflow: clip;
-  max-width: 876px;
 }
 
 /* NO will-change, deliberately: a 0.45s stride transition does not need
@@ -293,6 +291,11 @@ h3 {
   scroll-snap-align: start;
   cursor: pointer;
   outline: none;
+}
+
+/* Only carousel cards scale with the derived stride; static rails stay 132px. */
+.rail-carousel .rail-card {
+  flex-basis: var(--rail-card-w, 132px);
 }
 
 .rail-cover {
