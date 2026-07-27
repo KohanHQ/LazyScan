@@ -9,8 +9,7 @@ export interface Profile {
   userId: UUID;
   username: string | null;
   displayName: string | null;
-  // Optional free-text "about me" (migration 031). Capped at 256 chars and
-  // profanity-guarded at the validation layer; stored raw.
+  // Stored raw; the 256-char cap and profanity guard live at validation.
   bio: string | null;
   avatarUrl: string | null;
   profileVisibility: ProfileVisibility;

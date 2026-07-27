@@ -5,11 +5,10 @@ const MAX_BODY = 1000;
 
 // ponytail: a hard-coded wordlist is the floor, not real moderation — it is
 // trivially bypassed (leetspeak, spacing, new slurs). Swap for an external list
-// or a moderation service if this ever needs to actually hold. The list itself
-// is the canonical shared one (shared/utility/profanity.ts); masking keeps its
-// plain \b matcher because it replaces in the raw text, where the bio matcher's
-// normalized classes cannot map back to original positions.
+// or a moderation service if this ever needs to actually hold.
 // Word-boundary, case-insensitive: "ass" matches standalone but not "class".
+// Masking stays on \b: it replaces in the raw text, where the stricter
+// matcher's normalized classes cannot map back to original positions.
 const PROFANITY_RE = new RegExp(`\\b(?:${PROFANITY_ROOTS.join("|")})\\b`, "gi");
 
 export function maskProfanity(text: string): string {

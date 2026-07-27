@@ -1,9 +1,7 @@
 import assert from "node:assert";
 
-// Canonical profanity root list, shared by every validation-layer guard:
-// comments mask matches (comment.validation.ts), the profile bio rejects the
-// whole value (profile.validation.ts). Keep it small and root-shaped — the
-// matchers, not the list, carry the evasion resistance.
+// Root-shaped and small on purpose: the matchers, not the list, carry the
+// evasion resistance. Comments mask matches; the bio rejects the whole value.
 export const PROFANITY_ROOTS = [
   "arse",
   "arsehole",
@@ -27,8 +25,8 @@ export const PROFANITY_ROOTS = [
   "wanker",
 ];
 
-// Leet/symbol lookalikes per letter. `0` sits under both `o` and `u` so
-// f0ck-style swaps resolve to the intended root, not the literal "fock".
+// `0` sits under both `o` and `u` so f0ck-style swaps resolve to the intended
+// root, not the literal "fock".
 const LOOKALIKES: Record<string, string> = {
   a: "@4",
   b: "8",
@@ -44,9 +42,8 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// Each maximal run of a letter in the root becomes a class of the letter plus
-// its lookalikes, quantified by the run length: "ass" needs two s's (so the
-// common word "as" stays clean) while "fuuuck" still matches "fuck".
+// Run length is quantified so "ass" needs both s's (the common word "as" stays
+// clean) while "fuuuck" still matches "fuck".
 function rootToPattern(root: string): string {
   let pattern = "";
   for (let i = 0; i < root.length; ) {
@@ -60,16 +57,14 @@ function rootToPattern(root: string): string {
   return pattern;
 }
 
-// Boundaries are \w lookarounds, not \b: \b fails when a match starts with a
-// symbol ("$hit" has no word boundary before "$"). Substrings inside larger
-// words stay clean ("classic", "Scunthorpe").
+// \w lookarounds, not \b: \b fails when a match starts with a symbol ("$hit").
+// Substrings inside larger words stay clean ("Scunthorpe").
 const PROFANITY_RE = new RegExp(
   `(?<!\\w)(?:${PROFANITY_ROOTS.map(rootToPattern).join("|")})(?!\\w)`,
   "i"
 );
 
-// Matching only — callers decide whether to mask, reject, or log. Fully
-// spaced-out evasion ("f u c k") slips through by design: closing it requires
+// Spaced-out evasion ("f u c k") slips through by design: closing it means
 // dropping boundaries, which reintroduces the Scunthorpe problem.
 export function containsProfanity(text: string): boolean {
   return PROFANITY_RE.test(text);

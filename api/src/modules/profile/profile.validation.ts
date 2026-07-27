@@ -54,8 +54,7 @@ export class ProfileValidator {
     if (input.username) {
       ProfileValidator.validateUsername(input.username);
     }
-    // Reject, never censor: the raw bio is stored; filtering lives only at this
-    // validation gate. null (cleared) skips the check.
+    // Reject, never censor: the bio is stored raw. null (cleared) skips this.
     if (input.bio && containsProfanity(input.bio)) {
       throw new BusinessRuleError(
         "Bio contains prohibited language",
