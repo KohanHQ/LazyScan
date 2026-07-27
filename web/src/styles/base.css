@@ -1741,8 +1741,7 @@ img.user-avatar {
 }
 
 .manage-form--cols .field-wide,
-.manage-form--cols .manage-actions,
-.manage-form--cols .form-error {
+.manage-form--cols .manage-actions {
   grid-column: 1 / -1;
 }
 
@@ -1878,9 +1877,15 @@ img.user-avatar {
   font-size: 1.1rem;
 }
 
-/* pre-wrap keeps the user's own line breaks. */
+/* Quiet container so the bio reads as the bio, not stray text under the badges —
+   never a card. pre-wrap keeps the user's own line breaks. */
 .profile-bio {
-  margin: 12px 0 0;
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  color: var(--text-secondary);
   white-space: pre-wrap;
 }
 

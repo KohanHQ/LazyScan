@@ -16,6 +16,7 @@ import { retryChapterUpload } from "@/api/chapter";
 import { PageHeading } from "@/components/page-heading";
 import { Empty, ErrorState, Loading } from "@/components/states";
 import { RequireSession } from "@/components/require-session";
+import { useToast } from "@/components/ui/toast";
 import { usePopupDismiss } from "@/lib/use-popup-dismiss";
 import { formatDate } from "@/utils/format";
 
@@ -278,16 +279,15 @@ function ImportRow({
   onRetry: () => void;
 }): ReactElement {
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   const retry = async (): Promise<void> => {
     setBusy(true);
-    setError(null);
     try {
       await retryChapterUpload(entry.mangaId, entry.importId);
     } catch (retryError) {
       setBusy(false);
-      setError(retryError instanceof Error ? retryError.message : "Retry failed.");
+      toast.error(retryError instanceof Error ? retryError.message : "Retry failed.");
       return;
     }
     onRetry();
@@ -315,7 +315,6 @@ function ImportRow({
             ))}
           </ul>
         ) : null}
-        {error ? <p className="settings-import-error">{error}</p> : null}
       </div>
       <button className="secondary-button" type="button" onClick={() => void retry()} disabled={busy}>
         {busy ? "Retrying" : "Retry"}

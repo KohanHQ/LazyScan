@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/toast";
 import { ChaptersPanel } from "@/pages/manage-chapters-panel";
 import { navigateTo } from "@/router";
 
@@ -174,8 +175,8 @@ function MangaForm({
   const submitLabel = mode === "create" ? "Create manga" : "Save changes";
   const maxYear = new Date().getFullYear() + 1;
 
+  const toast = useToast();
   const [status, setStatus] = useState<MangaStatus>(manga?.status ?? "ongoing");
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -208,13 +209,13 @@ function MangaForm({
     const { input, cover } = readInput(new FormData(event.currentTarget), mode);
 
     if (!input.title || !input.slug) {
-      setError("Title and slug are required.");
+      toast.error("Title and slug are required.");
       return;
     }
     // React-side validation standing in for the suppressed native constraints
     // (the form is noValidate): slug pattern and numeric ranges.
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.slug)) {
-      setError("Slug may only contain lowercase letters, numbers, and single hyphens.");
+      toast.error("Slug may only contain lowercase letters, numbers, and single hyphens.");
       return;
     }
     if (
@@ -223,18 +224,17 @@ function MangaForm({
         input.publishedYear < 1900 ||
         input.publishedYear > maxYear)
     ) {
-      setError(`Published year must be a year between 1900 and ${maxYear}.`);
+      toast.error(`Published year must be a year between 1900 and ${maxYear}.`);
       return;
     }
     if (
       typeof input.totalChapters === "number" &&
       (!Number.isInteger(input.totalChapters) || input.totalChapters < 1)
     ) {
-      setError("Total chapters must be a whole number of at least 1.");
+      toast.error("Total chapters must be a whole number of at least 1.");
       return;
     }
 
-    setError(null);
     setBusy(true);
     try {
       let saved: Manga;
@@ -248,7 +248,7 @@ function MangaForm({
       }
       navigateTo(`/manga/${encodeURIComponent(saved.id)}`);
     } catch (saveError) {
-      setError(
+      toast.error(
         saveError instanceof Error ? saveError.message : "Unable to save manga."
       );
       setBusy(false);
@@ -264,7 +264,7 @@ function MangaForm({
       await deleteManga(manga.id);
       navigateTo("/");
     } catch (deleteError) {
-      setError(
+      toast.error(
         deleteError instanceof Error
           ? deleteError.message
           : "Unable to delete manga."
@@ -401,7 +401,6 @@ function MangaForm({
               <small>PNG, JPEG, or WebP. Requires storage to be configured.</small>
             </label>
           ) : null}
-          {error ? <p className="form-error">{error}</p> : null}
           <div className="manage-actions">
             <button className="primary-button" type="submit" disabled={busy}>
               {busy ? "Saving" : submitLabel}
@@ -480,14 +479,14 @@ function CoverDialog({
   onUploaded: (url: string | null) => void;
   onClose: () => void;
 }): ReactElement {
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const onUpload = async (): Promise<void> => {
     const file = fileRef.current?.files?.[0] ?? null;
     if (!file) {
-      setError("Choose an image to upload.");
+      toast.error("Choose an image to upload.");
       return;
     }
     setBusy(true);
@@ -496,7 +495,7 @@ function CoverDialog({
       onUploaded(updated.coverUrl);
       onClose();
     } catch (uploadError) {
-      setError(
+      toast.error(
         uploadError instanceof Error
           ? uploadError.message
           : "Unable to upload cover."
@@ -537,7 +536,6 @@ function CoverDialog({
             <small>PNG, JPEG, or WebP. Requires storage to be configured.</small>
           </label>
         </div>
-        {error ? <p className="form-error">{error}</p> : null}
         <DialogFooter>
           <button className="secondary-button" type="button" onClick={onClose}>
             Cancel

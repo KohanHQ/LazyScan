@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/toast";
 
 // Chapter management surface for the manga edit page: list every chapter (any
 // status/publish state) and act on it — publish/unpublish, edit metadata, delete,
@@ -63,16 +64,15 @@ function chapterLabel(chapter: ReaderChapter): string {
 }
 
 export function ChaptersPanel({ manga }: { manga: Manga }): ReactElement {
+  const toast = useToast();
   const [state, setState] = useState<ListState>({ kind: "loading" });
   const [reload, setReload] = useState(0);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
 
   useEffect(() => {
     // Refresh keeps the current list visible until new data lands (no reload
     // flash); the initial "loading" comes from the initializer above.
     let ignore = false;
-    setActionError(null);
     listMangaChapters(manga.id)
       .then((chapters) => {
         if (!ignore) {
@@ -100,7 +100,7 @@ export function ChaptersPanel({ manga }: { manga: Manga }): ReactElement {
       await action();
       refresh();
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Action failed.");
+      toast.error(error instanceof Error ? error.message : "Action failed.");
     }
   };
 
@@ -118,75 +118,72 @@ export function ChaptersPanel({ manga }: { manga: Manga }): ReactElement {
           No chapters yet. Use &quot;Upload chapter&quot; above to add one.
         </p>
       ) : (
-        <>
-          <ul className="chapter-admin-list">
-            {state.chapters.map((chapter) => (
-              <li className="chapter-admin-row" key={chapter.id}>
-                <div className="chapter-admin-main">
-                  <span className="chapter-admin-title">
-                    {chapterLabel(chapter)}
-                  </span>
-                  <span
-                    className={`chapter-admin-badge ${visibilityClass(chapter)}`}
-                  >
-                    {visibilityLabel(chapter)}
-                  </span>
-                </div>
-                <div className="chapter-admin-actions">
+        <ul className="chapter-admin-list">
+          {state.chapters.map((chapter) => (
+            <li className="chapter-admin-row" key={chapter.id}>
+              <div className="chapter-admin-main">
+                <span className="chapter-admin-title">
+                  {chapterLabel(chapter)}
+                </span>
+                <span
+                  className={`chapter-admin-badge ${visibilityClass(chapter)}`}
+                >
+                  {visibilityLabel(chapter)}
+                </span>
+              </div>
+              <div className="chapter-admin-actions">
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => setDialog({ kind: "pages", chapter })}
+                >
+                  Pages
+                </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => setDialog({ kind: "edit", chapter })}
+                >
+                  Edit
+                </button>
+                {chapter.publishedAt ? (
                   <button
                     className="ghost-button"
                     type="button"
-                    onClick={() => setDialog({ kind: "pages", chapter })}
+                    onClick={() =>
+                      void runAction(() =>
+                        unpublishChapter(manga.id, chapter.id)
+                      )
+                    }
                   >
-                    Pages
+                    Unpublish
                   </button>
+                ) : chapter.status === "ready" ? (
+                  // Only a fully processed ("ready"), unpublished chapter can be
+                  // published; processing/importing/failed rows can't.
                   <button
                     className="ghost-button"
                     type="button"
-                    onClick={() => setDialog({ kind: "edit", chapter })}
+                    onClick={() =>
+                      void runAction(() =>
+                        publishChapter(manga.id, chapter.id)
+                      )
+                    }
                   >
-                    Edit
+                    Publish
                   </button>
-                  {chapter.publishedAt ? (
-                    <button
-                      className="ghost-button"
-                      type="button"
-                      onClick={() =>
-                        void runAction(() =>
-                          unpublishChapter(manga.id, chapter.id)
-                        )
-                      }
-                    >
-                      Unpublish
-                    </button>
-                  ) : chapter.status === "ready" ? (
-                    // Only a fully processed ("ready"), unpublished chapter can be
-                    // published; processing/importing/failed rows can't.
-                    <button
-                      className="ghost-button"
-                      type="button"
-                      onClick={() =>
-                        void runAction(() =>
-                          publishChapter(manga.id, chapter.id)
-                        )
-                      }
-                    >
-                      Publish
-                    </button>
-                  ) : null}
-                  <button
-                    className="ghost-button danger"
-                    type="button"
-                    onClick={() => setDialog({ kind: "delete", chapter })}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-          {actionError ? <p className="form-error">{actionError}</p> : null}
-        </>
+                ) : null}
+                <button
+                  className="ghost-button danger"
+                  type="button"
+                  onClick={() => setDialog({ kind: "delete", chapter })}
+                >
+                  Delete
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
 
       {dialog.kind === "edit" ? (
@@ -242,7 +239,7 @@ function EditChapterDialog({
   onClose: () => void;
   onSaved: () => void;
 }): ReactElement {
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
   const numberRef = useRef<HTMLInputElement>(null);
@@ -252,7 +249,7 @@ function EditChapterDialog({
   const onSave = async (): Promise<void> => {
     const title = titleRef.current?.value.trim() ?? "";
     if (!title) {
-      setError("Title is required.");
+      toast.error("Title is required.");
       return;
     }
     const numberRaw = numberRef.current?.value.trim() ?? "";
@@ -264,7 +261,7 @@ function EditChapterDialog({
     // sort order.
     const numericError = validateChapterNumbers(numberRaw, volumeRaw, sortRaw);
     if (numericError) {
-      setError(numericError);
+      toast.error(numericError);
       return;
     }
 
@@ -280,7 +277,7 @@ function EditChapterDialog({
       });
       onSaved();
     } catch (saveError) {
-      setError(
+      toast.error(
         saveError instanceof Error ? saveError.message : "Unable to save chapter."
       );
       setBusy(false);
@@ -340,7 +337,6 @@ function EditChapterDialog({
             />
           </label>
         </div>
-        {error ? <p className="form-error">{error}</p> : null}
         <DialogFooter>
           <button className="secondary-button" type="button" onClick={onClose}>
             Cancel
@@ -380,8 +376,8 @@ function PagesDialog({
   const [state, setState] = useState<PagesState>({ kind: "loading" });
   // Working copy reordered in memory; persisted only on Save.
   const [order, setOrder] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     let ignore = false;
@@ -431,7 +427,7 @@ function PagesDialog({
       await reorderChapterPages(manga.id, chapter.id, order);
       onSaved();
     } catch (saveError) {
-      setError(
+      toast.error(
         saveError instanceof Error ? saveError.message : "Unable to save order."
       );
       setBusy(false);
@@ -514,7 +510,6 @@ function PagesDialog({
                 );
               })}
             </ol>
-            {error ? <p className="form-error">{error}</p> : null}
             <DialogFooter>
               <button
                 className="secondary-button"
