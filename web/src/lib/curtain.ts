@@ -7,11 +7,15 @@
 // panel fully covers the viewport at translateX(0) and is fully off-screen at
 // translateX(±100%).
 
-const COVER_MS = 420;
+const COVER_MS = 440;
 // Held at full cover (the cover animation fills forwards) while React commits
-// and paints the new route.
-const DWELL_MS = 140;
-const REVEAL_MS = 460;
+// and paints the new route. Raise this if a heavier route ever flashes.
+const DWELL_MS = 120;
+const REVEAL_MS = 480;
+// Both phases share easeInOutCubic: the cover decelerates into the hold and
+// the reveal accelerates out of it, so the wipe reads as one continuous pass
+// instead of accelerate → hard stop → re-accelerate.
+const EASE = "cubic-bezier(0.65, 0, 0.35, 1)";
 const SKEW = " skewX(-30deg)";
 
 let active = false;
@@ -43,7 +47,7 @@ export function curtainWipe(midpoint: () => void): void {
       { transform: `translateX(-100%)${SKEW}` },
       { transform: `translateX(0%)${SKEW}` },
     ],
-    { duration: COVER_MS, easing: "cubic-bezier(0.4, 0, 0.7, 1)", fill: "forwards" }
+    { duration: COVER_MS, easing: EASE, fill: "forwards" }
   );
   cover.oncancel = done;
   cover.onfinish = () => {
@@ -56,7 +60,7 @@ export function curtainWipe(midpoint: () => void): void {
       {
         delay: DWELL_MS,
         duration: REVEAL_MS,
-        easing: "cubic-bezier(0.3, 0, 0.2, 1)",
+        easing: EASE,
         fill: "forwards",
       }
     );

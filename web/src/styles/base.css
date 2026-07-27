@@ -242,7 +242,13 @@ h3 {
 }
 
 /* Marquee variant: one animated track carrying two identical copies of the card
-   list, so translating -50% lands copy 2 exactly where copy 1 started. */
+   list, translating 0 → -50% linear infinite, so copy 2 lands exactly where
+   copy 1 started. The geometry holds by structure, not by measured arithmetic:
+   - The viewport is its own class, NEVER combined with .rail-track — a plain
+     block, so the track is not a flex item and cannot be shrink-squashed
+     (that interplay shipped broken as F-054).
+   - Each copy pads its OWN trailing gap, making the track exactly 2× one copy
+     wide — the -50% wrap is exact whatever the gap value is. */
 /* clip, not hidden: hidden makes this a scroll container, so tabbing to a card
    that drifted off-screen leaves scrollLeft offset after blur. */
 .rail-marquee {
@@ -250,23 +256,24 @@ h3 {
   overflow: clip;
 }
 
-/* padding-right gives the track a trailing gap, making each copy exactly half of
-   it — without that, -50% stops 7px short and the wrap visibly hitches. */
-/* flex: 0 0 auto on both: each is a flex item of the box above it, and a flex
-   item's default shrink overrides width/max-content and squashes the copies. */
 .rail-marquee-track {
   display: flex;
-  flex: 0 0 auto;
-  gap: 14px;
   width: max-content;
-  padding-right: 14px;
+  will-change: transform;
   animation: rail-marquee var(--rail-marquee-duration) linear infinite;
+}
+
+/* Held static until the Rail component has measured a copy and set a real
+   duration — a 0s var would flash the wrap point on the first frame. */
+.rail-marquee-track:not(.is-ready) {
+  animation: none;
 }
 
 .rail-marquee-copy {
   display: flex;
   flex: 0 0 auto;
   gap: 14px;
+  padding-right: 14px;
 }
 
 @keyframes rail-marquee {

@@ -204,7 +204,9 @@ export function HomePage(): ReactElement {
 // no cards, so an empty feed leaves no gap between the hero and the library.
 // Rails fade + rise into view on scroll (.rail-reveal in base.css); without
 // IntersectionObserver or under reduced motion they render visible outright.
-// `marquee` opts a rail into the auto-scrolling variant (.rail-marquee).
+// `marquee` opts a rail into the infinite auto-scrolling variant — geometry is
+// measured from the live DOM in two honest steps (see effects below), never
+// derived from hard-coded card widths.
 function Rail(props: {
   role: string;
   eyebrow: string;
@@ -213,7 +215,7 @@ function Rail(props: {
   marquee?: boolean;
 }): ReactElement | null {
   const sectionRef = useRef<HTMLElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const [revealed, setRevealed] = useState(
     () =>
       !HAS_OBSERVER ||
@@ -221,48 +223,29 @@ function Rail(props: {
   );
   const [offscreen, setOffscreen] = useState(false);
   const [contentWidth, setContentWidth] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const [copyWidth, setCopyWidth] = useState(0);
   const reduceMotion =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // Card widths are fixed, so layout time is enough — no waiting on covers. The
-  // content width is only honest before the marquee viewport clips the track,
-  // so the first reading is kept and only the container is re-measured.
-  useLayoutEffect(() => {
-    const track = trackRef.current;
-    if (props.marquee !== true || !track) {
-      return;
-    }
-    const measure = (): void => {
-      setContainerWidth(track.clientWidth);
-      setContentWidth((width) => (width > 0 ? width : track.scrollWidth));
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [props.marquee]);
-
   // A thin feed and reduced motion deliberately share the fallback: plain track.
   const marqueeOn =
-    props.marquee === true && !reduceMotion && contentWidth > containerWidth;
+    props.marquee === true &&
+    !reduceMotion &&
+    viewportWidth > 0 &&
+    contentWidth > viewportWidth;
 
+  // Reveal observer: one-shot, disconnects once the rail has faded in.
   useEffect(() => {
     const section = sectionRef.current;
-    if (!section || !HAS_OBSERVER || (revealed && !marqueeOn)) {
+    if (!section || !HAS_OBSERVER || revealed) {
       return;
     }
     const observer = new IntersectionObserver(
       (entries) => {
-        const visible = entries.some((entry) => entry.isIntersecting);
-        if (visible) {
+        if (entries.some((entry) => entry.isIntersecting)) {
           setRevealed(true);
-        }
-        // A marquee keeps the observer past the reveal: an infinite animation
-        // running while the reader scrolls past is spent battery.
-        if (marqueeOn) {
-          setOffscreen(!visible);
-        } else if (visible) {
           observer.disconnect();
         }
       },
@@ -270,7 +253,55 @@ function Rail(props: {
     );
     observer.observe(section);
     return () => observer.disconnect();
-  }, [revealed, marqueeOn]);
+  }, [revealed]);
+
+  // Step 1: the plain track's scrollWidth decides whether the content overflows
+  // (honest only before the marquee's second copy renders, so the first reading
+  // is kept — card widths and count are fixed for a mounted rail). Only the
+  // viewport is re-measured on resize, so a narrower window can still engage.
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    if (props.marquee !== true || !viewport) {
+      return;
+    }
+    const measure = (): void => {
+      setViewportWidth(viewport.clientWidth);
+      setContentWidth((width) => (width > 0 ? width : viewport.scrollWidth));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [props.marquee]);
+
+  // Step 2: with the copies on screen, one copy's outer width is the exact loop
+  // length (each copy pads its own trailing gap — see base.css). Drives the
+  // duration var; the track stays un-animated (.is-ready gate) until this lands.
+  useLayoutEffect(() => {
+    if (!marqueeOn) {
+      return;
+    }
+    const copy = viewportRef.current?.querySelector(".rail-marquee-copy");
+    if (copy instanceof HTMLElement) {
+      setCopyWidth(copy.offsetWidth);
+    }
+  }, [marqueeOn]);
+
+  // Off-screen pause: an infinite animation running past the fold is spent
+  // battery. Separate observer from the reveal one — different lifetimes.
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!marqueeOn || !section || !HAS_OBSERVER) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        setOffscreen(!entries.some((entry) => entry.isIntersecting));
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [marqueeOn]);
 
   if (props.cards.length === 0) {
     return null;
@@ -286,13 +317,13 @@ function Rail(props: {
         <p className="eyebrow">{props.eyebrow}</p>
         <h2>{props.title}</h2>
       </div>
-      <div ref={trackRef} className={`rail-track${marqueeOn ? " rail-marquee" : ""}`}>
-        {marqueeOn ? (
+      {marqueeOn ? (
+        <div ref={viewportRef} className="rail-marquee">
           <div
-            className={`rail-marquee-track${offscreen ? " is-paused" : ""}`}
+            className={`rail-marquee-track${offscreen ? " is-paused" : ""}${copyWidth > 0 ? " is-ready" : ""}`}
             style={
               {
-                "--rail-marquee-duration": `${contentWidth / MARQUEE_PX_PER_SECOND}s`,
+                "--rail-marquee-duration": `${copyWidth / MARQUEE_PX_PER_SECOND}s`,
               } as CSSProperties
             }
           >
@@ -301,10 +332,12 @@ function Rail(props: {
               {props.cards}
             </div>
           </div>
-        ) : (
-          props.cards
-        )}
-      </div>
+        </div>
+      ) : (
+        <div ref={viewportRef} className="rail-track">
+          {props.cards}
+        </div>
+      )}
     </section>
   );
 }
