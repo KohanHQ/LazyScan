@@ -3953,3 +3953,39 @@ img.cover-fade.is-loaded {
   border-right: 2px solid var(--accent-fg);
   will-change: transform;
 }
+
+/* Boot splash over the whole shell until session bootstrap settles
+   (components/boot-splash.tsx drives the scramble). Above toasts (z-1100),
+   below the route curtain (z-2000). */
+.boot-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  transition: opacity 0.3s ease-out;
+}
+
+.boot-splash[data-leaving="true"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Monospace so a scrambled glyph never changes the wordmark's width; the
+   padding offsets the trailing letter-space so it stays optically centered. */
+.boot-splash-wordmark {
+  padding-left: 0.34em;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: clamp(1.3rem, 5vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: 0.34em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-splash {
+    transition: none;
+  }
+}
