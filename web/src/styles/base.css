@@ -247,20 +247,25 @@ h3 {
    arithmetic geometry — no content measurement. Structure notes:
    - The viewport is its own class, NEVER combined with .rail-track — a plain
      block, so the track is not a flex item and cannot be shrink-squashed
-     (the F-054 mechanism).
+     (that interplay broke the first iteration).
    - Each copy pads its own trailing gap, so card positions stay exact stride
      multiples across copy boundaries. */
 /* clip, not hidden: hidden makes this a scroll container, so tabbing to a card
-   that drifted off-screen leaves scrollLeft offset after blur. */
+   that drifted off-screen leaves scrollLeft offset after blur.
+   max-width caps the visible window at 6 strides (146px each — RAIL_STRIDE_PX
+   in home.tsx); narrower viewports just get fewer. */
 .rail-carousel {
   overflow: hidden;
   overflow: clip;
+  max-width: 876px;
 }
 
+/* NO will-change, deliberately: a 0.45s stride transition does not need
+   compositor promotion, and promoted layers have burned this rail before —
+   keep the track unpromoted. */
 .rail-carousel-track {
   display: flex;
   width: max-content;
-  will-change: transform;
   transition: transform 0.45s ease;
 }
 

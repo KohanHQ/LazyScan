@@ -195,7 +195,7 @@ export function HomePage(): ReactElement {
         title="Fresh chapters"
         carousel
         cards={data.updates.map((manga) => (
-          <RailCard key={manga.id} manga={manga} />
+          <RailCard key={manga.id} manga={manga} eager />
         ))}
       />
       <Library firstPage={data.firstPage} />
@@ -382,8 +382,9 @@ function Rail(props: {
 }
 
 // Compact rail card: cover + clamped title. Navigates to the manga detail page,
-// same as the grid cards.
-function RailCard({ manga }: { manga: Manga }): ReactElement {
+// same as the grid cards. `eager` loads covers immediately — the carousel's
+// duplicated copies sit outside the window, where lazy loading never fires.
+function RailCard({ manga, eager = false }: { manga: Manga; eager?: boolean }): ReactElement {
   return (
     <article
       className="rail-card"
@@ -391,7 +392,12 @@ function RailCard({ manga }: { manga: Manga }): ReactElement {
       {...clickable(`/manga/${encodeURIComponent(manga.id)}`)}
     >
       <div className="rail-cover">
-        <Cover url={manga.coverUrl} seed={manga.title} placeholderClass="cover-placeholder" />
+        <Cover
+          url={manga.coverUrl}
+          seed={manga.title}
+          placeholderClass="cover-placeholder"
+          loading={eager ? "eager" : "lazy"}
+        />
       </div>
       <h3 className="rail-title">{manga.title}</h3>
     </article>
