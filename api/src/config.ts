@@ -291,6 +291,22 @@ export const staticConfig = {
     resendCooldownMs: 60 * 1000, // 1 minute
   },
 
+  // Password reset OTP (same mail service pipeline, separate purpose).
+  // Longer TTL than verification (the user leaves the app to read mail) and a
+  // cooldown equal to the TTL, so one live reset code exists at a time.
+  passwordReset: {
+    codeTtlMs: 15 * 60 * 1000, // 15 minutes
+    maxAttempts: 5,
+    resendCooldownMs: 15 * 60 * 1000, // 15 minutes
+  },
+
+  // Login lockout. Bounds online password guessing per account (the auth rate
+  // limiter is per IP, so it does not cover a distributed attempt spread).
+  loginLockout: {
+    maxFailedAttempts: 3,
+    lockDurationMs: 60 * 60 * 1000, // 1 hour
+  },
+
   cache: {
     ttl: 60 * 60, // 1 hour in seconds
     // Popular ranking is read-heavy and recomputed often; a short TTL absorbs the

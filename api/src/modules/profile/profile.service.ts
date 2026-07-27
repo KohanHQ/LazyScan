@@ -25,6 +25,7 @@ function toResponse(profile: Profile, badges: Badge[]): ProfileResponse {
   return {
     username: profile.username,
     displayName: profile.displayName,
+    bio: profile.bio,
     avatarUrl: profile.avatarUrl,
     profileVisibility: profile.profileVisibility,
     shelfVisibility: profile.shelfVisibility,
@@ -112,6 +113,7 @@ export async function getPublicProfileByUsername(
   return {
     username: profile.username,
     displayName: profile.displayName,
+    bio: profile.bio,
     avatarUrl: profile.avatarUrl,
     createdAt: profile.createdAt.toISOString(),
     badges,

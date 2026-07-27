@@ -20,38 +20,21 @@ export const authTransportSchemas = {
   resendVerification: z.object({
     email: commonSchemas.email,
   }).strict(),
+
+  forgotPassword: z.object({
+    email: commonSchemas.email,
+  }).strict(),
+
+  resetPassword: z.object({
+    email: commonSchemas.email,
+    code: z.string().regex(/^\d{6}$/, "Verification code must be 6 digits"),
+    newPassword: commonSchemas.password,
+  }).strict(),
 };
 
 export class AuthValidator {
   static validateRegistration(input: { email: string; password: string }): void {
-
-    if (!/[A-Z]/.test(input.password)) {
-      throw new BusinessRuleError(
-        "Password must contain at least one uppercase letter",
-        "PASSWORD_UPPERCASE_REQUIRED"
-      );
-    }
-
-    if (!/[a-z]/.test(input.password)) {
-      throw new BusinessRuleError(
-        "Password must contain at least one lowercase letter",
-        "PASSWORD_LOWERCASE_REQUIRED"
-      );
-    }
-
-    if (!/\d/.test(input.password)) {
-      throw new BusinessRuleError(
-        "Password must contain at least one number",
-        "PASSWORD_NUMBER_REQUIRED"
-      );
-    }
-
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(input.password)) {
-      throw new BusinessRuleError(
-        "Password must contain at least one special character",
-        "PASSWORD_SPECIAL_REQUIRED"
-      );
-    }
+    AuthValidator.validatePasswordStrength(input.password);
 
     if (input.email.includes('+')) {
       throw new BusinessRuleError(
@@ -66,12 +49,49 @@ export class AuthValidator {
       'mailinator.com', 'yopmail.com', 'temp-mail.org',
       'throwaway.email', 'getnada.com', 'maildrop.cc'
     ];
-    
+
     if (blockedDomains.includes(emailDomain)) {
       throw new BusinessRuleError(
         "Email domain is not allowed",
         "EMAIL_DOMAIN_BLOCKED",
         { domain: emailDomain }
+      );
+    }
+  }
+
+  // A reset password must clear the same bar as a registration password —
+  // the email rules do not apply (the account already exists).
+  static validatePasswordReset(input: { newPassword: string }): void {
+    AuthValidator.validatePasswordStrength(input.newPassword);
+  }
+
+  static validatePasswordStrength(password: string): void {
+
+    if (!/[A-Z]/.test(password)) {
+      throw new BusinessRuleError(
+        "Password must contain at least one uppercase letter",
+        "PASSWORD_UPPERCASE_REQUIRED"
+      );
+    }
+
+    if (!/[a-z]/.test(password)) {
+      throw new BusinessRuleError(
+        "Password must contain at least one lowercase letter",
+        "PASSWORD_LOWERCASE_REQUIRED"
+      );
+    }
+
+    if (!/\d/.test(password)) {
+      throw new BusinessRuleError(
+        "Password must contain at least one number",
+        "PASSWORD_NUMBER_REQUIRED"
+      );
+    }
+
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      throw new BusinessRuleError(
+        "Password must contain at least one special character",
+        "PASSWORD_SPECIAL_REQUIRED"
       );
     }
   }

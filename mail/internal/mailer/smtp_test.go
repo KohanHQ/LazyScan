@@ -37,15 +37,20 @@ func TestFormatExpiry(t *testing.T) {
 func TestRenderHTMLBody(t *testing.T) {
 	const code = "482917"
 	const expiry = "10:10 UTC, Jun 5 2026"
-	got, err := renderHTMLBody(code, expiry)
-	if err != nil {
-		t.Fatalf("renderHTMLBody: %v", err)
-	}
-	if !strings.Contains(got, code) {
-		t.Errorf("html body does not contain the code")
-	}
-	if !strings.Contains(got, "It expires at "+expiry+".") {
-		t.Errorf("html body does not render the expiry")
+	for _, c := range []content{verificationContent, passwordResetContent} {
+		got, err := renderHTMLBody(c, code, expiry)
+		if err != nil {
+			t.Fatalf("renderHTMLBody(%q): %v", c.subject, err)
+		}
+		if !strings.Contains(got, code) {
+			t.Errorf("%q: html body does not contain the code", c.subject)
+		}
+		if !strings.Contains(got, "It expires at "+expiry+".") {
+			t.Errorf("%q: html body does not render the expiry", c.subject)
+		}
+		if !strings.Contains(got, c.heading) || !strings.Contains(got, c.footer) {
+			t.Errorf("%q: html body does not carry its own copy", c.subject)
+		}
 	}
 }
 
@@ -53,7 +58,7 @@ func TestRenderHTMLBodyEscapes(t *testing.T) {
 	// Both values are server-generated digits/timestamps today, but the
 	// template must escape regardless — a future payload bug must not become
 	// markup injection.
-	got, err := renderHTMLBody(`<script>alert(1)</script>`, `<b>soon</b>`)
+	got, err := renderHTMLBody(verificationContent, `<script>alert(1)</script>`, `<b>soon</b>`)
 	if err != nil {
 		t.Fatalf("renderHTMLBody: %v", err)
 	}
@@ -87,10 +92,28 @@ func TestSendMalformedRecipientIsPermanent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewSMTP: %v", err)
 	}
+	const code = "482917"
 	// No SMTP dial happens: address parsing fails first.
-	err = s.SendVerificationCode(context.Background(), "not an address", "482917", "2026-06-05T10:10:00Z")
-	if !errors.Is(err, ErrPermanent) {
-		t.Errorf("err = %v, want ErrPermanent", err)
+	sends := []struct {
+		name string
+		send func(context.Context, string, string, string) error
+	}{
+		{"verification", s.SendVerificationCode},
+		{"password reset", s.SendPasswordResetCode},
+	}
+	for _, tt := range sends {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.send(context.Background(), "not an address", code, "2026-06-05T10:10:00Z")
+			if err == nil {
+				t.Fatal("want error, got nil")
+			}
+			if !errors.Is(err, ErrPermanent) {
+				t.Errorf("err = %v, want ErrPermanent", err)
+			}
+			if strings.Contains(err.Error(), code) {
+				t.Errorf("error string leaks the code: %q", err)
+			}
+		})
 	}
 }
 
@@ -219,8 +242,8 @@ func TestSendAgainstMailpit(t *testing.T) {
 	}
 
 	msg := mailpitLatestTo(t, to)
-	if msg.Subject != subject {
-		t.Errorf("Subject = %q, want %q", msg.Subject, subject)
+	if msg.Subject != verificationContent.subject {
+		t.Errorf("Subject = %q, want %q", msg.Subject, verificationContent.subject)
 	}
 	if !strings.Contains(msg.Text, code) {
 		t.Errorf("plain body does not contain the code: %q", msg.Text)

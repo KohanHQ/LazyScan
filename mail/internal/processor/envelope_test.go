@@ -27,6 +27,11 @@ func validRaw() string {
 	}`
 }
 
+func passwordResetRaw() string {
+	return strings.Replace(validRaw(), EventTypeVerificationRequested,
+		EventTypePasswordResetRequested, 1)
+}
+
 func TestParseEnvelopeValid(t *testing.T) {
 	env, pl, err := parseEnvelope(validRaw())
 	if err != nil {

@@ -14,8 +14,12 @@ import (
 	"github.com/KohanHQ/lazyscan/mail/internal/store"
 )
 
-// EventTypeVerificationRequested is the only event type the mail service handles in v1.
-const EventTypeVerificationRequested = "auth.email.verification_requested"
+// The auth.email.* event types the mail service handles in v1. Anything else
+// on the stream is forward-compat and acked without sending.
+const (
+	EventTypeVerificationRequested  = "auth.email.verification_requested"
+	EventTypePasswordResetRequested = "auth.email.password_reset_requested"
+)
 
 // Store is the narrow Postgres surface the handler needs (fakeable in tests).
 type Store interface {
@@ -82,7 +86,13 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 		return OutcomeAck, nil
 	}
 
-	if env.EventType != EventTypeVerificationRequested {
+	var send func(ctx context.Context, to, code, expiresAt string) error
+	switch env.EventType {
+	case EventTypeVerificationRequested:
+		send = h.mail.SendVerificationCode
+	case EventTypePasswordResetRequested:
+		send = h.mail.SendPasswordResetCode
+	default:
 		// Forward-compat: the stream may carry new auth.email.* event types
 		// before the mail service learns them (consumers dispatch on eventType). Record
 		// processed so redelivery no-ops; no failure row — this is not an
@@ -105,7 +115,7 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 		return OutcomeAck, nil
 	}
 
-	if err := h.mail.SendVerificationCode(ctx, pl.Email, pl.Code, pl.ExpiresAt); err != nil {
+	if err := send(ctx, pl.Email, pl.Code, pl.ExpiresAt); err != nil {
 		if errors.Is(err, mailer.ErrPermanent) {
 			// SMTP permanently rejected the message — redelivery cannot fix
 			// it. Failure row + processed row, then ack: the event was
@@ -122,7 +132,7 @@ func (h *Handler) Handle(ctx context.Context, raw string) (Outcome, error) {
 		// (at-least-once; the user gets the same code twice, harmless).
 		return OutcomeRetryable, err
 	}
-	log.Info("verification email handled", "email", pl.Email)
+	log.Info("email handled", "eventType", env.EventType, "email", pl.Email)
 	return OutcomeAck, nil
 }
 

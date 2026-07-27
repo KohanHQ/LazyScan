@@ -9,6 +9,8 @@ export interface Profile {
   userId: UUID;
   username: string | null;
   displayName: string | null;
+  // Stored raw; the 256-char cap and profanity guard live at validation.
+  bio: string | null;
   avatarUrl: string | null;
   profileVisibility: ProfileVisibility;
   shelfVisibility: ProfileVisibility;
@@ -27,6 +29,8 @@ export interface UpdateProfileInput {
   username?: string;
   // null explicitly clears the field; undefined leaves it unchanged.
   displayName?: string | null;
+  // Same null-clears / undefined-unchanged contract as displayName.
+  bio?: string | null;
   // Visibility flags are a closed set; undefined leaves the stored value
   // unchanged. avatarUrl is intentionally not updatable: the avatar is derived
   // from the display name.
@@ -49,6 +53,7 @@ export interface Badge {
 export interface ProfileResponse {
   username: string | null;
   displayName: string | null;
+  bio: string | null;
   // Retained in the read shape for backward compatibility; always null because
   // the avatar is derived client-side and the write path no longer accepts it.
   avatarUrl: string | null;
@@ -68,6 +73,8 @@ export interface ProfileResponse {
 export interface PublicProfileResponse {
   username: string | null;
   displayName: string | null;
+  // Public whenever profile_visibility is public; there is no bio-level flag.
+  bio: string | null;
   avatarUrl: string | null;
   createdAt: string;
   badges: Badge[];

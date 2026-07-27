@@ -5,6 +5,9 @@ import {
   LoginRequest,
   VerifyEmailRequest,
   ResendVerificationRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+  OtpPurpose,
   User,
 } from "@/modules/auth/auth.model";
 import { hashPassword, verifyPassword } from "@/shared/crypto/password";
@@ -29,6 +32,7 @@ import type { TransactionClient } from "@/shared/database/transaction";
 import {
   insertOutboxEvents,
   AUTH_EMAIL_VERIFICATION_REQUESTED,
+  AUTH_EMAIL_PASSWORD_RESET_REQUESTED,
   AUTH_EMAIL_EVENT_SCHEMA_VERSION,
 } from "@/shared/outbox/outbox";
 import { staticConfig } from "@/config";
@@ -57,6 +61,14 @@ function tooManyAttempts(): AppError {
   });
 }
 
+function accountLocked(): AppError {
+  return new AppError({
+    code: "ACCOUNT_LOCKED",
+    message: "Account temporarily locked, try again later",
+    status: 429,
+  });
+}
+
 function shouldBeSuperuser(email: string, superuserEmails: string[] = []): boolean {
   return superuserEmails.includes(email.toLowerCase());
 }
@@ -73,18 +85,27 @@ async function promoteConfiguredSuperuser(
   return promoted ?? user;
 }
 
-// Issue (or rotate) the user's active OTP and write the mail outbox event in
-// the SAME transaction as the row change — the transactional-outbox guarantee.
-// Returns false when the resend cooldown swallowed the request (callers stay
-// silent about it: uniform responses, no enumeration or spam lever).
+// Issue (or rotate) the user's active OTP for one purpose and write the mail
+// outbox event in the SAME transaction as the row change — the
+// transactional-outbox guarantee. Returns false when the resend cooldown
+// swallowed the request (callers stay silent about it: uniform responses, no
+// enumeration or spam lever).
 // The plaintext code exists only in the outbox payload. Never log it.
-async function issueVerification(
+async function issueOtp(
   user: User,
+  purpose: OtpPurpose,
   tx: TransactionClient
 ): Promise<boolean> {
-  const { codeTtlMs, resendCooldownMs } = staticConfig.emailVerification;
+  const { codeTtlMs, resendCooldownMs } =
+    purpose === "verify"
+      ? staticConfig.emailVerification
+      : staticConfig.passwordReset;
 
-  const active = await authRepo.findActiveVerificationByUserId(user.id, tx);
+  const active = await authRepo.findActiveVerificationByUserId(
+    user.id,
+    purpose,
+    tx
+  );
   if (active && Date.now() - active.createdAt.getTime() < resendCooldownMs) {
     return false;
   }
@@ -98,7 +119,7 @@ async function issueVerification(
     await authRepo.rotateVerification(active.id, { codeHash, salt, expiresAt }, tx);
   } else {
     await authRepo.insertVerification(
-      { userId: user.id, codeHash, salt, expiresAt },
+      { userId: user.id, purpose, codeHash, salt, expiresAt },
       tx
     );
   }
@@ -106,7 +127,10 @@ async function issueVerification(
   await insertOutboxEvents(
     [
       {
-        eventType: AUTH_EMAIL_VERIFICATION_REQUESTED,
+        eventType:
+          purpose === "verify"
+            ? AUTH_EMAIL_VERIFICATION_REQUESTED
+            : AUTH_EMAIL_PASSWORD_RESET_REQUESTED,
         schemaVersion: AUTH_EMAIL_EVENT_SCHEMA_VERSION,
         aggregateType: "user",
         aggregateId: user.id,
@@ -149,7 +173,7 @@ export async function register(
     // victim's email and inherit the account once the victim verifies.
     await withTransaction(async (tx) => {
       await authRepo.updatePasswordHashById(existingUser.id, hashedPassword, tx);
-      await issueVerification(existingUser, tx);
+      await issueOtp(existingUser, "verify", tx);
     });
 
     logInfo("Unverified re-register, verification reissued", {
@@ -184,7 +208,7 @@ export async function register(
       tx
     );
 
-    await issueVerification(newUser, tx);
+    await issueOtp(newUser, "verify", tx);
 
     return newUser;
   });
@@ -211,7 +235,7 @@ export async function verifyEmail(
     throw invalidCode();
   }
 
-  const verification = await authRepo.findActiveVerificationByUserId(user.id);
+  const verification = await authRepo.findActiveVerificationByUserId(user.id, "verify");
   if (!verification) {
     logWarn("Verification failed: no active code", { userId: user.id });
     throw invalidCode();
@@ -272,12 +296,89 @@ export async function resendVerification(
   }
 
   const issued = await withTransaction(async (tx) =>
-    issueVerification(user, tx)
+    issueOtp(user, "verify", tx)
   );
 
   logInfo(issued ? "Verification resent" : "Resend suppressed by cooldown", {
     userId: user.id,
   });
+}
+
+// Always resolves: unknown email, unverified account, and cooldown suppression
+// all look identical to the caller (no enumeration surface).
+export async function requestPasswordReset(
+  input: ForgotPasswordRequest
+): Promise<void> {
+  const normalizedEmail = input.email.toLowerCase().trim();
+  const user = await authRepo.findByEmail(normalizedEmail);
+
+  // Unverified accounts cannot reset: the email is unproven, so a reset would
+  // be a takeover lever. They still have the verification flow.
+  if (!user || !user.verified) {
+    logInfo("Password reset no-op", { email: normalizedEmail });
+    return;
+  }
+
+  const issued = await withTransaction(async (tx) =>
+    issueOtp(user, "password_reset", tx)
+  );
+
+  logInfo(
+    issued ? "Password reset code issued" : "Password reset suppressed by cooldown",
+    { userId: user.id }
+  );
+}
+
+// Consumes the reset OTP and swaps the password. Deliberately mints no
+// session: the user re-logs in with the new password.
+export async function resetPassword(input: ResetPasswordRequest): Promise<void> {
+  const normalizedEmail = input.email.toLowerCase().trim();
+  const user = await authRepo.findByEmail(normalizedEmail);
+
+  if (!user || !user.verified) {
+    logWarn("Password reset failed: no resettable account", {
+      email: normalizedEmail,
+    });
+    throw invalidCode();
+  }
+
+  const reset = await authRepo.findActiveVerificationByUserId(
+    user.id,
+    "password_reset"
+  );
+  if (!reset) {
+    logWarn("Password reset failed: no active code", { userId: user.id });
+    throw invalidCode();
+  }
+
+  const { maxAttempts } = staticConfig.passwordReset;
+  if (reset.attempts >= maxAttempts) {
+    logWarn("Password reset blocked: attempt cap", { userId: user.id });
+    throw tooManyAttempts();
+  }
+
+  if (reset.expiresAt.getTime() <= Date.now()) {
+    logWarn("Password reset failed: code expired", { userId: user.id });
+    throw invalidCode();
+  }
+
+  if (!verifyOtpCode(input.code, reset.salt, reset.codeHash)) {
+    const attempts = await authRepo.incrementVerificationAttempts(reset.id);
+    logWarn("Password reset failed: wrong code", { userId: user.id, attempts });
+    throw attempts >= maxAttempts ? tooManyAttempts() : invalidCode();
+  }
+
+  const passwordHash = await hashPassword(input.newPassword);
+
+  await withTransaction(async (tx) => {
+    await authRepo.consumeVerification(reset.id, tx);
+    await authRepo.updatePasswordHashById(user.id, passwordHash, tx);
+    // A locked-out account must be usable again once the owner proves control
+    // of the mailbox — otherwise the lockout outlives the reset.
+    await authRepo.resetLoginLock(user.id, tx);
+  });
+
+  logInfo("Password reset", { userId: user.id });
 }
 
 export async function login(
@@ -296,12 +397,24 @@ export async function login(
     });
   }
 
+  // Checked before the password so a locked account cannot be probed further;
+  // the 429 reveals existence, accepted alongside register's 409 (ADR 0002).
+  if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
+    logWarn("Login blocked: account locked", { userId: user.id });
+    throw accountLocked();
+  }
+
   const isValidPassword = await verifyPassword(
     input.password,
     user.passwordHash
   );
   if (!isValidPassword) {
-    logWarn("Login failed: invalid password", { userId: user.id });
+    const { maxFailedAttempts, lockDurationMs } = staticConfig.loginLockout;
+    const attempts = await authRepo.incrementFailedLogin(user.id);
+    if (attempts >= maxFailedAttempts) {
+      await authRepo.setLockedUntil(user.id, new Date(Date.now() + lockDurationMs));
+    }
+    logWarn("Login failed: invalid password", { userId: user.id, attempts });
     throw unauthorized("Invalid credentials", {
       code: "INVALID_CREDENTIALS",
     });
@@ -315,6 +428,12 @@ export async function login(
     throw forbidden("Email not verified", {
       code: "EMAIL_NOT_VERIFIED",
     });
+  }
+
+  // Cleared only past the verify gate: a blocked unverified login is not proof
+  // of a legitimate session, so its lockout counter must keep running.
+  if (user.failedLoginAttempts > 0) {
+    await authRepo.resetLoginLock(user.id);
   }
 
   user = await promoteConfiguredSuperuser(user, options.superuserEmails);

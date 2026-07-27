@@ -15,11 +15,12 @@ import (
 // row and acks; any other error leaves the entry pending for retry.
 var ErrPermanent = errors.New("permanent send failure")
 
-// Mailer sends one verification email. expiresAt is the payload's ISO-8601
-// expiry, rendered into the message body; implementations must never log
-// or echo code outside the message itself.
+// Mailer sends one OTP email per auth.email.* event type. expiresAt is the
+// payload's ISO-8601 expiry, rendered into the message body; implementations
+// must never log or echo code outside the message itself.
 type Mailer interface {
 	SendVerificationCode(ctx context.Context, to, code, expiresAt string) error
+	SendPasswordResetCode(ctx context.Context, to, code, expiresAt string) error
 }
 
 // Log is a log-only stand-in, kept as the rollback target for the SMTP
@@ -37,5 +38,11 @@ func NewLog(log *slog.Logger) *Log {
 // SendVerificationCode logs the would-be delivery and reports success.
 func (l *Log) SendVerificationCode(_ context.Context, to, _, expiresAt string) error {
 	l.log.Info("would send verification email", "to", to, "expiresAt", expiresAt)
+	return nil
+}
+
+// SendPasswordResetCode logs the would-be delivery and reports success.
+func (l *Log) SendPasswordResetCode(_ context.Context, to, _, expiresAt string) error {
+	l.log.Info("would send password reset email", "to", to, "expiresAt", expiresAt)
 	return nil
 }

@@ -8,13 +8,14 @@ import { UUID } from "@/shared/types/id";
 
 const db = getDbClient();
 
-const PROFILE_COLUMNS = `user_id, username, display_name, avatar_url, profile_visibility, shelf_visibility, created_at, updated_at`;
+const PROFILE_COLUMNS = `user_id, username, display_name, bio, avatar_url, profile_visibility, shelf_visibility, created_at, updated_at`;
 
 function mapRow(row: any): Profile {
   return {
     userId: row.user_id as UUID,
     username: row.username,
     displayName: row.display_name,
+    bio: row.bio,
     avatarUrl: row.avatar_url,
     profileVisibility: row.profile_visibility,
     shelfVisibility: row.shelf_visibility,
@@ -25,7 +26,7 @@ function mapRow(row: any): Profile {
 
 export async function findByUserId(userId: UUID): Promise<Profile | null> {
   const rows = await db`
-    SELECT user_id, username, display_name, avatar_url, profile_visibility, shelf_visibility, created_at, updated_at
+    SELECT user_id, username, display_name, bio, avatar_url, profile_visibility, shelf_visibility, created_at, updated_at
     FROM profiles
     WHERE user_id = ${userId}
     LIMIT 1
@@ -35,7 +36,7 @@ export async function findByUserId(userId: UUID): Promise<Profile | null> {
 
 export async function findByUsername(username: string): Promise<Profile | null> {
   const rows = await db`
-    SELECT user_id, username, display_name, avatar_url, profile_visibility, shelf_visibility, created_at, updated_at
+    SELECT user_id, username, display_name, bio, avatar_url, profile_visibility, shelf_visibility, created_at, updated_at
     FROM profiles
     WHERE username = ${username}
     LIMIT 1
@@ -59,7 +60,7 @@ export async function create(
       ${input.displayName ?? null},
       ${input.avatarUrl ?? null}
     )
-    RETURNING user_id, username, display_name, avatar_url, profile_visibility, shelf_visibility, created_at, updated_at
+    RETURNING user_id, username, display_name, bio, avatar_url, profile_visibility, shelf_visibility, created_at, updated_at
   `;
   return mapRow(rows[0]);
 }
@@ -74,6 +75,9 @@ export async function update(userId: UUID, input: UpdateProfileInput): Promise<P
   }
   if (input.displayName !== undefined) {
     assignments.push(db`display_name = ${input.displayName}`);
+  }
+  if (input.bio !== undefined) {
+    assignments.push(db`bio = ${input.bio}`);
   }
   if (input.profileVisibility !== undefined) {
     assignments.push(db`profile_visibility = ${input.profileVisibility}`);
@@ -93,7 +97,7 @@ export async function update(userId: UUID, input: UpdateProfileInput): Promise<P
     UPDATE profiles
     SET ${setClause}
     WHERE user_id = ${userId}
-    RETURNING user_id, username, display_name, avatar_url, profile_visibility, shelf_visibility, created_at, updated_at
+    RETURNING user_id, username, display_name, bio, avatar_url, profile_visibility, shelf_visibility, created_at, updated_at
   `;
 
   return rows.length ? mapRow(rows[0]) : null;

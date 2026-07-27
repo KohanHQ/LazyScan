@@ -58,10 +58,20 @@ func NewSMTP(opts SMTPOptions) (*SMTP, error) {
 	return &SMTP{client: client, from: opts.From}, nil
 }
 
-// SendVerificationCode dials, sends one message, and closes the connection.
-// Errors are classified for the processor's retry taxonomy: ErrPermanent for
-// failures redelivery cannot fix, plain errors for transient ones.
+// SendVerificationCode sends the registration OTP.
 func (s *SMTP) SendVerificationCode(ctx context.Context, to, code, expiresAt string) error {
+	return s.send(ctx, verificationContent, to, code, expiresAt)
+}
+
+// SendPasswordResetCode sends the password-reset OTP.
+func (s *SMTP) SendPasswordResetCode(ctx context.Context, to, code, expiresAt string) error {
+	return s.send(ctx, passwordResetContent, to, code, expiresAt)
+}
+
+// send dials, sends one message, and closes the connection. Errors are
+// classified for the processor's retry taxonomy: ErrPermanent for failures
+// redelivery cannot fix, plain errors for transient ones.
+func (s *SMTP) send(ctx context.Context, c content, to, code, expiresAt string) error {
 	msg := mail.NewMsg()
 	if err := msg.From(s.from); err != nil {
 		return fmt.Errorf("from address %q: %w", s.from, err)
@@ -70,13 +80,13 @@ func (s *SMTP) SendVerificationCode(ctx context.Context, to, code, expiresAt str
 		// A malformed recipient address can never parse on redelivery either.
 		return fmt.Errorf("%w: recipient address %q: %v", ErrPermanent, to, err)
 	}
-	msg.Subject(subject)
+	msg.Subject(c.subject)
 	expiry := formatExpiry(expiresAt)
-	msg.SetBodyString(mail.TypeTextPlain, fmt.Sprintf(plainBodyTemplate, code, expiry))
+	msg.SetBodyString(mail.TypeTextPlain, fmt.Sprintf(c.plainBody, code, expiry))
 	// Plain part first, HTML alternative last: multipart/alternative clients
 	// prefer the last part they can render (RFC 2046), text-only clients keep
 	// the unchanged plain body.
-	html, err := renderHTMLBody(code, expiry)
+	html, err := renderHTMLBody(c, code, expiry)
 	if err != nil {
 		// Unreachable with a Must-parsed template and an in-memory buffer; if
 		// it ever fires it stays transient (classify's default — ambiguity

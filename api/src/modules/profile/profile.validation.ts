@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ValidationError, BusinessRuleError } from "@/shared/utility/validation";
+import { containsProfanity } from "@/shared/utility/profanity";
 
 const usernameSchema = z.string().min(3).max(30).regex(/^[a-zA-Z0-9_]+$/);
 
@@ -20,6 +21,7 @@ export const profileTransportSchemas = {
   update: z.object({
     username: usernameSchema.optional(),
     displayName: clearable(z.string().min(1).max(100)),
+    bio: clearable(z.string().min(1).max(256)),
     profileVisibility: visibilitySchema.optional(),
     shelfVisibility: visibilitySchema.optional(),
   }).strict(),
@@ -48,9 +50,16 @@ export class ProfileValidator {
     }
   }
 
-  static validateUpdate(input: { username?: string }): void {
+  static validateUpdate(input: { username?: string; bio?: string | null }): void {
     if (input.username) {
       ProfileValidator.validateUsername(input.username);
+    }
+    // Reject, never censor: the bio is stored raw. null (cleared) skips this.
+    if (input.bio && containsProfanity(input.bio)) {
+      throw new BusinessRuleError(
+        "Bio contains prohibited language",
+        "PROFILE_BIO_PROFANITY"
+      );
     }
   }
 }

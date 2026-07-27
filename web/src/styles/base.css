@@ -1878,6 +1878,12 @@ img.user-avatar {
   font-size: 1.1rem;
 }
 
+/* pre-wrap keeps the user's own line breaks. */
+.profile-bio {
+  margin: 12px 0 0;
+  white-space: pre-wrap;
+}
+
 /* Profile badges + reading stats. `--*` palette tokens are dark-theme only, so
    every var() carries a light fallback (see known-constraints.md). */
 .profile-badges {

@@ -105,6 +105,7 @@ function ProfileView({ profile }: { profile: Profile }): ReactElement {
             <span>Edit</span>
           </button>
         </div>
+        {profile.bio ? <p className="profile-bio">{profile.bio}</p> : null}
       </section>
       <StatsPanel />
       <FavoritesPanel shelfVisibility={profile.shelfVisibility} />
@@ -293,8 +294,10 @@ function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
     const data = new FormData(event.currentTarget);
 
     const displayName = String(data.get("displayName") || "").trim();
+    const bio = String(data.get("bio") || "").trim();
     const patch: ProfileUpdate = {
       displayName: displayName || null,
+      bio: bio || null,
       profileVisibility: data.get("profileVisibility") as ProfileVisibility,
       shelfVisibility: data.get("shelfVisibility") as ProfileVisibility,
     };
@@ -390,6 +393,18 @@ function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
               defaultValue={profile.displayName ?? ""}
             />
             <small>Your avatar is generated from your display name.</small>
+          </label>
+          <label>
+            <span>About me</span>
+            <textarea
+              name="bio"
+              rows={3}
+              maxLength={256}
+              defaultValue={profile.bio ?? ""}
+            />
+            <small>
+              Up to 256 characters. Shown on your profile when it is public.
+            </small>
           </label>
           {isOwner ? (
             <label>

@@ -1,35 +1,15 @@
 import { badRequest } from "@/shared/http/error";
+import { PROFANITY_ROOTS } from "@/shared/utility/profanity";
 
 const MAX_BODY = 1000;
 
 // ponytail: a hard-coded wordlist is the floor, not real moderation — it is
 // trivially bypassed (leetspeak, spacing, new slurs). Swap for an external list
 // or a moderation service if this ever needs to actually hold.
-const PROFANITY = [
-  "arse",
-  "arsehole",
-  "ass",
-  "asshole",
-  "bastard",
-  "bitch",
-  "bollocks",
-  "bullshit",
-  "cock",
-  "crap",
-  "cunt",
-  "dick",
-  "douche",
-  "fuck",
-  "piss",
-  "prick",
-  "shit",
-  "slut",
-  "twat",
-  "wanker",
-];
-
 // Word-boundary, case-insensitive: "ass" matches standalone but not "class".
-const PROFANITY_RE = new RegExp(`\\b(?:${PROFANITY.join("|")})\\b`, "gi");
+// Masking stays on \b: it replaces in the raw text, where the stricter
+// matcher's normalized classes cannot map back to original positions.
+const PROFANITY_RE = new RegExp(`\\b(?:${PROFANITY_ROOTS.join("|")})\\b`, "gi");
 
 export function maskProfanity(text: string): string {
   return text.replace(PROFANITY_RE, (match) => "*".repeat(match.length));

@@ -9,9 +9,15 @@ export interface User {
   role: UserRole;
   passwordHash: string;
   verified: boolean;
+  failedLoginAttempts: number;
+  lockedUntil: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
+
+// Which flow an email_verifications row belongs to. Rows are looked up per
+// purpose, so a reset code never shadows a pending registration code.
+export type OtpPurpose = "verify" | "password_reset";
 
 // One row in email_verifications: the active OTP for a user. The code is
 // hashed at rest (sha256(code + salt)); resend rotates the same row.
@@ -49,4 +55,14 @@ export interface VerifyEmailRequest {
 
 export interface ResendVerificationRequest {
   email: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  code: string;
+  newPassword: string;
 }

@@ -35,6 +35,12 @@ export type VerifyEmailInput = {
   code: string;
 };
 
+export type ResetPasswordInput = {
+  email: string;
+  code: string;
+  newPassword: string;
+};
+
 export function getCurrentUser(): Promise<CurrentUser> {
   return apiRequest<CurrentUser>("/auth/me");
 }
@@ -67,6 +73,23 @@ export function resendVerification(email: string): Promise<{ ok: boolean }> {
   return apiRequest<{ ok: boolean }>("/auth/resend-verification", {
     method: "POST",
     body: { email },
+  });
+}
+
+// Always resolves `{ ok: true }` regardless of account state (no
+// enumeration); the server enforces a 15min cooldown between sends.
+export function forgotPassword(email: string): Promise<{ ok: boolean }> {
+  return apiRequest<{ ok: boolean }>("/auth/forgot-password", {
+    method: "POST",
+    body: { email },
+  });
+}
+
+// Sets no session cookie: the user logs in again with the new password.
+export function resetPassword(input: ResetPasswordInput): Promise<{ ok: boolean }> {
+  return apiRequest<{ ok: boolean }>("/auth/reset-password", {
+    method: "POST",
+    body: input,
   });
 }
 

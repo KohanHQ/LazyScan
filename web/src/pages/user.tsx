@@ -160,6 +160,7 @@ function ProfileView({ profile }: { profile: PublicProfile }): ReactElement {
             <Badges badges={profile.badges} />
           </div>
         </div>
+        {profile.bio ? <p className="profile-bio">{profile.bio}</p> : null}
       </section>
       {profile.shelf.visible ? (
         <section className="manage-panel">
