@@ -241,14 +241,17 @@ h3 {
   scroll-snap-type: x proximity;
 }
 
-/* Marquee variant: one animated track carrying two identical copies of the card
-   list, translating 0 → -50% linear infinite, so copy 2 lands exactly where
-   copy 1 started. The geometry holds by structure, not by measured arithmetic:
+/* Marquee variant: one animated track carrying N identical copies of the card
+   list — enough to cover the viewport plus one copy — translating by exactly
+   one copy width (--rail-marquee-loop) so copy n+1 lands where copy n started.
+   The geometry holds by structure, not by measured arithmetic:
    - The viewport is its own class, NEVER combined with .rail-track — a plain
      block, so the track is not a flex item and cannot be shrink-squashed
      (that interplay shipped broken as F-054).
-   - Each copy pads its OWN trailing gap, making the track exactly 2× one copy
-     wide — the -50% wrap is exact whatever the gap value is. */
+   - Each copy pads its OWN trailing gap, so copies tile seamlessly whatever
+     the gap value is.
+   - N copies (not 2): the loop runs unconditionally, even when the content
+     alone would fit the viewport (F-057). */
 /* clip, not hidden: hidden makes this a scroll container, so tabbing to a card
    that drifted off-screen leaves scrollLeft offset after blur. */
 .rail-marquee {
@@ -263,8 +266,8 @@ h3 {
   animation: rail-marquee var(--rail-marquee-duration) linear infinite;
 }
 
-/* Held static until the Rail component has measured a copy and set a real
-   duration — a 0s var would flash the wrap point on the first frame. */
+/* Held static until the Rail component has measured a copy and set the loop
+   vars — translating without --rail-marquee-loop would be a no-op keyframe. */
 .rail-marquee-track:not(.is-ready) {
   animation: none;
 }
@@ -282,7 +285,7 @@ h3 {
   }
 
   to {
-    transform: translateX(-50%);
+    transform: translateX(calc(-1 * var(--rail-marquee-loop)));
   }
 }
 
