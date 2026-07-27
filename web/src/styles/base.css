@@ -241,65 +241,44 @@ h3 {
   scroll-snap-type: x proximity;
 }
 
-/* Marquee variant: one animated track carrying N identical copies of the card
-   list — enough to cover the viewport plus one copy — translating by exactly
-   one copy width (--rail-marquee-loop) so copy n+1 lands where copy n started.
-   The geometry holds by structure, not by measured arithmetic:
+/* Infinite card-stepping carousel (home.tsx Rail, `carousel` prop): JS steps
+   the track one fixed stride (146px = card 132 + gap 14) per tick; N copies
+   make the wrap at the copy-2 boundary pixel-identical to position 0. Pure
+   arithmetic geometry — no content measurement. Structure notes:
    - The viewport is its own class, NEVER combined with .rail-track — a plain
      block, so the track is not a flex item and cannot be shrink-squashed
-     (that interplay shipped broken as F-054).
-   - Each copy pads its OWN trailing gap, so copies tile seamlessly whatever
-     the gap value is.
-   - N copies (not 2): the loop runs unconditionally, even when the content
-     alone would fit the viewport (F-057). */
+     (the F-054 mechanism).
+   - Each copy pads its own trailing gap, so card positions stay exact stride
+     multiples across copy boundaries. */
 /* clip, not hidden: hidden makes this a scroll container, so tabbing to a card
    that drifted off-screen leaves scrollLeft offset after blur. */
-.rail-marquee {
+.rail-carousel {
   overflow: hidden;
   overflow: clip;
 }
 
-.rail-marquee-track {
+.rail-carousel-track {
   display: flex;
   width: max-content;
   will-change: transform;
-  animation: rail-marquee var(--rail-marquee-duration) linear infinite;
+  transition: transform 0.45s ease;
 }
 
-/* Held static until the Rail component has measured a copy and set the loop
-   vars — translating without --rail-marquee-loop would be a no-op keyframe. */
-.rail-marquee-track:not(.is-ready) {
-  animation: none;
+/* Silent wrap reset: the jump back to position 0 must not animate. */
+.rail-carousel-track.is-instant {
+  transition: none;
 }
 
-.rail-marquee-copy {
+.rail-carousel-copy {
   display: flex;
   flex: 0 0 auto;
   gap: 14px;
   padding-right: 14px;
 }
 
-@keyframes rail-marquee {
-  from {
-    transform: translateX(0);
-  }
-
-  to {
-    transform: translateX(calc(-1 * var(--rail-marquee-loop)));
-  }
-}
-
-/* WCAG 2.2.2: auto-moving content must be pausable. .is-paused is the off-screen
-   stop the Rail component toggles from its IntersectionObserver. */
-.rail-marquee-track:hover,
-.rail-marquee-track:focus-within,
-.rail-marquee-track.is-paused {
-  animation-play-state: paused;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .rail-marquee-track {
-    animation: none;
+  .rail-carousel-track {
+    transition: none;
   }
 }
 
