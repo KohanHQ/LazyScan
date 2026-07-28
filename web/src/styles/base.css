@@ -3784,6 +3784,173 @@ img.user-avatar {
   cursor: default;
 }
 
+/* ===== Forum (categories -> threads -> flat replies) =====
+   List rows reuse the history-row card look; thread bodies and replies reuse
+   the comment block (.comment-row / -input / -action) wholesale, so only the
+   forum-specific chrome lives here. */
+.forum-list {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 0 0 8px;
+  list-style: none;
+}
+
+.forum-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  cursor: pointer;
+  outline: none;
+}
+
+.forum-row:hover,
+.forum-row:focus-visible {
+  border-color: var(--accent-fg);
+  background: var(--surface-accent);
+}
+
+/* min-width:0 lets a long title wrap instead of stretching the row. */
+.forum-row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.forum-row-body h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+
+.forum-row-desc {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.forum-row-meta {
+  display: grid;
+  gap: 2px;
+  flex-shrink: 0;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+/* Pinned/locked markers on a thread row; the row's aria-label carries the
+   wording, so the glyph itself stays decorative. */
+.forum-glyph {
+  display: inline-flex;
+  color: var(--accent-fg);
+}
+
+.forum-back {
+  margin-bottom: 18px;
+}
+
+.forum-thread-form,
+.forum-reply-form {
+  margin-top: 20px;
+}
+
+.forum-thread-card {
+  display: grid;
+  gap: 8px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+/* Thread titles run to 200 chars, so they take a tighter scale than the h1
+   default and wrap on unbroken strings. */
+.forum-thread-title {
+  margin: 0;
+  font-size: clamp(1.4rem, 3.5vw, 2rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.forum-thread-stats {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+/* Locked threads replace the composer with this notice (hidden, not disabled);
+   the API refuses replies on a locked thread for every role. */
+.forum-locked-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Report dialog body: label/control pairs inside the Radix content grid. */
+.forum-report-fields {
+  display: grid;
+  gap: 6px;
+}
+
+.forum-report-fields label {
+  color: var(--text-label);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.forum-report-fields label:not(:first-child) {
+  margin-top: 10px;
+}
+
+/* Admin queue rows (settings page): the snippet is the reported text, the note
+   is the reporter's own words. */
+.forum-report-snippet {
+  margin: 0 0 4px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.forum-report-note {
+  margin: 0 0 6px;
+  padding-left: 10px;
+  border-left: 2px solid var(--border-strong);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+/* Narrow screens: the meta column drops under the title instead of squeezing
+   it (the breakpoint the rest of the app stacks at). */
+@media (max-width: 640px) {
+  .forum-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .forum-row-meta {
+    text-align: left;
+  }
+}
+
 /* ===== Motion additions (2026-07-26) =====
    All opacity/transform only; every effect has a reduced-motion fallback. */
 

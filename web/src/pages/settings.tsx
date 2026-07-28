@@ -17,6 +17,7 @@ import { PageHeading } from "@/components/page-heading";
 import { Empty, ErrorState, Loading } from "@/components/states";
 import { RequireSession } from "@/components/require-session";
 import { useToast } from "@/components/ui/toast";
+import { ForumReportsPanel } from "@/pages/forum-reports-panel";
 import { usePopupDismiss } from "@/lib/use-popup-dismiss";
 import { formatDate } from "@/utils/format";
 
@@ -131,6 +132,7 @@ function SettingsContent(): ReactElement {
         <StoragePanel storage={storage} />
         <CatalogPanel storage={storage} />
         <ImportHealthPanel storage={storage} attention={attention} onRetry={reload} />
+        <ForumReportsPanel />
         <AuditTrailPanel initial={logs} />
       </div>
     </>

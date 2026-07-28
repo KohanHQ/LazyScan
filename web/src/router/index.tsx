@@ -2,6 +2,8 @@ import { useSyncExternalStore, type ReactElement } from "react";
 import { FavoritesPage } from "@/pages/favorites";
 import { FeedPage } from "@/pages/feed";
 import { ForumPage } from "@/pages/forum";
+import { ForumCategoryPage } from "@/pages/forum-category";
+import { ForumThreadPage } from "@/pages/forum-thread";
 import { HistoryPage } from "@/pages/history";
 import { HomePage } from "@/pages/home";
 import { LoginPage } from "@/pages/login";
@@ -79,6 +81,10 @@ export function routeElement(path: string): ReactElement {
       return <FeedPage />;
     case "forum":
       return <ForumPage />;
+    case "forum-category":
+      return <ForumCategoryPage slug={route.slug} />;
+    case "forum-thread":
+      return <ForumThreadPage id={route.id} />;
     case "settings":
       return <SettingsPage />;
     case "history":
