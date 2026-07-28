@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { Sql } from "postgres";
+import type { UUID } from "@/shared/types/id";
 
 type JsonResponse<T = any> = {
   status: number;
@@ -72,6 +73,10 @@ function configureTestEnv(databaseUrl: string) {
 async function resetDatabase(db: Sql<{}>) {
   await db`
     DROP TABLE IF EXISTS
+      forum_reports,
+      forum_posts,
+      forum_threads,
+      forum_categories,
       manga_comments,
       reading_status,
       chapter_reads,
@@ -295,6 +300,7 @@ describe("API smoke baseline", () => {
       "030_rename_mail_tables.sql",
       "031_profile_bio.sql",
       "032_password_reset.sql",
+      "033_forum.sql",
     ]);
   });
 
@@ -2045,5 +2051,713 @@ describe("storage quota gate", () => {
     );
     expect(overCap.response.status).toBe(507);
     expect(overCap.json.error?.code).toBe("STORAGE_QUOTA_EXCEEDED");
+  });
+});
+
+// Forum: seeded categories -> threads -> flat posts, with a superuser report
+// queue. Public read / auth write; reply counts derived, last_post_at stored.
+describe("forum", () => {
+  const PASSWORD = "Correct-password-123!";
+
+  type Thread = {
+    id: string;
+    userId: string;
+    title: string;
+    body: string;
+    pinned: boolean;
+    locked: boolean;
+    replyCount: number;
+    lastPostAt: string;
+    authorName: string;
+  };
+  type Post = { id: string; threadId: string; body: string; createdAt: string };
+
+  // The config-granted superuser email is claimed by the smoke baseline, so the
+  // forum tests mint their own admin by flipping the stored role (auth resolves
+  // the role from the DB per request, so live sessions pick it up).
+  async function registerSuperuser(email: string): Promise<string> {
+    const cookie = await registerVerified(email, PASSWORD);
+    await ctx.db`UPDATE users SET role = 'superuser' WHERE email = ${email}`;
+    return cookie;
+  }
+
+  async function createThread(
+    cookie: string,
+    slug: string,
+    title: string,
+    body = "Thread body.",
+  ): Promise<Thread> {
+    const created = await send<Thread>(
+      "POST",
+      `/forum/categories/${slug}/threads`,
+      { title, body },
+      cookie,
+    );
+    return expectSuccess(created.json);
+  }
+
+  async function reply(
+    cookie: string,
+    threadId: string,
+    body: string,
+  ): Promise<Post> {
+    const created = await send<Post>(
+      "POST",
+      `/forum/threads/${threadId}/posts`,
+      { body },
+      cookie,
+    );
+    return expectSuccess(created.json);
+  }
+
+  test("seeds three categories, readable by guests with derived counts", async () => {
+    const categories = await send<
+      Array<{ slug: string; name: string; threadCount: number; sortOrder: number }>
+    >("GET", "/forum/categories");
+    const data = expectSuccess(categories.json);
+
+    expect(data.map((entry) => entry.slug)).toEqual([
+      "general",
+      "manga-talk",
+      "site-feedback",
+    ]);
+    expect(data.map((entry) => entry.sortOrder)).toEqual([10, 20, 30]);
+    for (const entry of data) {
+      expect(typeof entry.threadCount).toBe("number");
+    }
+  });
+
+  test("thread + reply flow: derived counts, oldest-first posts, activity bump", async () => {
+    const unique = Date.now();
+    const cookie = await registerVerified(`forum-a-${unique}@example.test`, PASSWORD);
+
+    const thread = await createThread(cookie, "general", `Thread ${unique}`);
+    expect(thread.replyCount).toBe(0);
+    expect(typeof thread.authorName).toBe("string");
+
+    // Thread creation counts as activity: last_post_at is set, not null.
+    const createdActivity = Date.parse(thread.lastPostAt);
+    expect(Number.isNaN(createdActivity)).toBe(false);
+
+    const first = await reply(cookie, thread.id, "First reply.");
+    const second = await reply(cookie, thread.id, "Second reply.");
+    expect(first.threadId).toBe(thread.id);
+
+    const posts = await send<{ posts: Post[]; total: number }>(
+      "GET",
+      `/forum/threads/${thread.id}/posts`,
+    );
+    const postPage = expectSuccess(posts.json);
+    expect(postPage.total).toBe(2);
+    expect(postPage.posts.map((entry) => entry.id)).toEqual([first.id, second.id]);
+
+    // Reply count is a COUNT, never a stored counter; last_post_at moved.
+    const detail = await send<Thread>("GET", `/forum/threads/${thread.id}`);
+    const detailData = expectSuccess(detail.json);
+    expect(detailData.replyCount).toBe(2);
+    expect(Date.parse(detailData.lastPostAt)).toBeGreaterThan(createdActivity);
+
+    // Post pagination is offset-based over the same oldest-first order.
+    const paged = await send<{ posts: Post[]; total: number }>(
+      "GET",
+      `/forum/threads/${thread.id}/posts?limit=1&offset=1`,
+    );
+    const pagedData = expectSuccess(paged.json);
+    expect(pagedData.total).toBe(2);
+    expect(pagedData.posts.map((entry) => entry.id)).toEqual([second.id]);
+
+    const listing = await send<{ threads: Thread[]; total: number }>(
+      "GET",
+      "/forum/categories/general/threads?limit=50",
+    );
+    const listed = expectSuccess(listing.json).threads.find(
+      (entry) => entry.id === thread.id,
+    );
+    expect(listed?.replyCount).toBe(2);
+  });
+
+  test("the reply insert and the activity bump share one transaction", async () => {
+    const unique = Date.now();
+    const email = `forum-tx-${unique}@example.test`;
+    const cookie = await registerVerified(email, PASSWORD);
+    const userId = await userIdByEmail(email);
+    const thread = await createThread(cookie, "general", `Tx thread ${unique}`);
+
+    const [forumRepo, { withTransaction }] = await Promise.all([
+      import("@/modules/forum/forum.repository"),
+      import("@/shared/database/transaction"),
+    ]);
+
+    const before = await ctx.db`
+      SELECT last_post_at FROM forum_threads WHERE id = ${thread.id}
+    `;
+
+    // A failure after the insert must roll back the bump with it: the listing
+    // sort can never show activity that has no reply behind it.
+    await expect(
+      withTransaction(async (tx) => {
+        await forumRepo.insertPost(thread.id as UUID, userId as UUID, "rolled back", tx);
+        await forumRepo.touchThreadLastPost(thread.id as UUID, tx);
+        throw new Error("forced rollback");
+      }),
+    ).rejects.toThrow("forced rollback");
+
+    const after = await ctx.db`
+      SELECT last_post_at FROM forum_threads WHERE id = ${thread.id}
+    `;
+    expect(new Date(after[0].last_post_at).getTime()).toBe(
+      new Date(before[0].last_post_at).getTime(),
+    );
+    const orphans = await ctx.db`
+      SELECT COUNT(*)::int AS total FROM forum_posts WHERE thread_id = ${thread.id}
+    `;
+    expect(orphans[0].total).toBe(0);
+
+    // 23503 = foreign_key_violation. A thread deleted between the lock check and
+    // the insert cannot leave an orphan reply; the service maps this to the same
+    // 404 a missing thread returns.
+    const orphanInsert = await forumRepo
+      .insertPost(
+        "11111111-1111-4111-8111-111111111111" as UUID,
+        userId as UUID,
+        "orphan",
+      )
+      .then(
+        () => null,
+        (error: { code?: string }) => error.code,
+      );
+    expect(orphanInsert).toBe("23503");
+  });
+
+  test("masks profanity in thread title, thread body, and post body", async () => {
+    const unique = Date.now();
+    const cookie = await registerVerified(`forum-mask-${unique}@example.test`, PASSWORD);
+
+    const thread = await createThread(
+      cookie,
+      "general",
+      "shit title",
+      "this is fuck body",
+    );
+    expect(thread.title).toBe("**** title");
+    expect(thread.body).toBe("this is **** body");
+
+    const post = await reply(cookie, thread.id, "what an ass reply");
+    expect(post.body).toBe("what an *** reply");
+
+    // Stored masked, not just rendered masked.
+    const stored = await ctx.db`
+      SELECT title, body FROM forum_threads WHERE id = ${thread.id}
+    `;
+    expect(stored[0].title).toBe("**** title");
+  });
+
+  test("rejects blank bodies, over-long input, and out-of-range pagination", async () => {
+    const unique = Date.now();
+    const cookie = await registerVerified(`forum-valid-${unique}@example.test`, PASSWORD);
+    const thread = await createThread(cookie, "general", `Guard ${unique}`);
+
+    const blankTitle = await send(
+      "POST",
+      "/forum/categories/general/threads",
+      { title: "   \u200B ", body: "ok" },
+      cookie,
+    );
+    expect(blankTitle.response.status).toBe(400);
+    expect(blankTitle.json.error?.code).toBe("INVALID_FORUM_THREAD_TITLE");
+
+    const longBody = await send(
+      "POST",
+      "/forum/categories/general/threads",
+      { title: "ok", body: "a".repeat(5001) },
+      cookie,
+    );
+    expect(longBody.response.status).toBe(400);
+    expect(longBody.json.error?.code).toBe("INVALID_FORUM_THREAD_BODY");
+
+    const longPost = await send(
+      "POST",
+      `/forum/threads/${thread.id}/posts`,
+      { body: "a".repeat(1001) },
+      cookie,
+    );
+    expect(longPost.response.status).toBe(400);
+    expect(longPost.json.error?.code).toBe("INVALID_FORUM_POST_BODY");
+
+    for (const query of ["limit=0", "limit=51", "limit=abc", "offset=-1"]) {
+      const bad = await send("GET", `/forum/categories/general/threads?${query}`);
+      expect(bad.response.status).toBe(400);
+      expect(bad.json.error?.code).toBe("INVALID_PAGINATION");
+    }
+
+    const missingCategory = await send("GET", "/forum/categories/nope/threads");
+    expect(missingCategory.response.status).toBe(404);
+    expect(missingCategory.json.error?.code).toBe("FORUM_CATEGORY_NOT_FOUND");
+
+    const missingThread = await send(
+      "GET",
+      "/forum/threads/11111111-1111-4111-8111-111111111111",
+    );
+    expect(missingThread.response.status).toBe(404);
+    expect(missingThread.json.error?.code).toBe("FORUM_THREAD_NOT_FOUND");
+
+    const anonPost = await send(
+      "POST",
+      `/forum/threads/${thread.id}/posts`,
+      { body: "guest" },
+    );
+    expect(anonPost.response.status).toBe(401);
+  });
+
+  test("a locked thread blocks replies and edits; a superuser owner is exempt", async () => {
+    const unique = Date.now();
+    const ownerCookie = await registerVerified(`forum-lock-${unique}@example.test`, PASSWORD);
+    const adminCookie = await registerSuperuser(`forum-lockadmin-${unique}@example.test`);
+
+    const thread = await createThread(ownerCookie, "general", `Locked ${unique}`);
+    const post = await reply(ownerCookie, thread.id, "Before the lock.");
+
+    const locked = await send<Thread>(
+      "POST",
+      `/admin/forum/threads/${thread.id}/lock`,
+      undefined,
+      adminCookie,
+    );
+    expect(expectSuccess(locked.json).locked).toBe(true);
+
+    const blockedReply = await send(
+      "POST",
+      `/forum/threads/${thread.id}/posts`,
+      { body: "After the lock." },
+      ownerCookie,
+    );
+    expect(blockedReply.response.status).toBe(403);
+    expect(blockedReply.json.error?.code).toBe("FORUM_THREAD_LOCKED");
+
+    const blockedThreadEdit = await send(
+      "PUT",
+      `/forum/threads/${thread.id}`,
+      { title: "Edited", body: "Edited body." },
+      ownerCookie,
+    );
+    expect(blockedThreadEdit.response.status).toBe(403);
+    expect(blockedThreadEdit.json.error?.code).toBe("FORUM_THREAD_LOCKED");
+
+    const blockedPostEdit = await send(
+      "PUT",
+      `/forum/posts/${post.id}`,
+      { body: "Edited reply." },
+      ownerCookie,
+    );
+    expect(blockedPostEdit.response.status).toBe(403);
+    expect(blockedPostEdit.json.error?.code).toBe("FORUM_THREAD_LOCKED");
+
+    // The lock does not hold against a superuser editing their OWN content.
+    const adminThread = await createThread(adminCookie, "general", `Admin locked ${unique}`);
+    const adminPost = await reply(adminCookie, adminThread.id, "Admin reply.");
+    expectSuccess(
+      (
+        await send(
+          "POST",
+          `/admin/forum/threads/${adminThread.id}/lock`,
+          undefined,
+          adminCookie,
+        )
+      ).json,
+    );
+    const adminEdit = await send<Thread>(
+      "PUT",
+      `/forum/threads/${adminThread.id}`,
+      { title: "Admin edited", body: "Admin edited body." },
+      adminCookie,
+    );
+    expect(expectSuccess(adminEdit.json).title).toBe("Admin edited");
+    const adminPostEdit = await send<Post>(
+      "PUT",
+      `/forum/posts/${adminPost.id}`,
+      { body: "Admin edited reply." },
+      adminCookie,
+    );
+    expect(expectSuccess(adminPostEdit.json).body).toBe("Admin edited reply.");
+
+    // Unlocking restores ordinary posting.
+    const unlocked = await send<Thread>(
+      "POST",
+      `/admin/forum/threads/${thread.id}/unlock`,
+      undefined,
+      adminCookie,
+    );
+    expect(expectSuccess(unlocked.json).locked).toBe(false);
+    expectSuccess(
+      (
+        await send(
+          "POST",
+          `/forum/threads/${thread.id}/posts`,
+          { body: "After the unlock." },
+          ownerCookie,
+        )
+      ).json,
+    );
+  });
+
+  test("edits are owner-only; deletes are owner-or-superuser", async () => {
+    const unique = Date.now();
+    const ownerCookie = await registerVerified(`forum-own-${unique}@example.test`, PASSWORD);
+    const otherCookie = await registerVerified(`forum-other-${unique}@example.test`, PASSWORD);
+    const adminCookie = await registerSuperuser(`forum-owner-admin-${unique}@example.test`);
+
+    const thread = await createThread(ownerCookie, "general", `Owned ${unique}`);
+    const post = await reply(ownerCookie, thread.id, "Owner reply.");
+
+    const foreignThreadEdit = await send(
+      "PUT",
+      `/forum/threads/${thread.id}`,
+      { title: "Hijacked", body: "Hijacked body." },
+      otherCookie,
+    );
+    expect(foreignThreadEdit.response.status).toBe(403);
+    expect(foreignThreadEdit.json.error?.code).toBe("FORUM_THREAD_EDIT_FORBIDDEN");
+
+    const foreignPostEdit = await send(
+      "PUT",
+      `/forum/posts/${post.id}`,
+      { body: "Hijacked reply." },
+      otherCookie,
+    );
+    expect(foreignPostEdit.response.status).toBe(403);
+    expect(foreignPostEdit.json.error?.code).toBe("FORUM_POST_EDIT_FORBIDDEN");
+
+    // A superuser may not edit someone else's content either — only delete it.
+    const adminEdit = await send(
+      "PUT",
+      `/forum/threads/${thread.id}`,
+      { title: "Admin hijack", body: "Admin hijack body." },
+      adminCookie,
+    );
+    expect(adminEdit.response.status).toBe(403);
+    expect(adminEdit.json.error?.code).toBe("FORUM_THREAD_EDIT_FORBIDDEN");
+
+    const foreignDelete = await send(
+      "DELETE",
+      `/forum/posts/${post.id}`,
+      undefined,
+      otherCookie,
+    );
+    expect(foreignDelete.response.status).toBe(403);
+    expect(foreignDelete.json.error?.code).toBe("FORUM_POST_DELETE_FORBIDDEN");
+
+    const ownerEdit = await send<Thread>(
+      "PUT",
+      `/forum/threads/${thread.id}`,
+      { title: "Owner edited", body: "Owner edited body." },
+      ownerCookie,
+    );
+    expect(expectSuccess(ownerEdit.json).title).toBe("Owner edited");
+
+    expectSuccess(
+      (await send("DELETE", `/forum/posts/${post.id}`, undefined, adminCookie)).json,
+    );
+    expectSuccess(
+      (await send("DELETE", `/forum/threads/${thread.id}`, undefined, adminCookie)).json,
+    );
+
+    const gone = await send("GET", `/forum/threads/${thread.id}`);
+    expect(gone.response.status).toBe(404);
+  });
+
+  test("pinned threads sort above the activity order", async () => {
+    const unique = Date.now();
+    const cookie = await registerVerified(`forum-pin-${unique}@example.test`, PASSWORD);
+    const adminCookie = await registerSuperuser(`forum-pinadmin-${unique}@example.test`);
+
+    const older = await createThread(cookie, "site-feedback", `Older ${unique}`);
+    const newer = await createThread(cookie, "site-feedback", `Newer ${unique}`);
+
+    const beforePin = await send<{ threads: Thread[] }>(
+      "GET",
+      "/forum/categories/site-feedback/threads?limit=50",
+    );
+    expect(expectSuccess(beforePin.json).threads[0]?.id).toBe(newer.id);
+
+    const pinned = await send<Thread>(
+      "POST",
+      `/admin/forum/threads/${older.id}/pin`,
+      undefined,
+      adminCookie,
+    );
+    expect(expectSuccess(pinned.json).pinned).toBe(true);
+
+    const afterPin = await send<{ threads: Thread[] }>(
+      "GET",
+      "/forum/categories/site-feedback/threads?limit=50",
+    );
+    expect(expectSuccess(afterPin.json).threads[0]?.id).toBe(older.id);
+
+    const unpinned = await send<Thread>(
+      "POST",
+      `/admin/forum/threads/${older.id}/unpin`,
+      undefined,
+      adminCookie,
+    );
+    expect(expectSuccess(unpinned.json).pinned).toBe(false);
+
+    const afterUnpin = await send<{ threads: Thread[] }>(
+      "GET",
+      "/forum/categories/site-feedback/threads?limit=50",
+    );
+    expect(expectSuccess(afterUnpin.json).threads[0]?.id).toBe(newer.id);
+  });
+
+  test("one open report per reporter per target; duplicates are a 409", async () => {
+    const unique = Date.now();
+    const authorCookie = await registerVerified(`forum-rep-a-${unique}@example.test`, PASSWORD);
+    const reporterCookie = await registerVerified(`forum-rep-b-${unique}@example.test`, PASSWORD);
+    const otherReporter = await registerVerified(`forum-rep-c-${unique}@example.test`, PASSWORD);
+    const adminCookie = await registerSuperuser(`forum-repadmin-${unique}@example.test`);
+
+    const thread = await createThread(authorCookie, "manga-talk", `Reported ${unique}`);
+    const post = await reply(authorCookie, thread.id, "Reported reply.");
+
+    expectSuccess(
+      (
+        await send(
+          "POST",
+          `/forum/threads/${thread.id}/report`,
+          { reason: "spam", note: "Repeated ad." },
+          reporterCookie,
+        )
+      ).json,
+    );
+
+    const duplicate = await send(
+      "POST",
+      `/forum/threads/${thread.id}/report`,
+      { reason: "abuse" },
+      reporterCookie,
+    );
+    expect(duplicate.response.status).toBe(409);
+    expect(duplicate.json.error?.code).toBe("FORUM_REPORT_DUPLICATE");
+
+    // A different reporter, and the same reporter on a different target, both pass.
+    expectSuccess(
+      (
+        await send(
+          "POST",
+          `/forum/threads/${thread.id}/report`,
+          { reason: "nsfw" },
+          otherReporter,
+        )
+      ).json,
+    );
+    expectSuccess(
+      (
+        await send(
+          "POST",
+          `/forum/posts/${post.id}/report`,
+          { reason: "other", note: null },
+          reporterCookie,
+        )
+      ).json,
+    );
+
+    const badReason = await send(
+      "POST",
+      `/forum/posts/${post.id}/report`,
+      { reason: "vibes" },
+      otherReporter,
+    );
+    expect(badReason.response.status).toBe(400);
+    expect(badReason.json.error?.code).toBe("INVALID_FORUM_REPORT_REASON");
+
+    const longNote = await send(
+      "POST",
+      `/forum/posts/${post.id}/report`,
+      { reason: "spam", note: "a".repeat(501) },
+      otherReporter,
+    );
+    expect(longNote.response.status).toBe(400);
+    expect(longNote.json.error?.code).toBe("INVALID_FORUM_REPORT_NOTE");
+
+    const missingTarget = await send(
+      "POST",
+      "/forum/threads/11111111-1111-4111-8111-111111111111/report",
+      { reason: "spam" },
+      otherReporter,
+    );
+    expect(missingTarget.response.status).toBe(404);
+
+    // Dismissing frees the slot: the same reporter may report the target again.
+    const queue = await send<{
+      reports: Array<{
+        id: string;
+        targetType: string;
+        targetId: string;
+        targetSnippet: string;
+        targetAuthorName: string;
+        reporterName: string;
+        reason: string;
+        note: string | null;
+      }>;
+      total: number;
+    }>("GET", "/admin/forum/reports?status=open&limit=50", undefined, adminCookie);
+    const open = expectSuccess(queue.json).reports;
+    const threadReport = open.find(
+      (entry) => entry.targetId === thread.id && entry.reason === "spam",
+    );
+    expect(threadReport).toBeDefined();
+    expect(threadReport?.targetType).toBe("thread");
+    expect(threadReport?.note).toBe("Repeated ad.");
+    expect(threadReport?.targetSnippet).toContain(`Reported ${unique}`);
+    expect(typeof threadReport?.targetAuthorName).toBe("string");
+    expect(typeof threadReport?.reporterName).toBe("string");
+    expect(open.some((entry) => entry.targetId === post.id)).toBe(true);
+
+    expectSuccess(
+      (
+        await send(
+          "POST",
+          `/admin/forum/reports/${threadReport!.id}/dismiss`,
+          undefined,
+          adminCookie,
+        )
+      ).json,
+    );
+
+    const dismissed = await send<{ reports: Array<{ id: string }> }>(
+      "GET",
+      "/admin/forum/reports?status=dismissed&limit=50",
+      undefined,
+      adminCookie,
+    );
+    expect(
+      expectSuccess(dismissed.json).reports.some(
+        (entry) => entry.id === threadReport!.id,
+      ),
+    ).toBe(true);
+
+    // Dismissing twice is a no-op, not an error.
+    expectSuccess(
+      (
+        await send(
+          "POST",
+          `/admin/forum/reports/${threadReport!.id}/dismiss`,
+          undefined,
+          adminCookie,
+        )
+      ).json,
+    );
+
+    expectSuccess(
+      (
+        await send(
+          "POST",
+          `/forum/threads/${thread.id}/report`,
+          { reason: "abuse" },
+          reporterCookie,
+        )
+      ).json,
+    );
+
+    // Reports cascade with their target: deleting the thread clears its queue
+    // entries (including the post's, via the thread -> post cascade).
+    expectSuccess(
+      (await send("DELETE", `/forum/threads/${thread.id}`, undefined, adminCookie)).json,
+    );
+    const remaining = await ctx.db`
+      SELECT COUNT(*)::int AS total FROM forum_reports
+      WHERE thread_id = ${thread.id} OR post_id = ${post.id}
+    `;
+    expect(remaining[0].total).toBe(0);
+  });
+
+  test("concurrent duplicate reports resolve to exactly one 200 and one 409", async () => {
+    const unique = Date.now();
+    const authorCookie = await registerVerified(`forum-race-a-${unique}@example.test`, PASSWORD);
+    const reporterCookie = await registerVerified(`forum-race-b-${unique}@example.test`, PASSWORD);
+    const thread = await createThread(authorCookie, "general", `Race ${unique}`);
+
+    // The partial unique index, not a read-then-write check, is what makes this
+    // deterministic: both requests see no existing report before either inserts.
+    const results = await Promise.all([
+      send("POST", `/forum/threads/${thread.id}/report`, { reason: "spam" }, reporterCookie),
+      send("POST", `/forum/threads/${thread.id}/report`, { reason: "spam" }, reporterCookie),
+    ]);
+    expect(results.map((result) => result.response.status).sort()).toEqual([200, 409]);
+
+    const stored = await ctx.db`
+      SELECT COUNT(*)::int AS total FROM forum_reports
+      WHERE thread_id = ${thread.id} AND status = 'open'
+    `;
+    expect(stored[0].total).toBe(1);
+  });
+
+  test("a report row must reference exactly one target", async () => {
+    const unique = Date.now();
+    const email = `forum-target-${unique}@example.test`;
+    const cookie = await registerVerified(email, PASSWORD);
+    const reporterId = await userIdByEmail(email);
+    const thread = await createThread(cookie, "general", `Target ${unique}`);
+    const post = await reply(cookie, thread.id, "Target reply.");
+
+    // 23514 = check_violation. Both targets set, and neither set, are DB-level
+    // violations — the API can never write one, and no backfill can either.
+    async function insertRejectionCode(
+      threadId: string | null,
+      postId: string | null,
+    ): Promise<string> {
+      try {
+        await ctx.db`
+          INSERT INTO forum_reports (reporter_id, thread_id, post_id, reason)
+          VALUES (${reporterId}, ${threadId}, ${postId}, 'spam')
+        `;
+      } catch (error) {
+        return String((error as { code?: string }).code);
+      }
+      throw new Error("expected the forum_reports_one_target CHECK to reject");
+    }
+
+    expect(await insertRejectionCode(thread.id, post.id)).toBe("23514");
+    expect(await insertRejectionCode(null, null)).toBe("23514");
+  });
+
+  test("the moderation surface is superuser-only", async () => {
+    const unique = Date.now();
+    const userCookie = await registerVerified(`forum-gate-${unique}@example.test`, PASSWORD);
+    const adminCookie = await registerSuperuser(`forum-gateadmin-${unique}@example.test`);
+    const thread = await createThread(userCookie, "general", `Gate ${unique}`);
+
+    const anonQueue = await send("GET", "/admin/forum/reports");
+    expect(anonQueue.response.status).toBe(401);
+
+    const userQueue = await send("GET", "/admin/forum/reports", undefined, userCookie);
+    expect(userQueue.response.status).toBe(403);
+    expect(userQueue.json.error?.code).toBe("ADMIN_ACCESS_REQUIRED");
+
+    const userLock = await send(
+      "POST",
+      `/admin/forum/threads/${thread.id}/lock`,
+      undefined,
+      userCookie,
+    );
+    expect(userLock.response.status).toBe(403);
+    expect(userLock.json.error?.code).toBe("ADMIN_ACCESS_REQUIRED");
+
+    const badStatus = await send(
+      "GET",
+      "/admin/forum/reports?status=nope",
+      undefined,
+      adminCookie,
+    );
+    expect(badStatus.response.status).toBe(400);
+    expect(badStatus.json.error?.code).toBe("INVALID_FORUM_REPORT_STATUS");
+
+    const missingReport = await send(
+      "POST",
+      "/admin/forum/reports/11111111-1111-4111-8111-111111111111/dismiss",
+      undefined,
+      adminCookie,
+    );
+    expect(missingReport.response.status).toBe(404);
+    expect(missingReport.json.error?.code).toBe("FORUM_REPORT_NOT_FOUND");
   });
 });

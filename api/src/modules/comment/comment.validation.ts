@@ -1,19 +1,12 @@
 import { badRequest } from "@/shared/http/error";
-import { PROFANITY_ROOTS } from "@/shared/utility/profanity";
+import { maskProfanity } from "@/shared/utility/profanity";
 
 const MAX_BODY = 1000;
 
 // ponytail: a hard-coded wordlist is the floor, not real moderation — it is
 // trivially bypassed (leetspeak, spacing, new slurs). Swap for an external list
 // or a moderation service if this ever needs to actually hold.
-// Word-boundary, case-insensitive: "ass" matches standalone but not "class".
-// Masking stays on \b: it replaces in the raw text, where the stricter
-// matcher's normalized classes cannot map back to original positions.
-const PROFANITY_RE = new RegExp(`\\b(?:${PROFANITY_ROOTS.join("|")})\\b`, "gi");
-
-export function maskProfanity(text: string): string {
-  return text.replace(PROFANITY_RE, (match) => "*".repeat(match.length));
-}
+export { maskProfanity };
 
 // Zero-width chars (ZWSP/ZWNJ/ZWJ/BOM/word-joiner) would otherwise pass the
 // non-empty check, so a body made only of them reads as blank content.

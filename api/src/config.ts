@@ -280,6 +280,11 @@ export const staticConfig = {
     // Comment writes (post/edit/delete) per IP — throttles spam without
     // affecting the public comment reads (those ride publicRead).
     comment: { windowMs: 60 * 1000, maxRequests: 5 },
+    // Forum thread/post writes per IP — same shape as the comment bucket.
+    forum: { windowMs: 60 * 1000, maxRequests: 5 },
+    // Forum reports. Own, much longer window: report-bombing is the abuse this
+    // bounds, and a legitimate reporter never needs a second burst.
+    forumReport: { windowMs: 5 * 60 * 1000, maxRequests: 5 },
   },
 
   // Email verification OTP (mail service pipeline).

@@ -22,6 +22,7 @@ const commentSchema = t.Object({
 });
 
 const MAX_LIMIT = 50;
+const MAX_OFFSET = 10_000;
 
 // Comments have a tighter page cap (max 50) than the shared pagination helper,
 // so limit/offset are parsed locally: default 20, clamped to [1, 50], offset >= 0.
@@ -41,6 +42,12 @@ function parseListQuery(query: {
     throw badRequest("offset must be greater than or equal to 0", {
       code: "INVALID_PAGINATION",
       details: { field: "offset", min: 0 },
+    });
+  }
+  if (offset > MAX_OFFSET) {
+    throw badRequest(`offset must not exceed ${MAX_OFFSET}`, {
+      code: "INVALID_PAGINATION",
+      details: { field: "offset", max: MAX_OFFSET },
     });
   }
   return { limit, offset };
