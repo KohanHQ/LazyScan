@@ -174,3 +174,20 @@ export const commentWriteLimit = (ctx: any): void =>
     maxRequests: staticConfig.rateLimit.comment.maxRequests,
     keyPrefix: "comment:write",
   });
+
+// Forum thread/post write POST/PUT/DELETE. Same shape as the comment bucket.
+export const forumWriteLimit = (ctx: any): void =>
+  enforceRateLimit(ctx, {
+    windowMs: staticConfig.rateLimit.forum.windowMs,
+    maxRequests: staticConfig.rateLimit.forum.maxRequests,
+    keyPrefix: "forum:write",
+  });
+
+// Forum reports. Separate, longer-window bucket so report-bombing is bounded
+// independently of ordinary posting.
+export const forumReportLimit = (ctx: any): void =>
+  enforceRateLimit(ctx, {
+    windowMs: staticConfig.rateLimit.forumReport.windowMs,
+    maxRequests: staticConfig.rateLimit.forumReport.maxRequests,
+    keyPrefix: "forum:report",
+  });

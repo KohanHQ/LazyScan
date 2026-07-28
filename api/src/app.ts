@@ -10,6 +10,7 @@ import { readerHandler } from "@/modules/reader/reader.handler";
 import { libraryHandler } from "@/modules/library/library.handler";
 import { readingStatusHandler } from "@/modules/reading-status/reading-status.handler";
 import { commentHandler } from "@/modules/comment/comment.handler";
+import { forumHandler } from "@/modules/forum/forum.handler";
 import { adminHandler } from "@/modules/admin/admin.handler";
 import { globalRateLimit } from "@/middleware/rate.limit";
 import { authMiddleware } from "@/middleware/auth";
@@ -88,6 +89,7 @@ export function createApp() {
           .use(libraryHandler)
           .use(readingStatusHandler)
           .use(commentHandler)
+          .use(forumHandler)
           .use(adminHandler),
       )
 

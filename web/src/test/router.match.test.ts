@@ -61,6 +61,27 @@ describe("matchRoute dynamic routes", () => {
     });
   });
 
+  test("forum category captures slug", () => {
+    expect(matchRoute("/forum/manga-talk")).toEqual({
+      name: "forum-category",
+      slug: "manga-talk",
+    });
+  });
+
+  test("forum category decodes the slug", () => {
+    expect(matchRoute("/forum/site%20feedback")).toEqual({
+      name: "forum-category",
+      slug: "site feedback",
+    });
+  });
+
+  test("forum thread captures id", () => {
+    expect(matchRoute("/forum/thread/abc123")).toEqual({
+      name: "forum-thread",
+      id: "abc123",
+    });
+  });
+
   test("reader captures both ids", () => {
     expect(matchRoute("/manga/m1/chapter/c2")).toEqual({
       name: "reader",
@@ -81,6 +102,17 @@ describe("matchRoute precedence and fallback", () => {
       mangaId: "m1",
       chapterId: "c2",
     });
+  });
+
+  test("forum thread wins over the category slug", () => {
+    expect(matchRoute("/forum/thread/abc123")).toEqual({
+      name: "forum-thread",
+      id: "abc123",
+    });
+  });
+
+  test("/forum stays the index, not a category", () => {
+    expect(matchRoute("/forum")).toEqual({ name: "forum" });
   });
 
   test("/profile/edit wins over /profile", () => {

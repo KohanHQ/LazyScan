@@ -24,26 +24,20 @@ const commentSchema = t.Object({
 const MAX_LIMIT = 50;
 
 // Comments have a tighter page cap (max 50) than the shared pagination helper,
-// so limit/offset are parsed locally: default 20, clamped to [1, 50], offset >= 0.
+// so limit is parsed locally: default 20, clamped to [1, 50]. The cursor is
+// opaque here; the repository decodes it against its own shape.
 function parseListQuery(query: {
   limit?: string;
-  offset?: string;
-}): { limit: number; offset: number } {
+  cursor?: string;
+}): { limit: number; cursor: string | null } {
   const limit = parseIntQuery(query.limit, "limit", 20);
-  const offset = parseIntQuery(query.offset, "offset", 0);
   if (limit < 1 || limit > MAX_LIMIT) {
     throw badRequest(`limit must be between 1 and ${MAX_LIMIT}`, {
       code: "INVALID_PAGINATION",
       details: { field: "limit", min: 1, max: MAX_LIMIT },
     });
   }
-  if (offset < 0) {
-    throw badRequest("offset must be greater than or equal to 0", {
-      code: "INVALID_PAGINATION",
-      details: { field: "offset", min: 0 },
-    });
-  }
-  return { limit, offset };
+  return { limit, cursor: query.cursor ? query.cursor : null };
 }
 
 function parseIntQuery(
@@ -91,13 +85,13 @@ export const commentHandler = new Elysia()
         query,
       } = ctx as {
         params: { id: string };
-        query: { limit?: string; offset?: string };
+        query: { limit?: string; cursor?: string };
       };
-      const { limit, offset } = parseListQuery(query);
+      const { limit, cursor } = parseListQuery(query);
       const result = await service.listComments(
         id as UUID,
         limit,
-        offset
+        cursor
       );
       return success(result);
     },
@@ -106,7 +100,7 @@ export const commentHandler = new Elysia()
       params: t.Object({ id: t.String() }),
       query: t.Object({
         limit: t.Optional(t.String()),
-        offset: t.Optional(t.String()),
+        cursor: t.Optional(t.String()),
       }),
       response: {
         200: t.Object({
@@ -115,6 +109,7 @@ export const commentHandler = new Elysia()
           data: t.Object({
             comments: t.Array(commentSchema),
             total: t.Number(),
+            nextCursor: t.Union([t.String(), t.Null()]),
           }),
         }),
       },

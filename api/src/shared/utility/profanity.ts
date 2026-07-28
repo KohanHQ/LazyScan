@@ -70,6 +70,15 @@ export function containsProfanity(text: string): boolean {
   return PROFANITY_RE.test(text);
 }
 
+// Masking stays on plain \b roots: it replaces in the raw text, where the
+// stricter matcher's normalized classes cannot map back to original positions.
+const MASK_RE = new RegExp(`\\b(?:${PROFANITY_ROOTS.join("|")})\\b`, "gi");
+
+// Word-boundary, case-insensitive: "ass" matches standalone but not "class".
+export function maskProfanity(text: string): string {
+  return text.replace(MASK_RE, (match) => "*".repeat(match.length));
+}
+
 // Load-time self-check: a broken pattern must fail loudly at boot, not
 // silently stop guarding.
 assert(containsProfanity("f0ck"), "profanity matcher misses leet swap");

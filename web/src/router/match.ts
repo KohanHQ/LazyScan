@@ -12,6 +12,8 @@ export type Route =
   | { name: "status" }
   | { name: "feed" }
   | { name: "forum" }
+  | { name: "forum-category"; slug: string }
+  | { name: "forum-thread"; id: string }
   | { name: "settings" }
   | { name: "history" }
   | { name: "login" }
@@ -50,6 +52,24 @@ export function matchRoute(path: string): Route {
 
   if (path === "/forum") {
     return { name: "forum" };
+  }
+
+  // Thread detail is checked before the category slug so "thread" can never be
+  // read as a category.
+  const forumThreadMatch = path.match(/^\/forum\/thread\/([^/]+)$/);
+  if (forumThreadMatch?.[1]) {
+    return {
+      name: "forum-thread",
+      id: decodeURIComponent(forumThreadMatch[1]),
+    };
+  }
+
+  const forumCategoryMatch = path.match(/^\/forum\/([^/]+)$/);
+  if (forumCategoryMatch?.[1]) {
+    return {
+      name: "forum-category",
+      slug: decodeURIComponent(forumCategoryMatch[1]),
+    };
   }
 
   if (path === "/settings") {

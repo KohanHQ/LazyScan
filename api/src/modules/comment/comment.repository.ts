@@ -1,8 +1,13 @@
 import { getDbClient } from "@/shared/database/client";
 import { UUID } from "@/shared/types/id";
+import { decodeCursor, takePage } from "@/shared/utility/cursor";
 import type { CommentResponse } from "@/modules/comment/comment.model";
 
 const db = getDbClient();
+
+// Keyset cursor shape in ORDER BY order. Decoding lives beside the query so the
+// shape can never drift from its SQL.
+const COMMENT_CURSOR = ["timestamp", "uuid"] as const;
 
 // The author name is the profile display name, falling back to username; the
 // profile row always exists (created at registration), so LEFT JOIN + COALESCE
@@ -23,23 +28,36 @@ function mapRow(row: any): CommentResponse {
   };
 }
 
+// Descending sort, so the row comparison is `<` against
+// idx_manga_comments_manga_created. The `::text` out and `::text::timestamptz`
+// back keep the key at real microsecond precision (see cursor.ts).
 export async function listByManga(
   mangaId: UUID,
   limit: number,
-  offset: number
-): Promise<CommentResponse[]> {
+  cursor: string | null
+): Promise<{ comments: CommentResponse[]; nextCursor: string | null }> {
+  const keys = cursor === null ? null : decodeCursor(COMMENT_CURSOR, cursor);
   const rows = await db`
     SELECT c.id, c.manga_id, c.user_id, c.body, c.created_at, c.updated_at,
+           c.created_at::text AS cursor_created_at,
            COALESCE(p.display_name, p.username, 'Unknown') AS author_name,
            p.avatar_url AS author_avatar
     FROM manga_comments c
     LEFT JOIN profiles p ON p.user_id = c.user_id
     WHERE c.manga_id = ${mangaId}
+      ${
+        keys === null
+          ? db``
+          : db`AND (c.created_at, c.id) < (${keys[0]}::text::timestamptz, ${keys[1]}::uuid)`
+      }
     ORDER BY c.created_at DESC, c.id DESC
-    LIMIT ${limit}
-    OFFSET ${offset}
+    LIMIT ${limit + 1}
   `;
-  return rows.map(mapRow);
+  const { page, nextCursor } = takePage(rows, limit, COMMENT_CURSOR, (row) => [
+    row.cursor_created_at,
+    row.id,
+  ]);
+  return { comments: page.map(mapRow), nextCursor };
 }
 
 export async function countByManga(mangaId: UUID): Promise<number> {
