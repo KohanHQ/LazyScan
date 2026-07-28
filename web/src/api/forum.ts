@@ -33,9 +33,12 @@ export type ForumThread = {
   updatedAt: string;
 };
 
+// `nextCursor` is the opaque keyset cursor for the following page, null once the
+// page returned reaches the end of the list.
 export type ForumThreadPage = {
   threads: ForumThread[];
   total: number;
+  nextCursor: string | null;
 };
 
 export type ForumPost = {
@@ -52,6 +55,7 @@ export type ForumPost = {
 export type ForumPostPage = {
   posts: ForumPost[];
   total: number;
+  nextCursor: string | null;
 };
 
 export type ForumReportReason = "spam" | "abuse" | "nsfw" | "other";
@@ -76,6 +80,7 @@ export type ForumReport = {
 export type ForumReportPage = {
   reports: ForumReport[];
   total: number;
+  nextCursor: string | null;
 };
 
 // Server-side bounds (forum.validation.ts). Mirrored so inputs stop typing at
@@ -95,11 +100,14 @@ export const REPORT_REASONS: ForumReportReason[] = [
 // Listings share the comments page cap (server clamps limit to [1, 50]).
 const PAGE_SIZE = 20;
 
-function pageQuery(offset: number, limit: number): string {
-  return new URLSearchParams({
-    limit: String(limit),
-    offset: String(offset),
-  }).toString();
+// Cursors are opaque to the client: pass back whatever nextCursor carried, and
+// null for the first page.
+function pageQuery(cursor: string | null, limit: number): string {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor !== null) {
+    params.set("cursor", cursor);
+  }
+  return params.toString();
 }
 
 export function listForumCategories(): Promise<ForumCategory[]> {
@@ -108,11 +116,11 @@ export function listForumCategories(): Promise<ForumCategory[]> {
 
 export function listForumThreads(
   slug: string,
-  offset = 0,
+  cursor: string | null = null,
   limit = PAGE_SIZE
 ): Promise<ForumThreadPage> {
   return apiRequest<ForumThreadPage>(
-    `/forum/categories/${encodeURIComponent(slug)}/threads?${pageQuery(offset, limit)}`
+    `/forum/categories/${encodeURIComponent(slug)}/threads?${pageQuery(cursor, limit)}`
   );
 }
 
@@ -122,11 +130,11 @@ export function getForumThread(id: string): Promise<ForumThread> {
 
 export function listForumPosts(
   threadId: string,
-  offset = 0,
+  cursor: string | null = null,
   limit = PAGE_SIZE
 ): Promise<ForumPostPage> {
   return apiRequest<ForumPostPage>(
-    `/forum/threads/${encodeURIComponent(threadId)}/posts?${pageQuery(offset, limit)}`
+    `/forum/threads/${encodeURIComponent(threadId)}/posts?${pageQuery(cursor, limit)}`
   );
 }
 
@@ -215,16 +223,11 @@ export function reportForumPost(
 
 export function listForumReports(
   status: ForumReportStatus,
-  offset = 0,
+  cursor: string | null = null,
   limit = PAGE_SIZE
 ): Promise<ForumReportPage> {
-  const params = new URLSearchParams({
-    status,
-    limit: String(limit),
-    offset: String(offset),
-  });
   return apiRequest<ForumReportPage>(
-    `/admin/forum/reports?${params.toString()}`
+    `/admin/forum/reports?status=${status}&${pageQuery(cursor, limit)}`
   );
 }
 

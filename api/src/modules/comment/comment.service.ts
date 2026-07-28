@@ -13,14 +13,14 @@ import type {
 export async function listComments(
   mangaId: UUID,
   limit: number,
-  offset: number
+  cursor: string | null
 ): Promise<CommentListResponse> {
   const id = assertUuid(mangaId, "manga id");
-  const [comments, total] = await Promise.all([
-    commentRepo.listByManga(id, limit, offset),
+  const [page, total] = await Promise.all([
+    commentRepo.listByManga(id, limit, cursor),
     commentRepo.countByManga(id),
   ]);
-  return { comments, total };
+  return { comments: page.comments, total, nextCursor: page.nextCursor };
 }
 
 export async function createComment(

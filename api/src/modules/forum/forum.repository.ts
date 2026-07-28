@@ -1,6 +1,7 @@
 import { getDbClient } from "@/shared/database/client";
 import type { TransactionClient } from "@/shared/database/transaction";
 import { UUID } from "@/shared/types/id";
+import { decodeCursor, takePage } from "@/shared/utility/cursor";
 import type {
   ForumCategoryResponse,
   ForumPostResponse,
@@ -18,6 +19,12 @@ const db = getDbClient();
 
 // How much reported content the admin queue carries inline for triage.
 const SNIPPET_LENGTH = 200;
+
+// Keyset cursor shapes, one per listing, in that listing's ORDER BY order.
+// Decoding lives beside the query so a shape can never drift from its SQL.
+const THREAD_CURSOR = ["bool", "timestamp", "uuid"] as const;
+const POST_CURSOR = ["timestamp", "uuid"] as const;
+const REPORT_CURSOR = ["timestamp", "uuid"] as const;
 
 function mapCategory(row: any): ForumCategoryResponse {
   return {
@@ -103,14 +110,19 @@ export async function findCategoryBySlug(
   return rows.length ? { id: rows[0].id as UUID, slug: rows[0].slug } : null;
 }
 
+// Uniform-direction sort, so one row comparison covers all three keys; Postgres
+// pushes it into idx_forum_threads_category_activity as an index condition,
+// boolean column included.
 export async function listThreadsByCategory(
   categoryId: UUID,
   limit: number,
-  offset: number
-): Promise<ForumThreadResponse[]> {
+  cursor: string | null
+): Promise<{ threads: ForumThreadResponse[]; nextCursor: string | null }> {
+  const keys = cursor === null ? null : decodeCursor(THREAD_CURSOR, cursor);
   const rows = await db`
     SELECT t.id, t.category_id, c.slug AS category_slug, t.user_id, t.title,
            t.body, t.pinned, t.locked, t.last_post_at, t.created_at, t.updated_at,
+           t.last_post_at::text AS cursor_last_post_at,
            COALESCE(p.display_name, p.username, 'Unknown') AS author_name,
            p.avatar_url AS author_avatar,
            (SELECT COUNT(*)::int FROM forum_posts fp WHERE fp.thread_id = t.id)
@@ -119,11 +131,20 @@ export async function listThreadsByCategory(
     JOIN forum_categories c ON c.id = t.category_id
     LEFT JOIN profiles p ON p.user_id = t.user_id
     WHERE t.category_id = ${categoryId}
+      ${
+        keys === null
+          ? db``
+          : db`AND (t.pinned, t.last_post_at, t.id) < (${keys[0]}, ${keys[1]}::text::timestamptz, ${keys[2]}::uuid)`
+      }
     ORDER BY t.pinned DESC, t.last_post_at DESC, t.id DESC
-    LIMIT ${limit}
-    OFFSET ${offset}
+    LIMIT ${limit + 1}
   `;
-  return rows.map(mapThread);
+  const { page, nextCursor } = takePage(rows, limit, THREAD_CURSOR, (row) => [
+    row.pinned,
+    row.cursor_last_post_at,
+    row.id,
+  ]);
+  return { threads: page.map(mapThread), nextCursor };
 }
 
 export async function countThreadsByCategory(categoryId: UUID): Promise<number> {
@@ -200,23 +221,34 @@ export async function removeThreadById(id: UUID): Promise<void> {
   await db`DELETE FROM forum_threads WHERE id = ${id}`;
 }
 
+// Ascending sort, so the row comparison is `>` against idx_forum_posts_thread_created.
 export async function listPostsByThread(
   threadId: UUID,
   limit: number,
-  offset: number
-): Promise<ForumPostResponse[]> {
+  cursor: string | null
+): Promise<{ posts: ForumPostResponse[]; nextCursor: string | null }> {
+  const keys = cursor === null ? null : decodeCursor(POST_CURSOR, cursor);
   const rows = await db`
     SELECT fp.id, fp.thread_id, fp.user_id, fp.body, fp.created_at, fp.updated_at,
+           fp.created_at::text AS cursor_created_at,
            COALESCE(p.display_name, p.username, 'Unknown') AS author_name,
            p.avatar_url AS author_avatar
     FROM forum_posts fp
     LEFT JOIN profiles p ON p.user_id = fp.user_id
     WHERE fp.thread_id = ${threadId}
+      ${
+        keys === null
+          ? db``
+          : db`AND (fp.created_at, fp.id) > (${keys[0]}::text::timestamptz, ${keys[1]}::uuid)`
+      }
     ORDER BY fp.created_at ASC, fp.id ASC
-    LIMIT ${limit}
-    OFFSET ${offset}
+    LIMIT ${limit + 1}
   `;
-  return rows.map(mapPost);
+  const { page, nextCursor } = takePage(rows, limit, POST_CURSOR, (row) => [
+    row.cursor_created_at,
+    row.id,
+  ]);
+  return { posts: page.map(mapPost), nextCursor };
 }
 
 export async function countPostsByThread(threadId: UUID): Promise<number> {
@@ -299,14 +331,18 @@ export async function insertReport(input: {
   return row.id as UUID;
 }
 
+// Keyset runs per status filter, matching idx_forum_reports_status_created.
 export async function listReports(input: {
   status: ForumReportStatus;
   limit: number;
-  offset: number;
-}): Promise<ForumReportResponse[]> {
+  cursor: string | null;
+}): Promise<{ reports: ForumReportResponse[]; nextCursor: string | null }> {
+  const keys =
+    input.cursor === null ? null : decodeCursor(REPORT_CURSOR, input.cursor);
   const rows = await db`
     SELECT r.id, r.thread_id, r.post_id, r.reason, r.note, r.status,
            r.created_at, r.resolved_at,
+           r.created_at::text AS cursor_created_at,
            left(COALESCE(t.title || chr(10) || t.body, fp.body), ${SNIPPET_LENGTH})
              AS target_snippet,
            COALESCE(ta.display_name, ta.username, 'Unknown') AS target_author_name,
@@ -317,11 +353,19 @@ export async function listReports(input: {
     LEFT JOIN profiles ta ON ta.user_id = COALESCE(t.user_id, fp.user_id)
     LEFT JOIN profiles rp ON rp.user_id = r.reporter_id
     WHERE r.status = ${input.status}
+      ${
+        keys === null
+          ? db``
+          : db`AND (r.created_at, r.id) < (${keys[0]}::text::timestamptz, ${keys[1]}::uuid)`
+      }
     ORDER BY r.created_at DESC, r.id DESC
-    LIMIT ${input.limit}
-    OFFSET ${input.offset}
+    LIMIT ${input.limit + 1}
   `;
-  return rows.map(mapReport);
+  const { page, nextCursor } = takePage(rows, input.limit, REPORT_CURSOR, (row) => [
+    row.cursor_created_at,
+    row.id,
+  ]);
+  return { reports: page.map(mapReport), nextCursor };
 }
 
 export async function countReports(status: ForumReportStatus): Promise<number> {

@@ -13,22 +13,25 @@ export type Comment = {
   updatedAt: string;
 };
 
+// `nextCursor` is the opaque keyset cursor for the following page, null once the
+// page returned reaches the end of the list.
 export type CommentPage = {
   comments: Comment[];
   total: number;
+  nextCursor: string | null;
 };
 
 const PAGE_SIZE = 20;
 
 export function listComments(
   mangaId: string,
-  offset = 0,
+  cursor: string | null = null,
   limit = PAGE_SIZE
 ): Promise<CommentPage> {
-  const params = new URLSearchParams({
-    limit: String(limit),
-    offset: String(offset),
-  });
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor !== null) {
+    params.set("cursor", cursor);
+  }
   return apiRequest<CommentPage>(
     `/manga/${encodeURIComponent(mangaId)}/comments?${params.toString()}`
   );

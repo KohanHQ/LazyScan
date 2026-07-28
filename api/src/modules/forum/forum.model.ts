@@ -36,9 +36,12 @@ export interface ForumThreadResponse {
   updatedAt: string;
 }
 
+// `total` is the whole filtered set; `nextCursor` is the opaque keyset cursor
+// for the page after this one, null when this page reaches the end.
 export interface ForumThreadListResponse {
   threads: ForumThreadResponse[];
   total: number;
+  nextCursor: string | null;
 }
 
 export interface ForumPostResponse {
@@ -55,6 +58,7 @@ export interface ForumPostResponse {
 export interface ForumPostListResponse {
   posts: ForumPostResponse[];
   total: number;
+  nextCursor: string | null;
 }
 
 // Admin queue row. The snippet is a truncated copy of the reported content so
@@ -76,4 +80,5 @@ export interface ForumReportResponse {
 export interface ForumReportListResponse {
   reports: ForumReportResponse[];
   total: number;
+  nextCursor: string | null;
 }

@@ -21,11 +21,17 @@ const REPORTS_LIMIT = 20;
 // paging never drift from the server.
 // Unlike the audit-trail panel it loads its own first page instead of taking it
 // from the settings fetch, so a forum-side failure can't fail the whole page.
+// Cursors are opaque, so pages are walked rather than indexed: the trail holds
+// the cursor of every page reached so far, starting at null for page one. Its
+// depth is the page number, and Prev is a pop.
+const FIRST_PAGE: ReadonlyArray<string | null> = Object.freeze([null]);
+
 export function ForumReportsPanel(): ReactElement {
   const [status, setStatus] = useState<ForumReportStatus>("open");
   const [reports, setReports] = useState<ForumReport[]>([]);
   const [total, setTotal] = useState(0);
-  const [offset, setOffset] = useState(0);
+  const [trail, setTrail] = useState<ReadonlyArray<string | null>>(FIRST_PAGE);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +41,7 @@ export function ForumReportsPanel(): ReactElement {
   const loadingRef = useRef(false);
 
   const goTo = async (
-    nextOffset: number,
+    nextTrail: ReadonlyArray<string | null>,
     nextStatus: ForumReportStatus = status
   ): Promise<void> => {
     if (loadingRef.current) {
@@ -44,17 +50,26 @@ export function ForumReportsPanel(): ReactElement {
     loadingRef.current = true;
     setLoading(true);
     try {
-      let target = Math.max(0, nextOffset);
-      let result = await listForumReports(nextStatus, target, REPORTS_LIMIT);
+      let target = nextTrail;
+      let result = await listForumReports(
+        nextStatus,
+        target[target.length - 1],
+        REPORTS_LIMIT
+      );
       // Clearing the last row of a page empties it; step back one page so the
       // queue never renders blank with rows still behind it.
-      if (result.reports.length === 0 && target > 0) {
-        target = Math.max(0, target - REPORTS_LIMIT);
-        result = await listForumReports(nextStatus, target, REPORTS_LIMIT);
+      if (result.reports.length === 0 && target.length > 1) {
+        target = target.slice(0, -1);
+        result = await listForumReports(
+          nextStatus,
+          target[target.length - 1],
+          REPORTS_LIMIT
+        );
       }
       setReports(result.reports);
       setTotal(result.total);
-      setOffset(target);
+      setNextCursor(result.nextCursor);
+      setTrail(target);
       setStatus(nextStatus);
       setError(null);
     } catch (loadError) {
@@ -72,12 +87,13 @@ export function ForumReportsPanel(): ReactElement {
 
   useEffect(() => {
     // Mount-only first page; every later fetch is user- or action-driven.
-    void goTo(0);
+    void goTo(FIRST_PAGE);
   }, []);
 
-  const page = Math.floor(offset / REPORTS_LIMIT) + 1;
-  const hasNext = offset + reports.length < total;
-  const showPager = offset > 0 || hasNext;
+  const page = trail.length;
+  const hasPrevious = trail.length > 1;
+  const hasNext = nextCursor !== null;
+  const showPager = hasPrevious || hasNext;
 
   return (
     <section className="manage-panel settings-panel">
@@ -101,7 +117,7 @@ export function ForumReportsPanel(): ReactElement {
             ]}
             onChange={(value) => {
               if (value !== status) {
-                void goTo(0, value as ForumReportStatus);
+                void goTo(FIRST_PAGE, value as ForumReportStatus);
               }
             }}
           />
@@ -126,7 +142,7 @@ export function ForumReportsPanel(): ReactElement {
                 key={report.id}
                 report={report}
                 busyPanel={loading}
-                onDone={() => void goTo(offset)}
+                onDone={() => void goTo(trail)}
               />
             ))}
           </ol>
@@ -138,8 +154,8 @@ export function ForumReportsPanel(): ReactElement {
           <button
             className="secondary-button"
             type="button"
-            disabled={offset === 0 || loading}
-            onClick={() => void goTo(Math.max(0, offset - REPORTS_LIMIT))}
+            disabled={!hasPrevious || loading}
+            onClick={() => void goTo(trail.slice(0, -1))}
           >
             Previous
           </button>
@@ -148,7 +164,7 @@ export function ForumReportsPanel(): ReactElement {
             className="secondary-button"
             type="button"
             disabled={!hasNext || loading}
-            onClick={() => void goTo(offset + REPORTS_LIMIT)}
+            onClick={() => void goTo([...trail, nextCursor])}
           >
             Next
           </button>

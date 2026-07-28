@@ -27,9 +27,11 @@ export function Comments({ mangaId }: { mangaId: string }): ReactElement {
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [moreHidden, setMoreHidden] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const offsetRef = useRef(0);
+  // The server's opaque keyset cursor for the next page; null means this is the
+  // end of the list, which is exactly when Load more hides.
+  const cursorRef = useRef<string | null>(null);
+  const [moreHidden, setMoreHidden] = useState(true);
   // Tracks the currently mounted manga so an in-flight loadMore from a previous
   // mangaId can discard its late response instead of appending to the new list.
   const activeMangaRef = useRef(mangaId);
@@ -38,17 +40,17 @@ export function Comments({ mangaId }: { mangaId: string }): ReactElement {
     let ignore = false;
     setComments(null);
     setError(null);
-    offsetRef.current = 0;
+    cursorRef.current = null;
     activeMangaRef.current = mangaId;
-    listComments(mangaId, 0, PAGE_SIZE)
+    listComments(mangaId, null, PAGE_SIZE)
       .then((page) => {
         if (ignore) {
           return;
         }
         setComments(page.comments);
         setTotal(page.total);
-        offsetRef.current = page.comments.length;
-        setMoreHidden(page.comments.length >= page.total);
+        cursorRef.current = page.nextCursor;
+        setMoreHidden(page.nextCursor === null);
       })
       .catch((loadError) => {
         if (!ignore) {
@@ -66,18 +68,30 @@ export function Comments({ mangaId }: { mangaId: string }): ReactElement {
 
   const loadMore = async (): Promise<void> => {
     const requestedManga = mangaId;
+    const requestedCursor = cursorRef.current;
+    if (requestedCursor === null) {
+      return;
+    }
     setLoadingMore(true);
     try {
-      const page = await listComments(requestedManga, offsetRef.current, PAGE_SIZE);
+      const page = await listComments(requestedManga, requestedCursor, PAGE_SIZE);
       // Manga switched mid-fetch: drop this response so it can't append to the
       // now-different list.
       if (activeMangaRef.current !== requestedManga) {
         return;
       }
-      setComments((current) => [...(current ?? []), ...page.comments]);
+      // The cursor already excludes what page one returned; the id filter is
+      // belt-and-braces against a row the composer put in the list by hand.
+      setComments((current) => {
+        const seen = new Set((current ?? []).map((item) => item.id));
+        return [
+          ...(current ?? []),
+          ...page.comments.filter((item) => !seen.has(item.id)),
+        ];
+      });
       setTotal(page.total);
-      offsetRef.current += page.comments.length;
-      setMoreHidden(offsetRef.current >= page.total);
+      cursorRef.current = page.nextCursor;
+      setMoreHidden(page.nextCursor === null);
     } catch {
       // Keep the current list; the Load more button stays for a retry.
     } finally {
@@ -88,9 +102,10 @@ export function Comments({ mangaId }: { mangaId: string }): ReactElement {
   };
 
   const onCreated = (comment: Comment): void => {
+    // Newest-first list, so a new comment belongs at the head; the cursor points
+    // at rows strictly older than page one and is unaffected.
     setComments((current) => [comment, ...(current ?? [])]);
     setTotal((value) => value + 1);
-    offsetRef.current += 1;
   };
 
   const onUpdated = (comment: Comment): void => {
@@ -104,7 +119,6 @@ export function Comments({ mangaId }: { mangaId: string }): ReactElement {
   const onRemoved = (id: string): void => {
     setComments((current) => current?.filter((item) => item.id !== id) ?? current);
     setTotal((value) => Math.max(0, value - 1));
-    offsetRef.current = Math.max(0, offsetRef.current - 1);
   };
 
   return (

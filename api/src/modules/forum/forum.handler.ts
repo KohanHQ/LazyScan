@@ -68,7 +68,7 @@ const reportSchema = t.Object({
 
 const listQuerySchema = t.Object({
   limit: t.Optional(t.String()),
-  offset: t.Optional(t.String()),
+  cursor: t.Optional(t.String()),
 });
 
 const reportBodySchema = t.Object({
@@ -89,36 +89,22 @@ function envelope<T extends TSchema>(data: T) {
 }
 
 const MAX_LIMIT = 50;
-const MAX_OFFSET = 10_000;
 
 // Forum listings share the comments page cap (max 50) rather than the shared
-// pagination helper, so limit/offset are parsed locally: default 20, clamped to
-// [1, 50], offset >= 0.
+// pagination helper, so limit is parsed locally: default 20, clamped to [1, 50].
+// The cursor is opaque here; the repository decodes it against its own shape.
 function parseListQuery(query: {
   limit?: string;
-  offset?: string;
-}): { limit: number; offset: number } {
+  cursor?: string;
+}): { limit: number; cursor: string | null } {
   const limit = parseIntQuery(query.limit, "limit", 20);
-  const offset = parseIntQuery(query.offset, "offset", 0);
   if (limit < 1 || limit > MAX_LIMIT) {
     throw badRequest(`limit must be between 1 and ${MAX_LIMIT}`, {
       code: "INVALID_PAGINATION",
       details: { field: "limit", min: 1, max: MAX_LIMIT },
     });
   }
-  if (offset < 0) {
-    throw badRequest("offset must be greater than or equal to 0", {
-      code: "INVALID_PAGINATION",
-      details: { field: "offset", min: 0 },
-    });
-  }
-  if (offset > MAX_OFFSET) {
-    throw badRequest(`offset must not exceed ${MAX_OFFSET}`, {
-      code: "INVALID_PAGINATION",
-      details: { field: "offset", max: MAX_OFFSET },
-    });
-  }
-  return { limit, offset };
+  return { limit, cursor: query.cursor ? query.cursor : null };
 }
 
 function parseIntQuery(
@@ -175,17 +161,21 @@ export const forumHandler = new Elysia()
         query,
       } = ctx as {
         params: { slug: string };
-        query: { limit?: string; offset?: string };
+        query: { limit?: string; cursor?: string };
       };
-      const { limit, offset } = parseListQuery(query);
-      return success(await service.listThreads(slug, limit, offset));
+      const { limit, cursor } = parseListQuery(query);
+      return success(await service.listThreads(slug, limit, cursor));
     },
     {
       beforeHandle: publicReadLimit,
       params: t.Object({ slug: t.String() }),
       query: listQuerySchema,
       response: envelope(
-        t.Object({ threads: t.Array(threadSchema), total: t.Number() })
+        t.Object({
+          threads: t.Array(threadSchema),
+          total: t.Number(),
+          nextCursor: t.Union([t.String(), t.Null()]),
+        })
       ),
     }
   )
@@ -213,17 +203,21 @@ export const forumHandler = new Elysia()
         query,
       } = ctx as {
         params: { id: string };
-        query: { limit?: string; offset?: string };
+        query: { limit?: string; cursor?: string };
       };
-      const { limit, offset } = parseListQuery(query);
-      return success(await service.listPosts(id as UUID, limit, offset));
+      const { limit, cursor } = parseListQuery(query);
+      return success(await service.listPosts(id as UUID, limit, cursor));
     },
     {
       beforeHandle: publicReadLimit,
       params: t.Object({ id: t.String() }),
       query: listQuerySchema,
       response: envelope(
-        t.Object({ posts: t.Array(postSchema), total: t.Number() })
+        t.Object({
+          posts: t.Array(postSchema),
+          total: t.Number(),
+          nextCursor: t.Union([t.String(), t.Null()]),
+        })
       ),
     }
   )
@@ -393,15 +387,15 @@ export const forumHandler = new Elysia()
         "/admin/forum/reports",
         async (ctx: any) => {
           const { query } = ctx as {
-            query: { status?: string; limit?: string; offset?: string };
+            query: { status?: string; limit?: string; cursor?: string };
           };
           const user = await resolveRequiredUser(ctx.cookie.session?.value);
-          const { limit, offset } = parseListQuery(query);
+          const { limit, cursor } = parseListQuery(query);
           return success(
             await service.listReports(user, {
               status: query.status,
               limit,
-              offset,
+              cursor,
             })
           );
         },
@@ -409,10 +403,14 @@ export const forumHandler = new Elysia()
           query: t.Object({
             status: t.Optional(t.String()),
             limit: t.Optional(t.String()),
-            offset: t.Optional(t.String()),
+            cursor: t.Optional(t.String()),
           }),
           response: envelope(
-            t.Object({ reports: t.Array(reportSchema), total: t.Number() })
+            t.Object({
+              reports: t.Array(reportSchema),
+              total: t.Number(),
+              nextCursor: t.Union([t.String(), t.Null()]),
+            })
           ),
         }
       )

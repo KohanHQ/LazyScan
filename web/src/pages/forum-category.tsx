@@ -37,7 +37,9 @@ export function ForumCategoryPage({ slug }: { slug: string }): ReactElement {
   const [moreHidden, setMoreHidden] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [composing, setComposing] = useState(false);
-  const offsetRef = useRef(0);
+  // The server's opaque keyset cursor for the next page; null means this is the
+  // end of the list, which is exactly when Load more hides.
+  const cursorRef = useRef<string | null>(null);
   // Tracks the mounted slug so an in-flight loadMore from a previous category
   // can discard its late response instead of appending to the new list.
   const activeSlugRef = useRef(slug);
@@ -45,7 +47,7 @@ export function ForumCategoryPage({ slug }: { slug: string }): ReactElement {
   useEffect(() => {
     let ignore = false;
     setState({ kind: "loading" });
-    offsetRef.current = 0;
+    cursorRef.current = null;
     activeSlugRef.current = slug;
     setLoadingMore(false);
     void (async () => {
@@ -57,7 +59,7 @@ export function ForumCategoryPage({ slug }: { slug: string }): ReactElement {
         // slug rather than failing the page.
         [categories, page] = await Promise.all([
           listForumCategories().catch(() => null),
-          listForumThreads(slug, 0, PAGE_SIZE),
+          listForumThreads(slug, null, PAGE_SIZE),
         ]);
       } catch (loadError) {
         if (!ignore) {
@@ -76,8 +78,8 @@ export function ForumCategoryPage({ slug }: { slug: string }): ReactElement {
       }
       setThreads(page.threads);
       setTotal(page.total);
-      offsetRef.current = page.threads.length;
-      setMoreHidden(page.threads.length >= page.total);
+      cursorRef.current = page.nextCursor;
+      setMoreHidden(page.nextCursor === null);
       setState({
         kind: "ready",
         category: categories?.find((item) => item.slug === slug) ?? null,
@@ -90,20 +92,29 @@ export function ForumCategoryPage({ slug }: { slug: string }): ReactElement {
 
   const loadMore = async (): Promise<void> => {
     const requestedSlug = slug;
+    const requestedCursor = cursorRef.current;
+    if (requestedCursor === null) {
+      return;
+    }
     setLoadingMore(true);
     try {
       const page = await listForumThreads(
         requestedSlug,
-        offsetRef.current,
+        requestedCursor,
         PAGE_SIZE
       );
       if (activeSlugRef.current !== requestedSlug) {
         return;
       }
-      setThreads((current) => [...current, ...page.threads]);
+      // The cursor already excludes page one; the id filter is belt-and-braces
+      // against a thread that moved across the boundary between fetches.
+      setThreads((current) => {
+        const seen = new Set(current.map((item) => item.id));
+        return [...current, ...page.threads.filter((item) => !seen.has(item.id))];
+      });
       setTotal(page.total);
-      offsetRef.current += page.threads.length;
-      setMoreHidden(offsetRef.current >= page.total);
+      cursorRef.current = page.nextCursor;
+      setMoreHidden(page.nextCursor === null);
     } catch {
       // Keep the current list; the Load more button stays for a retry.
     } finally {

@@ -46,14 +46,14 @@ export function listCategories(): Promise<ForumCategoryResponse[]> {
 export async function listThreads(
   slug: string,
   limit: number,
-  offset: number
+  cursor: string | null
 ): Promise<ForumThreadListResponse> {
   const category = await categoryOrThrow(slug);
-  const [threads, total] = await Promise.all([
-    forumRepo.listThreadsByCategory(category.id, limit, offset),
+  const [page, total] = await Promise.all([
+    forumRepo.listThreadsByCategory(category.id, limit, cursor),
     forumRepo.countThreadsByCategory(category.id),
   ]);
-  return { threads, total };
+  return { threads: page.threads, total, nextCursor: page.nextCursor };
 }
 
 export async function getThread(threadId: UUID): Promise<ForumThreadResponse> {
@@ -63,15 +63,15 @@ export async function getThread(threadId: UUID): Promise<ForumThreadResponse> {
 export async function listPosts(
   threadId: UUID,
   limit: number,
-  offset: number
+  cursor: string | null
 ): Promise<ForumPostListResponse> {
   const id = assertUuid(threadId, "thread id");
   await threadOrThrow(id);
-  const [posts, total] = await Promise.all([
-    forumRepo.listPostsByThread(id, limit, offset),
+  const [page, total] = await Promise.all([
+    forumRepo.listPostsByThread(id, limit, cursor),
     forumRepo.countPostsByThread(id),
   ]);
-  return { posts, total };
+  return { posts: page.posts, total, nextCursor: page.nextCursor };
 }
 
 export async function createThread(
@@ -233,15 +233,15 @@ export async function reportPost(
 // 403 for every query shape (mirrors admin.service).
 export async function listReports(
   user: AuthUser,
-  input: { status?: string; limit: number; offset: number }
+  input: { status?: string; limit: number; cursor: string | null }
 ): Promise<ForumReportListResponse> {
   assertSuperuser(user);
   const status = parseReportStatus(input.status);
-  const [reports, total] = await Promise.all([
-    forumRepo.listReports({ status, limit: input.limit, offset: input.offset }),
+  const [page, total] = await Promise.all([
+    forumRepo.listReports({ status, limit: input.limit, cursor: input.cursor }),
     forumRepo.countReports(status),
   ]);
-  return { reports, total };
+  return { reports: page.reports, total, nextCursor: page.nextCursor };
 }
 
 // Idempotent: dismissing an already-dismissed report is a no-op, an unknown id

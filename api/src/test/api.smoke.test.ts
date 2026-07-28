@@ -2143,13 +2143,16 @@ describe("forum", () => {
     const second = await reply(cookie, thread.id, "Second reply.");
     expect(first.threadId).toBe(thread.id);
 
-    const posts = await send<{ posts: Post[]; total: number }>(
-      "GET",
-      `/forum/threads/${thread.id}/posts`,
-    );
+    const posts = await send<{
+      posts: Post[];
+      total: number;
+      nextCursor: string | null;
+    }>("GET", `/forum/threads/${thread.id}/posts`);
     const postPage = expectSuccess(posts.json);
     expect(postPage.total).toBe(2);
     expect(postPage.posts.map((entry) => entry.id)).toEqual([first.id, second.id]);
+    // Both rows fit the default page, so there is nothing after it.
+    expect(postPage.nextCursor).toBeNull();
 
     // Reply count is a COUNT, never a stored counter; last_post_at moved.
     const detail = await send<Thread>("GET", `/forum/threads/${thread.id}`);
@@ -2157,14 +2160,26 @@ describe("forum", () => {
     expect(detailData.replyCount).toBe(2);
     expect(Date.parse(detailData.lastPostAt)).toBeGreaterThan(createdActivity);
 
-    // Post pagination is offset-based over the same oldest-first order.
-    const paged = await send<{ posts: Post[]; total: number }>(
+    // Post pagination is keyset over the same oldest-first order: page one hands
+    // back the cursor that page two resumes from.
+    type PostPage = { posts: Post[]; total: number; nextCursor: string | null };
+    const firstPage = await send<PostPage>(
       "GET",
-      `/forum/threads/${thread.id}/posts?limit=1&offset=1`,
+      `/forum/threads/${thread.id}/posts?limit=1`,
+    );
+    const firstPageData = expectSuccess(firstPage.json);
+    expect(firstPageData.total).toBe(2);
+    expect(firstPageData.posts.map((entry) => entry.id)).toEqual([first.id]);
+    expect(firstPageData.nextCursor).not.toBeNull();
+
+    const paged = await send<PostPage>(
+      "GET",
+      `/forum/threads/${thread.id}/posts?limit=1&cursor=${encodeURIComponent(firstPageData.nextCursor!)}`,
     );
     const pagedData = expectSuccess(paged.json);
     expect(pagedData.total).toBe(2);
     expect(pagedData.posts.map((entry) => entry.id)).toEqual([second.id]);
+    expect(pagedData.nextCursor).toBeNull();
 
     const listing = await send<{ threads: Thread[]; total: number }>(
       "GET",
@@ -2284,7 +2299,7 @@ describe("forum", () => {
     expect(longPost.response.status).toBe(400);
     expect(longPost.json.error?.code).toBe("INVALID_FORUM_POST_BODY");
 
-    for (const query of ["limit=0", "limit=51", "limit=abc", "offset=-1"]) {
+    for (const query of ["limit=0", "limit=51", "limit=abc"]) {
       const bad = await send("GET", `/forum/categories/general/threads?${query}`);
       expect(bad.response.status).toBe(400);
       expect(bad.json.error?.code).toBe("INVALID_PAGINATION");
@@ -2759,5 +2774,371 @@ describe("forum", () => {
     );
     expect(missingReport.response.status).toBe(404);
     expect(missingReport.json.error?.code).toBe("FORUM_REPORT_NOT_FOUND");
+  });
+});
+
+// Keyset pagination over the four community listings. The properties under test
+// are the ones offsets could not hold: a walk visits every row exactly once, a
+// row arriving mid-walk cannot duplicate or hide another, and a microsecond
+// timestamp survives the cursor round trip.
+describe("keyset cursor pagination", () => {
+  const PASSWORD = "Correct-password-123!";
+
+  type Row = { id: string };
+  type Page = { total: number; nextCursor: string | null } & Record<string, any>;
+
+  function pageUrl(path: string, query: string): string {
+    return `${path}${path.includes("?") ? "&" : "?"}${query}`;
+  }
+
+  function cursorQuery(limit: number, cursor: string | null): string {
+    return cursor === null
+      ? `limit=${limit}`
+      : `limit=${limit}&cursor=${encodeURIComponent(cursor)}`;
+  }
+
+  async function fetchPage(
+    path: string,
+    limit: number,
+    cursor: string | null,
+    cookie?: string,
+  ): Promise<Page> {
+    const response = await send<Page>(
+      "GET",
+      pageUrl(path, cursorQuery(limit, cursor)),
+      undefined,
+      cookie,
+    );
+    return expectSuccess(response.json);
+  }
+
+  // Walks to the end, i.e. until a page reports nextCursor === null. The guard
+  // turns a cursor that fails to advance into a failed test, not a hung suite.
+  async function walk(
+    path: string,
+    key: string,
+    limit: number,
+    cookie?: string,
+  ): Promise<{ ids: string[]; pages: number; total: number }> {
+    const ids: string[] = [];
+    let cursor: string | null = null;
+    let pages = 0;
+    let total = 0;
+    for (let guard = 0; guard < 200; guard += 1) {
+      const page = await fetchPage(path, limit, cursor, cookie);
+      ids.push(...(page[key] as Row[]).map((row) => row.id));
+      pages += 1;
+      total = page.total;
+      cursor = page.nextCursor;
+      if (cursor === null) {
+        return { ids, pages, total };
+      }
+    }
+    throw new Error(`cursor walk of ${path} never reached a null nextCursor`);
+  }
+
+  async function createThread(
+    cookie: string,
+    slug: string,
+    title: string,
+  ): Promise<Row> {
+    const created = await send<Row>(
+      "POST",
+      `/forum/categories/${slug}/threads`,
+      { title, body: "Cursor thread body." },
+      cookie,
+    );
+    return expectSuccess(created.json);
+  }
+
+  async function reply(cookie: string, threadId: string, body: string): Promise<Row> {
+    const created = await send<Row>(
+      "POST",
+      `/forum/threads/${threadId}/posts`,
+      { body },
+      cookie,
+    );
+    return expectSuccess(created.json);
+  }
+
+  async function createManga(unique: number): Promise<string> {
+    const rows = await ctx.db`
+      INSERT INTO manga (title, slug, status)
+      VALUES ('Cursor Manga', ${`cursor-manga-${unique}`}, 'ongoing')
+      RETURNING id
+    `;
+    return rows[0].id as string;
+  }
+
+  async function comment(cookie: string, mangaId: string, body: string): Promise<Row> {
+    const created = await send<Row>(
+      "POST",
+      `/manga/${mangaId}/comments`,
+      { body },
+      cookie,
+    );
+    return expectSuccess(created.json);
+  }
+
+  function decodedCursor(cursor: string): unknown[] {
+    return JSON.parse(Buffer.from(cursor, "base64url").toString("utf8"));
+  }
+
+  test("walks thread posts ascending over three pages with no gap or repeat", async () => {
+    const unique = Date.now();
+    const cookie = await registerVerified(`cursor-posts-${unique}@example.test`, PASSWORD);
+    const thread = await createThread(cookie, "general", `Cursor posts ${unique}`);
+
+    const created: string[] = [];
+    for (let index = 0; index < 5; index += 1) {
+      created.push((await reply(cookie, thread.id, `Reply ${index}.`)).id);
+    }
+
+    const path = `/forum/threads/${thread.id}/posts`;
+    const walked = await walk(path, "posts", 2);
+
+    expect(walked.pages).toBe(3);
+    expect(walked.total).toBe(5);
+    expect(walked.ids).toEqual(created);
+    expect(new Set(walked.ids).size).toBe(walked.ids.length);
+
+    // The same rows the unpaged read returns, in the same order.
+    const whole = await fetchPage(path, 50, null);
+    expect(whole.nextCursor).toBeNull();
+    expect((whole.posts as Row[]).map((row) => row.id)).toEqual(created);
+  });
+
+  test("walks category threads with the pinned key in the cursor", async () => {
+    const unique = Date.now();
+    const cookie = await registerVerified(`cursor-threads-${unique}@example.test`, PASSWORD);
+    const adminEmail = `cursor-threadadmin-${unique}@example.test`;
+    const adminCookie = await registerVerified(adminEmail, PASSWORD);
+    await ctx.db`UPDATE users SET role = 'superuser' WHERE email = ${adminEmail}`;
+
+    for (let index = 0; index < 4; index += 1) {
+      await createThread(cookie, "site-feedback", `Cursor thread ${unique}-${index}`);
+    }
+    const pinned = await createThread(cookie, "site-feedback", `Cursor pinned ${unique}`);
+    expectSuccess(
+      (
+        await send(
+          "POST",
+          `/admin/forum/threads/${pinned.id}/pin`,
+          undefined,
+          adminCookie,
+        )
+      ).json,
+    );
+
+    const path = "/forum/categories/site-feedback/threads";
+    const whole = await fetchPage(path, 50, null);
+    const expected = (whole.threads as Row[]).map((row) => row.id);
+    // Pinned sorts above the activity order, so the boolean key leads the cursor.
+    expect(expected[0]).toBe(pinned.id);
+
+    const walked = await walk(path, "threads", 2);
+    expect(walked.ids).toEqual(expected);
+    expect(walked.ids.length).toBe(walked.total);
+    expect(new Set(walked.ids).size).toBe(walked.ids.length);
+  });
+
+  test("walks the report queue per status and ends with a null cursor", async () => {
+    const unique = Date.now();
+    const authorCookie = await registerVerified(`cursor-rep-a-${unique}@example.test`, PASSWORD);
+    const reporterCookie = await registerVerified(`cursor-rep-b-${unique}@example.test`, PASSWORD);
+    const adminEmail = `cursor-repadmin-${unique}@example.test`;
+    const adminCookie = await registerVerified(adminEmail, PASSWORD);
+    await ctx.db`UPDATE users SET role = 'superuser' WHERE email = ${adminEmail}`;
+
+    const thread = await createThread(authorCookie, "general", `Cursor reports ${unique}`);
+    for (let index = 0; index < 3; index += 1) {
+      const post = await reply(authorCookie, thread.id, `Reportable ${index}.`);
+      expectSuccess(
+        (
+          await send(
+            "POST",
+            `/forum/posts/${post.id}/report`,
+            { reason: "spam" },
+            reporterCookie,
+          )
+        ).json,
+      );
+    }
+
+    const path = "/admin/forum/reports?status=open";
+    const whole = await fetchPage(path, 50, null, adminCookie);
+    const expected = (whole.reports as Row[]).map((row) => row.id);
+    expect(expected.length).toBeGreaterThanOrEqual(3);
+
+    const walked = await walk(path, "reports", 1, adminCookie);
+    expect(walked.pages).toBe(expected.length);
+    expect(walked.ids).toEqual(expected);
+    expect(walked.ids.length).toBe(walked.total);
+  });
+
+  test("a comment inserted mid-walk cannot repeat or hide a descending row", async () => {
+    const unique = Date.now();
+    const email = `cursor-drift-desc-${unique}@example.test`;
+    const cookie = await registerVerified(email, PASSWORD);
+    const mangaId = await createManga(unique);
+
+    const created: string[] = [];
+    for (let index = 0; index < 5; index += 1) {
+      created.push((await comment(cookie, mangaId, `Comment ${index}.`)).id);
+    }
+    const path = `/manga/${mangaId}/comments`;
+    const baseline = (await fetchPage(path, 50, null)).comments as Row[];
+    const baselineIds = baseline.map((row) => row.id);
+    expect(baselineIds).toEqual([...created].reverse());
+
+    const first = await fetchPage(path, 2, null);
+    const firstIds = (first.comments as Row[]).map((row) => row.id);
+    expect(firstIds).toEqual(baselineIds.slice(0, 2));
+
+    // The drift: a newer comment lands ahead of the whole list between fetches.
+    const drifted = await comment(cookie, mangaId, "Arrived between pages.");
+
+    const second = await fetchPage(path, 2, first.nextCursor);
+    const secondIds = (second.comments as Row[]).map((row) => row.id);
+
+    // Resumes exactly where page one stopped: nothing repeated, nothing skipped.
+    expect(secondIds).toEqual(baselineIds.slice(2, 4));
+    expect(secondIds).not.toContain(drifted.id);
+    expect(new Set([...firstIds, ...secondIds]).size).toBe(4);
+
+    // The bug this replaces: the same drift makes OFFSET 2 re-serve row two.
+    const offsetPage = await ctx.db`
+      SELECT id FROM manga_comments
+      WHERE manga_id = ${mangaId}
+      ORDER BY created_at DESC, id DESC
+      LIMIT 2 OFFSET 2
+    `;
+    expect(offsetPage.map((row) => row.id)).toEqual([
+      baselineIds[1],
+      baselineIds[2],
+    ]);
+  });
+
+  test("a post inserted mid-walk cannot repeat or hide an ascending row", async () => {
+    const unique = Date.now();
+    const cookie = await registerVerified(`cursor-drift-asc-${unique}@example.test`, PASSWORD);
+    const thread = await createThread(cookie, "general", `Cursor drift ${unique}`);
+
+    const created: string[] = [];
+    for (let index = 0; index < 5; index += 1) {
+      created.push((await reply(cookie, thread.id, `Ascending ${index}.`)).id);
+    }
+    const path = `/forum/threads/${thread.id}/posts`;
+
+    const first = await fetchPage(path, 2, null);
+    const firstIds = (first.posts as Row[]).map((row) => row.id);
+    expect(firstIds).toEqual(created.slice(0, 2));
+
+    // Backdated on purpose: an ascending list only drifts when a row appears
+    // *before* the window, which a plain append never does.
+    await ctx.db`
+      INSERT INTO forum_posts (thread_id, user_id, body, created_at)
+      SELECT thread_id, user_id, 'Arrived before the window.',
+             created_at - interval '1 second'
+      FROM forum_posts WHERE id = ${created[0]}
+    `;
+
+    const second = await fetchPage(path, 2, first.nextCursor);
+    const secondIds = (second.posts as Row[]).map((row) => row.id);
+
+    expect(secondIds).toEqual(created.slice(2, 4));
+    expect(new Set([...firstIds, ...secondIds]).size).toBe(4);
+
+    // The bug this replaces: the same drift makes OFFSET 2 re-serve row two.
+    const offsetPage = await ctx.db`
+      SELECT id FROM forum_posts
+      WHERE thread_id = ${thread.id}
+      ORDER BY created_at ASC, id ASC
+      LIMIT 2 OFFSET 2
+    `;
+    expect(offsetPage.map((row) => row.id)).toEqual([created[1], created[2]]);
+  });
+
+  test("rows one microsecond apart inside the same millisecond paginate cleanly", async () => {
+    const unique = Date.now();
+    const email = `cursor-micro-${unique}@example.test`;
+    await registerVerified(email, PASSWORD);
+    const userId = await userIdByEmail(email);
+    const mangaId = await createManga(unique + 1);
+
+    // Same millisecond, different microseconds. The response bodies both render
+    // as ...123Z (Date-backed), so only a text-exact cursor can separate them.
+    const seeded = await ctx.db`
+      INSERT INTO manga_comments (manga_id, user_id, body, created_at)
+      VALUES
+        (${mangaId}, ${userId}, 'Microsecond older.', '2026-01-01 00:00:00.123456+00'),
+        (${mangaId}, ${userId}, 'Microsecond newer.', '2026-01-01 00:00:00.123999+00')
+      RETURNING id, created_at::text AS created_at_text
+    `;
+    const older = seeded.find((row) => row.created_at_text.endsWith(".123456+00"))!;
+    const newer = seeded.find((row) => row.created_at_text.endsWith(".123999+00"))!;
+
+    const path = `/manga/${mangaId}/comments`;
+    const first = await fetchPage(path, 1, null);
+    expect((first.comments as Row[]).map((row) => row.id)).toEqual([newer.id]);
+    expect(first.nextCursor).not.toBeNull();
+    // The cursor carries the microseconds; a JS Date would have cut it to .123.
+    expect(decodedCursor(first.nextCursor!)[0]).toBe("2026-01-01 00:00:00.123999+00");
+
+    const second = await fetchPage(path, 1, first.nextCursor);
+    expect((second.comments as Row[]).map((row) => row.id)).toEqual([older.id]);
+    expect(second.nextCursor).toBeNull();
+
+    const walked = await walk(path, "comments", 1);
+    expect(walked.ids).toEqual([newer.id, older.id]);
+  });
+
+  test("a malformed or foreign-shaped cursor is a 400 INVALID_CURSOR", async () => {
+    const unique = Date.now();
+    const cookie = await registerVerified(`cursor-bad-${unique}@example.test`, PASSWORD);
+    const adminEmail = `cursor-badadmin-${unique}@example.test`;
+    const adminCookie = await registerVerified(adminEmail, PASSWORD);
+    await ctx.db`UPDATE users SET role = 'superuser' WHERE email = ${adminEmail}`;
+    const thread = await createThread(cookie, "general", `Cursor bad ${unique}`);
+    const mangaId = await createManga(unique + 2);
+
+    const routes: Array<[string, string | undefined]> = [
+      ["/forum/categories/general/threads", undefined],
+      [`/forum/threads/${thread.id}/posts`, undefined],
+      [`/manga/${mangaId}/comments`, undefined],
+      ["/admin/forum/reports?status=open", adminCookie],
+    ];
+
+    // Junk, valid base64url of a non-tuple, and a tuple whose id is not a UUID.
+    const malformed = [
+      "not-a-cursor",
+      Buffer.from('{"offset":20}').toString("base64url"),
+      Buffer.from('["2026-01-01 00:00:00+00","nope"]').toString("base64url"),
+    ];
+
+    for (const [path, routeCookie] of routes) {
+      for (const cursor of malformed) {
+        const bad = await send(
+          "GET",
+          pageUrl(path, `cursor=${encodeURIComponent(cursor)}`),
+          undefined,
+          routeCookie,
+        );
+        expect(bad.response.status).toBe(400);
+        expect(bad.json.error?.code).toBe("INVALID_CURSOR");
+      }
+    }
+
+    // A well-formed cursor from another listing is still the wrong shape: the
+    // two-key post cursor cannot stand in for the three-key thread cursor.
+    await reply(cookie, thread.id, "Shape check one.");
+    await reply(cookie, thread.id, "Shape check two.");
+    const postPage = await fetchPage(`/forum/threads/${thread.id}/posts`, 1, null);
+    const foreign = await send(
+      "GET",
+      `/forum/categories/general/threads?cursor=${encodeURIComponent(postPage.nextCursor!)}`,
+    );
+    expect(foreign.response.status).toBe(400);
+    expect(foreign.json.error?.code).toBe("INVALID_CURSOR");
   });
 });

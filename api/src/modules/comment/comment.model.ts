@@ -17,7 +17,10 @@ export interface CommentResponse {
   updatedAt: string;
 }
 
+// `total` is the whole comment count for the manga; `nextCursor` is the opaque
+// keyset cursor for the page after this one, null when this page is the last.
 export interface CommentListResponse {
   comments: CommentResponse[];
   total: number;
+  nextCursor: string | null;
 }

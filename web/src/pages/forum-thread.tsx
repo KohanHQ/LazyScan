@@ -36,6 +36,7 @@ type ThreadData = {
   thread: ForumThread;
   posts: ForumPost[];
   total: number;
+  nextCursor: string | null;
   categoryName: string | null;
 };
 
@@ -62,7 +63,7 @@ export function ForumThreadPage({ id }: { id: string }): ReactElement {
         // degrades to the slug instead of failing the page.
         [thread, page, categories] = await Promise.all([
           getForumThread(id),
-          listForumPosts(id, 0, PAGE_SIZE),
+          listForumPosts(id, null, PAGE_SIZE),
           listForumCategories().catch(() => null),
         ]);
       } catch (loadError) {
@@ -86,6 +87,7 @@ export function ForumThreadPage({ id }: { id: string }): ReactElement {
           thread,
           posts: page.posts,
           total: page.total,
+          nextCursor: page.nextCursor,
           categoryName:
             categories?.find((item) => item.slug === thread.categorySlug)
               ?.name ?? null,
@@ -143,27 +145,27 @@ function ThreadView({ initial }: { initial: ThreadData }): ReactElement {
   const [thread, setThread] = useState(initial.thread);
   const [posts, setPosts] = useState(initial.posts);
   const [total, setTotal] = useState(initial.total);
-  const [moreHidden, setMoreHidden] = useState(
-    initial.posts.length >= initial.total
-  );
+  const [moreHidden, setMoreHidden] = useState(initial.nextCursor === null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [reportTarget, setReportTarget] = useState<
     { type: "thread" | "post"; id: string } | null
   >(null);
 
-  const offsetRef = useRef(initial.posts.length);
+  // The server's opaque keyset cursor for the next page; null is the end of the
+  // list, which is exactly when Load more hides.
+  const cursorRef = useRef<string | null>(initial.nextCursor);
   // Replies written in this session. They are the newest rows, so they stay at
   // the end of the oldest-first list and are deduped out of later pages.
   const createdIdsRef = useRef(new Set<string>());
 
   const loadMore = async (): Promise<void> => {
+    const requestedCursor = cursorRef.current;
+    if (requestedCursor === null) {
+      return;
+    }
     setLoadingMore(true);
     try {
-      const page = await listForumPosts(
-        thread.id,
-        offsetRef.current,
-        PAGE_SIZE
-      );
+      const page = await listForumPosts(thread.id, requestedCursor, PAGE_SIZE);
       setPosts((current) => {
         const seen = new Set(current.map((post) => post.id));
         const incoming = page.posts.filter((post) => !seen.has(post.id));
@@ -175,8 +177,8 @@ function ThreadView({ initial }: { initial: ThreadData }): ReactElement {
         ];
       });
       setTotal(page.total);
-      offsetRef.current += page.posts.length;
-      setMoreHidden(offsetRef.current >= page.total);
+      cursorRef.current = page.nextCursor;
+      setMoreHidden(page.nextCursor === null);
     } catch {
       // Keep the current list; the Load more button stays for a retry.
     } finally {
@@ -188,8 +190,8 @@ function ThreadView({ initial }: { initial: ThreadData }): ReactElement {
     createdIdsRef.current.add(post.id);
     setPosts((current) => [...current, post]);
     setTotal((value) => value + 1);
-    // offsetRef is deliberately untouched: appending at the tail of an
-    // oldest-first list shifts none of the already-fetched rows.
+    // The cursor is deliberately untouched: it addresses a row, and appending at
+    // the tail of an oldest-first list moves nothing the fetched window covers.
   };
 
   const onUpdated = (post: ForumPost): void => {
@@ -201,11 +203,9 @@ function ThreadView({ initial }: { initial: ThreadData }): ReactElement {
   const onRemoved = (postId: string): void => {
     setPosts((current) => current.filter((item) => item.id !== postId));
     setTotal((value) => Math.max(0, value - 1));
-    // A session reply lives past the fetched window, so only rows inside that
-    // window shift the offset.
-    if (!createdIdsRef.current.delete(postId)) {
-      offsetRef.current = Math.max(0, offsetRef.current - 1);
-    }
+    // No cursor compensation to do: the cursor is a sort position, so deleting
+    // the row it names still resumes the next page in the right place.
+    createdIdsRef.current.delete(postId);
   };
 
   return (
