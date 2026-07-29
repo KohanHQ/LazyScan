@@ -605,17 +605,17 @@ function ReplyForm({
         value={body}
         disabled={busy}
         onChange={setBody}
+        action={
+          <button
+            className="primary-button"
+            type="submit"
+            disabled={busy || body.trim().length === 0}
+          >
+            {busy ? "Posting…" : "Post reply"}
+          </button>
+        }
       />
       {error !== null ? <p className="comment-error">{error}</p> : null}
-      <div className="comment-form-actions">
-        <button
-          className="primary-button"
-          type="submit"
-          disabled={busy || body.trim().length === 0}
-        >
-          {busy ? "Posting…" : "Post reply"}
-        </button>
-      </div>
     </form>
   );
 }

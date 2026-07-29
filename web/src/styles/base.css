@@ -3800,6 +3800,7 @@ button.settings-health-chip-button:disabled {
   padding: 10px 12px;
   background: none;
   color: var(--text);
+  font: inherit;
   font-size: 0.95rem;
   resize: none;
   overflow: hidden;
@@ -3812,11 +3813,19 @@ button.settings-health-chip-button:disabled {
 
 .composer-footer {
   display: flex;
-  justify-content: flex-end;
-  padding: 0 12px 6px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 8px;
+  border-top: 1px solid var(--border);
+}
+
+.composer-hint {
+  color: var(--text-muted);
+  font-size: 0.75rem;
 }
 
 .composer-count {
+  margin-left: auto;
   color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 600;
@@ -3827,15 +3836,16 @@ button.settings-health-chip-button:disabled {
   color: var(--status-warn-fg);
 }
 
+.composer-footer .primary-button {
+  min-height: 0;
+  padding: 6px 16px;
+  font-size: 0.85rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .composer-shell {
     transition: none;
   }
-}
-
-.comment-form-actions {
-  display: flex;
-  justify-content: flex-end;
 }
 
 .comment-login,
