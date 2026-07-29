@@ -3371,6 +3371,16 @@ img.user-avatar {
   font-weight: 700;
 }
 
+button.settings-health-chip-button {
+  font-family: inherit;
+  background: none;
+  cursor: pointer;
+}
+
+button.settings-health-chip-button:disabled {
+  cursor: default;
+}
+
 /* Audit-trail heading aside: level chips + the catalog-style filter button. */
 .settings-heading-aside {
   display: inline-flex;
@@ -3389,6 +3399,11 @@ img.user-avatar {
 .settings-logs-filter .library-filter {
   position: static;
   transform: none;
+}
+
+.settings-health-chip-button.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .settings-health-chip.is-bad {
