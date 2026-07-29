@@ -4,6 +4,11 @@ export function Loading({ message = "Loading" }: { message?: string }): ReactEle
   return (
     <div className="state-block state-loading" role="status">
       {message}
+      <span className="state-loading-dots" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </span>
     </div>
   );
 }

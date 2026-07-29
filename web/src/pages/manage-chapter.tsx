@@ -507,6 +507,11 @@ function UploadingPhase({
   const back = (): void =>
     navigateTo(`/manage/manga/${encodeURIComponent(mangaId)}`);
 
+  const doneCount = run.targets.filter((target) => {
+    const state = statuses[target.pageId]?.state;
+    return state === "ready" || state === "failed";
+  }).length;
+
   return (
     <>
       <PageHeading eyebrow="Chapter upload" title="Uploading pages" />
@@ -514,6 +519,7 @@ function UploadingPhase({
         <p className="upload-hint">
           Uploading {run.targets.length} pages to storage. Keep this tab open.
         </p>
+        <UploadProgress done={doneCount} total={run.targets.length} />
         <ol className="upload-list">
           {run.targets.map((target) => {
             const status = statuses[target.pageId] ?? {
@@ -704,6 +710,7 @@ function ProcessingPhase({
         <p className="upload-hint">
           {`Processed ${processed}/${total}${failed ? ` · ${failed} failed` : ""}`}
         </p>
+        <UploadProgress done={processed} total={total} />
         {detail?.import.errorMessage ? (
           <p className="form-error">{detail.import.errorMessage}</p>
         ) : null}
@@ -753,6 +760,37 @@ function ProcessingPhase({
 }
 
 // --- Helpers ---
+
+function UploadProgress({
+  done,
+  total,
+}: {
+  done: number;
+  total: number;
+}): ReactElement | null {
+  if (total === 0) {
+    return null;
+  }
+  const percent = Math.round((done / total) * 100);
+  return (
+    <div
+      className="upload-progress"
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={total}
+      aria-valuenow={done}
+      aria-label={`${done} of ${total} pages`}
+    >
+      <div className="upload-progress-track">
+        <div
+          className="upload-progress-fill"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <span className="upload-progress-label">{`${done} / ${total}`}</span>
+    </div>
+  );
+}
 
 function pageCountLabel(count: number): string {
   if (count === 0) {

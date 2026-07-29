@@ -125,21 +125,11 @@ export function ForumCategoryPage({ slug }: { slug: string }): ReactElement {
   };
 
   if (state.kind === "loading") {
-    return (
-      <>
-        <Heading title={slug} />
-        <Loading message="Loading threads" />
-      </>
-    );
+    return <Loading message="Loading threads" />;
   }
 
   if (state.kind === "error") {
-    return (
-      <>
-        <Heading title={slug} />
-        <ErrorState message={state.message} />
-      </>
-    );
+    return <ErrorState message={state.message} />;
   }
 
   const title = state.category?.name ?? slug;
