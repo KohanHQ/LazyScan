@@ -519,7 +519,7 @@ function UploadingPhase({
         <p className="upload-hint">
           Uploading {run.targets.length} pages to storage. Keep this tab open.
         </p>
-        <UploadProgress done={doneCount} total={run.targets.length} />
+        <UploadProgress key="upload" done={doneCount} total={run.targets.length} />
         <ol className="upload-list">
           {run.targets.map((target) => {
             const status = statuses[target.pageId] ?? {
@@ -710,7 +710,7 @@ function ProcessingPhase({
         <p className="upload-hint">
           {`Processed ${processed}/${total}${failed ? ` · ${failed} failed` : ""}`}
         </p>
-        <UploadProgress done={processed} total={total} />
+        <UploadProgress key="process" done={processed} total={total} />
         {detail?.import.errorMessage ? (
           <p className="form-error">{detail.import.errorMessage}</p>
         ) : null}
