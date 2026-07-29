@@ -7,6 +7,7 @@ import {
   reportForumThread,
   type ForumReportReason,
 } from "@/api/forum";
+import { ComposerTextarea } from "@/components/composer-textarea";
 import { PopupSelect } from "@/components/popup-select";
 import {
   Dialog,
@@ -105,15 +106,14 @@ export function ForumReportDialog({
             onChange={(value) => setReason(value as ForumReportReason)}
           />
           <label htmlFor="forum-report-note">Note (optional)</label>
-          <textarea
+          <ComposerTextarea
             id="forum-report-note"
-            className="comment-input"
             placeholder="Add any detail that helps triage…"
             maxLength={MAX_REPORT_NOTE}
             rows={3}
             value={note}
             disabled={busy}
-            onChange={(event) => setNote(event.target.value)}
+            onChange={setNote}
           />
         </div>
         <DialogFooter>

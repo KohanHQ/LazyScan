@@ -10,6 +10,7 @@ import {
   type ForumThread,
   type ForumThreadPage,
 } from "@/api/forum";
+import { ComposerTextarea } from "@/components/composer-textarea";
 import { PageHeading } from "@/components/page-heading";
 import { Empty, ErrorState, Loading } from "@/components/states";
 import { clickable } from "@/lib/clickable";
@@ -277,15 +278,14 @@ function NewThreadForm({ slug }: { slug: string }): ReactElement {
         disabled={busy}
         onChange={(event) => setTitle(event.target.value)}
       />
-      <textarea
-        className="comment-input"
-        aria-label="Thread body"
+      <ComposerTextarea
+        ariaLabel="Thread body"
         placeholder="What do you want to discuss?"
         maxLength={MAX_THREAD_BODY}
         rows={5}
         value={body}
         disabled={busy}
-        onChange={(event) => setBody(event.target.value)}
+        onChange={setBody}
       />
       {error !== null ? <p className="comment-error">{error}</p> : null}
       <div className="comment-form-actions">
