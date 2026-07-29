@@ -229,17 +229,18 @@ function CommentForm({
         value={body}
         disabled={busy}
         onChange={setBody}
+        hint="Be kind — spoilers get flagged."
+        action={
+          <button
+            className="primary-button"
+            type="submit"
+            disabled={busy || body.trim().length === 0}
+          >
+            {busy ? "Posting…" : "Post comment"}
+          </button>
+        }
       />
       {error !== null ? <p className="comment-error">{error}</p> : null}
-      <div className="comment-form-actions">
-        <button
-          className="primary-button"
-          type="submit"
-          disabled={busy || body.trim().length === 0}
-        >
-          {busy ? "Posting…" : "Post comment"}
-        </button>
-      </div>
     </form>
   );
 }

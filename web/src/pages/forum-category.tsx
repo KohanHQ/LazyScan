@@ -286,17 +286,19 @@ function NewThreadForm({ slug }: { slug: string }): ReactElement {
         value={body}
         disabled={busy}
         onChange={setBody}
+        action={
+          <button
+            className="primary-button"
+            type="submit"
+            disabled={
+              busy || title.trim().length === 0 || body.trim().length === 0
+            }
+          >
+            {busy ? "Posting…" : "Post thread"}
+          </button>
+        }
       />
       {error !== null ? <p className="comment-error">{error}</p> : null}
-      <div className="comment-form-actions">
-        <button
-          className="primary-button"
-          type="submit"
-          disabled={busy || title.trim().length === 0 || body.trim().length === 0}
-        >
-          {busy ? "Posting…" : "Post thread"}
-        </button>
-      </div>
     </form>
   );
 }
