@@ -883,6 +883,12 @@ h3 {
 
 /* Reveal after a beat so sub-250ms fetches never flash a loading state. */
 .state-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  border: 0;
+  background: none;
   opacity: 0;
   animation: state-loading-reveal 0.2s ease 0.25s forwards;
 }
