@@ -901,14 +901,13 @@ h3 {
 
 .state-loading-dots {
   display: inline-flex;
-  gap: 4px;
-  margin-left: 6px;
+  gap: 8px;
   vertical-align: baseline;
 }
 
 .state-loading-dots span {
-  width: 4px;
-  height: 4px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: currentcolor;
   animation: state-loading-bounce 1s ease-in-out infinite;
@@ -930,7 +929,7 @@ h3 {
     opacity: 0.5;
   }
   30% {
-    transform: translateY(-4px);
+    transform: translateY(-8px);
     opacity: 1;
   }
 }
@@ -3775,6 +3774,65 @@ button.settings-health-chip-button:disabled {
   outline: 3px solid var(--accent-fg);
 }
 
+/* Shared multiline composer (components/composer-textarea.tsx). Chrome sits on
+   the shell so the counter is inside the border; selectors are two-class so
+   they beat `.manage-form textarea` on the profile bio field. */
+.composer-shell {
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface-raised);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.composer-shell:focus-within {
+  border-color: var(--accent-fg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-fg) 25%, transparent);
+}
+
+.composer-shell .composer-input {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 6px 6px 0 0;
+  padding: 10px 12px;
+  background: none;
+  color: var(--text);
+  font-size: 0.95rem;
+  resize: none;
+  overflow: hidden;
+}
+
+.composer-shell .composer-input:focus,
+.composer-shell .composer-input:focus-visible {
+  outline: none;
+}
+
+.composer-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 12px 6px;
+}
+
+.composer-count {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.composer-count.is-warn {
+  color: var(--status-warn-fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .composer-shell {
+    transition: none;
+  }
+}
+
 .comment-form-actions {
   display: flex;
   justify-content: flex-end;
@@ -3845,6 +3903,14 @@ button.settings-health-chip-button:disabled {
   overflow-wrap: anywhere;
   color: var(--text);
   font-size: 0.95rem;
+}
+
+/* Links inside user-authored text (lib/linkify.tsx); no global anchor rule
+   exists, so the color is set here. */
+.comment-body a,
+.profile-bio a {
+  color: var(--accent-fg);
+  overflow-wrap: anywhere;
 }
 
 .comment-actions {

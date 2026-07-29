@@ -7,8 +7,10 @@ import {
   updateComment,
   type Comment,
 } from "@/api/comments";
+import { ComposerTextarea } from "@/components/composer-textarea";
 import { Cover } from "@/components/cover";
 import { Empty, ErrorState } from "@/components/states";
+import { linkify } from "@/lib/linkify";
 import { useSession } from "@/state/hooks";
 import { resolveAvatar } from "@/utils/avatar";
 import { formatDate } from "@/utils/format";
@@ -219,15 +221,14 @@ function CommentForm({
         submit();
       }}
     >
-      <textarea
-        className="comment-input"
-        aria-label="Add a comment"
+      <ComposerTextarea
+        ariaLabel="Add a comment"
         placeholder="Add a comment…"
         maxLength={MAX_BODY}
         rows={3}
         value={body}
         disabled={busy}
-        onChange={(event) => setBody(event.target.value)}
+        onChange={setBody}
       />
       {error !== null ? <p className="comment-error">{error}</p> : null}
       <div className="comment-form-actions">
@@ -321,14 +322,13 @@ function CommentRow({
       </div>
       {editing ? (
         <>
-          <textarea
-            className="comment-input"
-            aria-label="Edit comment"
+          <ComposerTextarea
+            ariaLabel="Edit comment"
             maxLength={MAX_BODY}
             rows={3}
             value={draft}
             disabled={busy}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={setDraft}
           />
           <div className="comment-actions">
             <button
@@ -355,7 +355,7 @@ function CommentRow({
         </>
       ) : (
         <>
-          <p className="comment-body">{comment.body}</p>
+          <p className="comment-body">{linkify(comment.body)}</p>
           {canEdit || canDelete ? (
             <div className="comment-actions">
               {canEdit ? (

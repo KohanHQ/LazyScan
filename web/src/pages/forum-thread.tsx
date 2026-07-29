@@ -20,11 +20,13 @@ import {
   type ForumPostPage,
   type ForumThread,
 } from "@/api/forum";
+import { ComposerTextarea } from "@/components/composer-textarea";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Cover } from "@/components/cover";
 import { ForumReportDialog } from "@/components/forum-report-dialog";
 import { Empty, ErrorState, Loading } from "@/components/states";
 import { useToast } from "@/components/ui/toast";
+import { linkify } from "@/lib/linkify";
 import { navigateTo } from "@/router";
 import { useSession } from "@/state/hooks";
 import { resolveAvatar } from "@/utils/avatar";
@@ -418,14 +420,13 @@ function ThreadCard({
             disabled={busy}
             onChange={(event) => setTitle(event.target.value)}
           />
-          <textarea
-            className="comment-input"
-            aria-label="Thread body"
+          <ComposerTextarea
+            ariaLabel="Thread body"
             maxLength={MAX_THREAD_BODY}
             rows={6}
             value={body}
             disabled={busy}
-            onChange={(event) => setBody(event.target.value)}
+            onChange={setBody}
           />
           <div className="comment-actions">
             <button
@@ -469,7 +470,7 @@ function ThreadCard({
               {edited ? " · edited" : ""}
             </span>
           </div>
-          <p className="comment-body">{thread.body}</p>
+          <p className="comment-body">{linkify(thread.body)}</p>
           <p className="forum-thread-stats">
             {replyCount} repl{replyCount === 1 ? "y" : "ies"}
             {thread.pinned ? " · pinned" : ""}
@@ -596,15 +597,14 @@ function ReplyForm({
         submit();
       }}
     >
-      <textarea
-        className="comment-input"
-        aria-label="Write a reply"
+      <ComposerTextarea
+        ariaLabel="Write a reply"
         placeholder="Write a reply…"
         maxLength={MAX_POST_BODY}
         rows={4}
         value={body}
         disabled={busy}
-        onChange={(event) => setBody(event.target.value)}
+        onChange={setBody}
       />
       {error !== null ? <p className="comment-error">{error}</p> : null}
       <div className="comment-form-actions">
@@ -702,14 +702,13 @@ function PostRow({
       </div>
       {editing ? (
         <>
-          <textarea
-            className="comment-input"
-            aria-label="Edit reply"
+          <ComposerTextarea
+            ariaLabel="Edit reply"
             maxLength={MAX_POST_BODY}
             rows={3}
             value={draft}
             disabled={busy}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={setDraft}
           />
           <div className="comment-actions">
             <button
@@ -736,7 +735,7 @@ function PostRow({
         </>
       ) : (
         <>
-          <p className="comment-body">{post.body}</p>
+          <p className="comment-body">{linkify(post.body)}</p>
           {canEdit || canDelete || canReport ? (
             <div className="comment-actions">
               {canEdit ? (

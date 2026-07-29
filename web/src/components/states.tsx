@@ -2,8 +2,11 @@ import type { ReactElement, ReactNode } from "react";
 
 export function Loading({ message = "Loading" }: { message?: string }): ReactElement {
   return (
-    <div className="state-block state-loading" role="status">
-      {message}
+    <div
+      className="state-block state-loading"
+      role="status"
+      aria-label={message}
+    >
       <span className="state-loading-dots" aria-hidden="true">
         <span />
         <span />

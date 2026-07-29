@@ -20,6 +20,7 @@ import type {
 import { getLibrary } from "@/api/library";
 import type { LibraryEntry } from "@/api/library";
 import { Badges } from "@/components/badges";
+import { ComposerTextarea } from "@/components/composer-textarea";
 import { Cover } from "@/components/cover";
 import { MangaCard } from "@/components/manga-card";
 import { Page } from "@/components/page";
@@ -28,6 +29,7 @@ import { PopupSelect } from "@/components/popup-select";
 import { RequireSession } from "@/components/require-session";
 import { ErrorState, Loading } from "@/components/states";
 import { useToast } from "@/components/ui/toast";
+import { linkify } from "@/lib/linkify";
 import { navigateTo } from "@/router";
 import { bootstrapSession } from "@/state/session";
 import { resolveAvatar } from "@/utils/avatar";
@@ -106,7 +108,9 @@ function ProfileView({ profile }: { profile: Profile }): ReactElement {
             <span>Edit</span>
           </button>
         </div>
-        {profile.bio ? <p className="profile-bio">{profile.bio}</p> : null}
+        {profile.bio ? (
+          <p className="profile-bio">{linkify(profile.bio)}</p>
+        ) : null}
       </section>
       <StatsPanel />
       <FavoritesPanel shelfVisibility={profile.shelfVisibility} />
@@ -281,6 +285,7 @@ function ProfileEditContent(): ReactElement {
 function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [bio, setBio] = useState(profile.bio ?? "");
   const [profileVisibility, setProfileVisibility] = useState(
     profile.profileVisibility
   );
@@ -397,11 +402,12 @@ function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
           </label>
           <label>
             <span>About me</span>
-            <textarea
+            <ComposerTextarea
               name="bio"
               rows={3}
               maxLength={256}
-              defaultValue={profile.bio ?? ""}
+              value={bio}
+              onChange={setBio}
             />
             <small>
               Up to 256 characters. Shown on your profile when it is public.

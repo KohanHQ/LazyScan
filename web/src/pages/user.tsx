@@ -14,6 +14,7 @@ import { Page } from "@/components/page";
 import { PageHeading } from "@/components/page-heading";
 import { RequireSession } from "@/components/require-session";
 import { ErrorState, Loading } from "@/components/states";
+import { linkify } from "@/lib/linkify";
 import { navigateTo } from "@/router";
 import { formatDate } from "@/utils/format";
 import { resolveAvatar } from "@/utils/avatar";
@@ -160,7 +161,9 @@ function ProfileView({ profile }: { profile: PublicProfile }): ReactElement {
             <Badges badges={profile.badges} />
           </div>
         </div>
-        {profile.bio ? <p className="profile-bio">{profile.bio}</p> : null}
+        {profile.bio ? (
+          <p className="profile-bio">{linkify(profile.bio)}</p>
+        ) : null}
       </section>
       {profile.shelf.visible ? (
         <section className="manage-panel">
