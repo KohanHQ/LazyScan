@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactElement } from "react";
-import { Funnel, Settings } from "lucide-react";
+import { ChevronLeft, ChevronRight, Funnel, Settings } from "lucide-react";
 import {
   getAdminStorageStats,
   listAdminImports,
@@ -457,6 +457,7 @@ function AuditTrailPanel({ initial }: { initial: AdminLogsResult }): ReactElemen
           <button
             className="secondary-button"
             type="button"
+            aria-label="Previous page"
             disabled={offset === 0 || loading}
             onClick={() => {
               if (offset > 0) {
@@ -464,12 +465,13 @@ function AuditTrailPanel({ initial }: { initial: AdminLogsResult }): ReactElemen
               }
             }}
           >
-            Previous
+            <ChevronLeft className="icon" size={16} aria-hidden="true" />
           </button>
           <span className="chapter-pager-status">Page {page}</span>
           <button
             className="secondary-button"
             type="button"
+            aria-label="Next page"
             disabled={!hasNext || loading}
             onClick={() => {
               if (hasNext) {
@@ -477,7 +479,7 @@ function AuditTrailPanel({ initial }: { initial: AdminLogsResult }): ReactElemen
               }
             }}
           >
-            Next
+            <ChevronRight className="icon" size={16} aria-hidden="true" />
           </button>
         </nav>
       ) : null}

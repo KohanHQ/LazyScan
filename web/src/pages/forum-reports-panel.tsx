@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactElement } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   dismissForumReport,
   listForumReports,
@@ -163,19 +164,21 @@ export function ForumReportsPanel(): ReactElement {
           <button
             className="secondary-button"
             type="button"
+            aria-label="Previous page"
             disabled={!hasPrevious || loading}
             onClick={() => void goTo(trail.slice(0, -1))}
           >
-            Previous
+            <ChevronLeft className="icon" size={16} aria-hidden="true" />
           </button>
           <span className="chapter-pager-status">Page {page}</span>
           <button
             className="secondary-button"
             type="button"
+            aria-label="Next page"
             disabled={!hasNext || loading}
             onClick={() => void goTo([...trail, nextCursor])}
           >
-            Next
+            <ChevronRight className="icon" size={16} aria-hidden="true" />
           </button>
         </nav>
       ) : null}
