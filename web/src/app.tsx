@@ -12,13 +12,7 @@ import { BootSplash } from "@/components/boot-splash";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { animateIn } from "@/lib/animate-in";
-import { curtainWipe } from "@/lib/curtain";
-import {
-  navigateTo,
-  routeElement,
-  setRouteTransition,
-  useLocationPath,
-} from "@/router";
+import { navigateTo, routeElement, useLocationPath } from "@/router";
 import { READER_ROUTE } from "@/router/match";
 import { useSession } from "@/state/hooks";
 import { bootstrapSession } from "@/state/session";
@@ -85,21 +79,6 @@ export function App(): ReactElement {
         console.error("Session bootstrap failed:", error);
       })
       .finally(() => setBooting(false));
-  }, []);
-
-  useEffect(() => {
-    // Curtain wipe only on the home↔auth pair; every other navigation commits
-    // immediately. Registered here so all navigateTo callers inherit it.
-    setRouteTransition((from, to, proceed) => {
-      const toAuth = to === "/login" || to === "/register";
-      const fromAuth = from === "/login" || from === "/register";
-      if ((from === "/" && toAuth) || (fromAuth && to === "/")) {
-        curtainWipe(proceed);
-        return;
-      }
-      proceed();
-    });
-    return () => setRouteTransition(null);
   }, []);
 
   useEffect(() => {
