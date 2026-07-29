@@ -60,7 +60,7 @@ function AuthForm({
   onForgot: () => void;
 }): ReactElement {
   const isRegister = mode === "register";
-  const title = isRegister ? "Create account" : "Login";
+  const title = isRegister ? "Welcome to LazyScan" : "Welcome back";
   const actionLabel = isRegister ? "Register" : "Login";
   const switchPath = isRegister ? "/login" : "/register";
   const switchLabel = isRegister
@@ -333,7 +333,7 @@ function ForgotView({
       />
       <section className="auth-panel" aria-labelledby="auth-title">
         <div>
-          <h1 id="auth-title">Forgot password</h1>
+          <h1 id="auth-title">Reset your password</h1>
           <p className="auth-hint">
             Enter your email and we&apos;ll send a reset code.
           </p>

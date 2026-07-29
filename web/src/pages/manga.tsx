@@ -7,7 +7,7 @@ import {
   type ReactElement,
   type SetStateAction,
 } from "react";
-import { Bookmark, Heart, Inbox } from "lucide-react";
+import { Bookmark, ChevronLeft, ChevronRight, Heart, Inbox } from "lucide-react";
 import { listReadyChapters } from "@/api/chapter";
 import type { ReaderChapter } from "@/api/chapter";
 import {
@@ -550,10 +550,11 @@ function ChapterList({
           <button
             className="secondary-button"
             type="button"
+            aria-label="Previous page"
             disabled={currentPage === 1}
             onClick={() => goTo(currentPage - 1)}
           >
-            Previous
+            <ChevronLeft className="icon" size={16} aria-hidden="true" />
           </button>
           <span className="chapter-pager-status">
             Page {currentPage}/{totalPages}
@@ -561,10 +562,11 @@ function ChapterList({
           <button
             className="secondary-button"
             type="button"
+            aria-label="Next page"
             disabled={currentPage === totalPages}
             onClick={() => goTo(currentPage + 1)}
           >
-            Next
+            <ChevronRight className="icon" size={16} aria-hidden="true" />
           </button>
         </nav>
       ) : null}

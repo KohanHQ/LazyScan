@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactElement } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   dismissForumReport,
   listForumReports,
@@ -8,7 +9,6 @@ import {
   type ForumReportStatus,
 } from "@/api/forum";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { PopupSelect } from "@/components/popup-select";
 import { useToast } from "@/components/ui/toast";
 import { navigateTo } from "@/router";
 import { formatDate } from "@/utils/format";
@@ -29,7 +29,7 @@ const FIRST_PAGE: ReadonlyArray<string | null> = Object.freeze([null]);
 export function ForumReportsPanel(): ReactElement {
   const [status, setStatus] = useState<ForumReportStatus>("open");
   const [reports, setReports] = useState<ForumReport[]>([]);
-  const [total, setTotal] = useState(0);
+  const [totals, setTotals] = useState({ open: 0, dismissed: 0 });
   const [trail, setTrail] = useState<ReadonlyArray<string | null>>(FIRST_PAGE);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,12 +50,13 @@ export function ForumReportsPanel(): ReactElement {
     loadingRef.current = true;
     setLoading(true);
     try {
+      const otherStatus: ForumReportStatus =
+        nextStatus === "open" ? "dismissed" : "open";
       let target = nextTrail;
-      let result = await listForumReports(
-        nextStatus,
-        target[target.length - 1],
-        REPORTS_LIMIT
-      );
+      let [result, other] = await Promise.all([
+        listForumReports(nextStatus, target[target.length - 1], REPORTS_LIMIT),
+        listForumReports(otherStatus, null, 1),
+      ]);
       // Clearing the last row of a page empties it; step back one page so the
       // queue never renders blank with rows still behind it.
       if (result.reports.length === 0 && target.length > 1) {
@@ -67,7 +68,11 @@ export function ForumReportsPanel(): ReactElement {
         );
       }
       setReports(result.reports);
-      setTotal(result.total);
+      setTotals(
+        nextStatus === "open"
+          ? { open: result.total, dismissed: other.total }
+          : { open: other.total, dismissed: result.total }
+      );
       setNextCursor(result.nextCursor);
       setTrail(target);
       setStatus(nextStatus);
@@ -99,29 +104,34 @@ export function ForumReportsPanel(): ReactElement {
     <section className="manage-panel settings-panel">
       <div className="settings-heading-row">
         <h2 className="settings-heading">Forum reports</h2>
-        <div className="settings-heading-aside">
-          <p className="settings-health-chips">
-            <span
-              className={`settings-health-chip${status === "open" && total > 0 ? " is-bad" : ""}`}
-            >
-              {total} {status}
-            </span>
-          </p>
-          <PopupSelect
-            className="library-filter-select"
-            ariaLabel="Filter reports by status"
-            value={status}
-            options={[
-              { value: "open", label: "Open" },
-              { value: "dismissed", label: "Dismissed" },
-            ]}
-            onChange={(value) => {
-              if (value !== status) {
-                void goTo(FIRST_PAGE, value as ForumReportStatus);
+        <p className="settings-health-chips">
+          <button
+            type="button"
+            className={`settings-health-chip settings-health-chip-button${status === "open" ? " is-active" : ""}${totals.open > 0 ? " is-bad" : ""}`}
+            aria-pressed={status === "open"}
+            disabled={loading}
+            onClick={() => {
+              if (status !== "open") {
+                void goTo(FIRST_PAGE, "open");
               }
             }}
-          />
-        </div>
+          >
+            {totals.open} open
+          </button>
+          <button
+            type="button"
+            className={`settings-health-chip settings-health-chip-button${status === "dismissed" ? " is-active" : ""}`}
+            aria-pressed={status === "dismissed"}
+            disabled={loading}
+            onClick={() => {
+              if (status !== "dismissed") {
+                void goTo(FIRST_PAGE, "dismissed");
+              }
+            }}
+          >
+            {totals.dismissed} dismissed
+          </button>
+        </p>
       </div>
 
       {error !== null ? <p className="settings-import-error">{error}</p> : null}
@@ -154,19 +164,21 @@ export function ForumReportsPanel(): ReactElement {
           <button
             className="secondary-button"
             type="button"
+            aria-label="Previous page"
             disabled={!hasPrevious || loading}
             onClick={() => void goTo(trail.slice(0, -1))}
           >
-            Previous
+            <ChevronLeft className="icon" size={16} aria-hidden="true" />
           </button>
           <span className="chapter-pager-status">Page {page}</span>
           <button
             className="secondary-button"
             type="button"
+            aria-label="Next page"
             disabled={!hasNext || loading}
             onClick={() => void goTo([...trail, nextCursor])}
           >
-            Next
+            <ChevronRight className="icon" size={16} aria-hidden="true" />
           </button>
         </nav>
       ) : null}
