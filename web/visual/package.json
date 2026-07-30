@@ -1,0 +1,8 @@
+{
+  "name": "lazyscan-visual-harness",
+  "private": true,
+  "description": "Deps for the containerized screenshot harness. Baked into web/visual/Dockerfile; never installed on the host.",
+  "devDependencies": {
+    "@playwright/test": "1.62.0"
+  }
+}

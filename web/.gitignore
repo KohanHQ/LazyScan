@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Visual harness run artifacts (baselines under __screenshots__ ARE committed)
+visual/.auth
+visual/.results
+visual/test-results
+visual/playwright-report
