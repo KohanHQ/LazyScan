@@ -1,3 +1,5 @@
+// Font faces first: they must exist before the stylesheets that reference them.
+import "@fontsource-variable/inter";
 import "@/styles/tailwind.css";
 import "@/styles/base.css";
 import "@/styles/reader.css";
