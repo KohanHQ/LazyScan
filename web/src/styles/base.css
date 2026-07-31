@@ -349,41 +349,6 @@ h3 {
   outline-offset: 2px;
 }
 
-/* "New manga" add-card: a dashed tile at the front of the manage grid. Stretches
-   to the row height alongside real cards. */
-.manga-card-add {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 260px;
-  border-style: dashed;
-  background: transparent;
-  color: var(--text-label);
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    color 0.2s ease;
-}
-
-.manga-card-add:hover {
-  border-color: var(--accent);
-  color: var(--accent-fg);
-}
-
-.manga-card-add:focus-visible {
-  border-color: var(--accent-fg);
-  color: var(--accent-fg);
-}
-
-.manga-card-add-plus {
-  font-size: 2.6rem;
-  font-weight: 400;
-  line-height: 1;
-}
-
 /* Inline spinner for async buttons (favorite / add-to-queue). Inherits the
    button's currentColor, so it reads on both the default and active states. */
 .button-spinner {
