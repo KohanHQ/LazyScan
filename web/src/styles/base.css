@@ -2261,58 +2261,9 @@ img.user-avatar {
 /* Settings (owner/superuser operations page). Panels reuse .manage-panel; these
    rules only style the stat grid and the import-health rows. `--*` tokens are
    dark-theme only, so every var() carries a light fallback. */
-.settings-panel {
-  text-align: left;
-}
-
 .settings-heading {
   margin: 0 0 4px;
   font-size: 1.05rem;
-}
-
-.settings-note {
-  margin: 0 0 14px;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-.settings-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 12px;
-  margin: 0;
-}
-
-.settings-stats dt {
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.settings-stats dd {
-  margin: 2px 0 0;
-  font-weight: 700;
-}
-
-.settings-imports {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-}
-
-.settings-import-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
 }
 
 .settings-import-body h3 {
@@ -2320,44 +2271,10 @@ img.user-avatar {
   font-size: 0.95rem;
 }
 
-.settings-import-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-}
-
 .settings-import-error {
   margin: 6px 0 0;
   color: var(--danger-fg);
   font-size: 0.8rem;
-}
-
-.settings-failed-pages {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: var(--surface-raised);
-  font-size: 0.78rem;
-}
-
-.settings-failed-pages li {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 2px 0;
-}
-
-.settings-page-name {
-  font-weight: 600;
-}
-
-.settings-page-error {
-  color: var(--danger-fg);
 }
 
 /* Chapter list pagination + volume grouping (manga detail). */
@@ -2394,15 +2311,6 @@ img.user-avatar {
   font-weight: 700;
 }
 
-/* Settings regrouping: storage hero value, catalog grid (reuses
-   .settings-stats), and import-health heading chips. */
-.settings-storage-value {
-  margin: 0;
-  font-size: 1.8rem;
-  font-weight: 800;
-  line-height: 1.2;
-}
-
 .settings-storage-sub {
   margin: 2px 0 10px;
   color: var(--text-muted);
@@ -2420,12 +2328,6 @@ img.user-avatar {
 }
 
 .settings-heading-row .settings-heading {
-  margin: 0;
-}
-
-.settings-health-chips {
-  display: flex;
-  gap: 6px;
   margin: 0;
 }
 
@@ -2448,13 +2350,6 @@ button.settings-health-chip-button {
 
 button.settings-health-chip-button:disabled {
   cursor: default;
-}
-
-/* Audit-trail heading aside: level chips + the catalog-style filter button. */
-.settings-heading-aside {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
 }
 
 /* Reuses the home catalog filter look (.library-filter / -pop / -option); this
@@ -2480,100 +2375,8 @@ button.settings-health-chip-button:disabled {
   color: var(--danger-fg);
 }
 
-/* Storage-by-title pie (settings). Pure conic-gradient, no chart library. */
-.settings-storage-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-/* Cap the text column so its long note line doesn't claim the full row width
-   and push the pie onto the next line; the figure pins to the right edge. */
-.settings-storage-row > div:first-child {
-  flex: 1 1 320px;
-  min-width: 260px;
-  max-width: 560px;
-}
-
-.settings-pie-figure {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin: 0 0 0 auto;
-}
-
-.settings-pie {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  border: 1px solid var(--border);
-}
-
-.settings-pie-legend {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.78rem;
-}
-
-.settings-pie-legend li {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.settings-pie-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.settings-pie-label {
-  font-weight: 600;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.settings-pie-share {
-  color: var(--text-muted);
-}
-
-/* Audit trail (settings): log rows + collapsible details. The level-filter
-   button is styled above (.settings-logs-filter near .settings-heading-aside). */
-.settings-logs {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0 0 12px;
-  padding: 0;
-}
-
-.settings-log-row {
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-}
-
-.settings-log-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-}
-
+/* Audit trail (settings) level chip. The level-filter button is styled above
+   (.settings-logs-filter). */
 .settings-log-level {
   display: inline-flex;
   align-items: center;
@@ -2611,31 +2414,9 @@ button.settings-health-chip-button:disabled {
   overflow-wrap: anywhere;
 }
 
-.settings-log-details {
-  margin: 6px 0 0;
-  font-size: 0.78rem;
-}
-
-.settings-log-details summary {
-  cursor: pointer;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
 .settings-log-error {
   margin: 6px 0 0;
   color: var(--danger-fg);
-}
-
-.settings-log-pre {
-  margin: 6px 0 0;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: var(--surface-raised);
-  font-size: 0.72rem;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 
 /* --- Chapter management (manage-manga edit page) --- */
@@ -3034,24 +2815,6 @@ button.settings-health-chip-button:disabled {
 /* Report dialog body: label/control pairs inside the Radix content grid. */
 /* Admin queue rows (settings page): the snippet is the reported text, the note
    is the reporter's own words. */
-.forum-report-snippet {
-  margin: 0 0 4px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  color: var(--text);
-  font-size: 0.9rem;
-}
-
-.forum-report-note {
-  margin: 0 0 6px;
-  padding-left: 10px;
-  border-left: 2px solid var(--border-strong);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-}
-
 /* ===== Motion additions (2026-07-26) =====
    All opacity/transform only; every effect has a reduced-motion fallback. */
 

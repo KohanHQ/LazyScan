@@ -141,15 +141,15 @@ function SettingsContent(): ReactElement {
 
 function StoragePanel({ storage }: { storage: AdminStorageStats }): ReactElement {
   return (
-    <section className="manage-panel settings-panel">
+    <section className="manage-panel text-left">
       <h2 className="settings-heading">Storage usage</h2>
-      <div className="settings-storage-row">
-        <div>
-          <p className="settings-storage-value">{formatBytes(storage.readyPagesBytes)}</p>
+      <div className="flex flex-wrap items-start justify-between gap-6">
+        <div className="max-w-[560px] min-w-[260px] flex-[1_1_320px]">
+          <p className="m-0 text-[1.8rem] leading-[1.2] font-extrabold">{formatBytes(storage.readyPagesBytes)}</p>
           <p className="settings-storage-sub">
             {storage.readyPagesCount} ready {storage.readyPagesCount === 1 ? "page" : "pages"} · {storage.totalPagesCount} total
           </p>
-          <p className="settings-note">Estimate from processed page sizes — staged originals and covers are counted but not sized.</p>
+          <p className="mb-3.5 text-[0.85rem] text-text-muted">Estimate from processed page sizes — staged originals and covers are counted but not sized.</p>
         </div>
         <StoragePie storage={storage} />
       </div>
@@ -204,20 +204,23 @@ function StoragePie({ storage }: { storage: AdminStorageStats }): ReactElement |
   });
 
   return (
-    <figure className="settings-pie-figure">
+    <figure className="m-0 ml-auto flex items-center gap-4">
       <div
-        className="settings-pie"
+        className="size-30 shrink-0 rounded-[50%] border border-border"
         style={{ background: `conic-gradient(${stops.join(", ")})` }}
         role="img"
         aria-label="Storage by title"
       />
       <figcaption>
-        <ul className="settings-pie-legend">
+        <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[0.78rem]">
           {slices.map((slice, index) => (
-            <li key={`${slice.label}-${index}`}>
-              <span className="settings-pie-dot" style={{ background: slice.color }} aria-hidden="true" />
-              <span className="settings-pie-label">{slice.label}</span>
-              <span className="settings-pie-share">{formatBytes(slice.bytes)} · {Math.round((slice.bytes / total) * 100)}%</span>
+            <li
+              key={`${slice.label}-${index}`}
+              className="flex items-center gap-[7px]"
+            >
+              <span className="size-[9px] shrink-0 rounded-[50%]" style={{ background: slice.color }} aria-hidden="true" />
+              <span className="max-w-[180px] overflow-hidden font-semibold text-ellipsis whitespace-nowrap">{slice.label}</span>
+              <span className="text-text-muted">{formatBytes(slice.bytes)} · {Math.round((slice.bytes / total) * 100)}%</span>
             </li>
           ))}
         </ul>
@@ -228,12 +231,21 @@ function StoragePie({ storage }: { storage: AdminStorageStats }): ReactElement |
 
 function CatalogPanel({ storage }: { storage: AdminStorageStats }): ReactElement {
   return (
-    <section className="manage-panel settings-panel">
+    <section className="manage-panel text-left">
       <h2 className="settings-heading">Catalog</h2>
-      <dl className="settings-stats">
-        <div><dt>Manga</dt><dd>{storage.mangaCount}</dd></div>
-        <div><dt>Chapters</dt><dd>{storage.chapterCount}</dd></div>
-        <div><dt>Covers</dt><dd>{storage.coverUploadsCount}</dd></div>
+      <dl className="m-0 grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-3">
+        <div>
+            <dt className="text-[0.75rem] font-bold tracking-[0.04em] text-text-muted uppercase">Manga</dt>
+            <dd className="m-0 mt-0.5 font-bold">{storage.mangaCount}</dd>
+          </div>
+        <div>
+            <dt className="text-[0.75rem] font-bold tracking-[0.04em] text-text-muted uppercase">Chapters</dt>
+            <dd className="m-0 mt-0.5 font-bold">{storage.chapterCount}</dd>
+          </div>
+        <div>
+            <dt className="text-[0.75rem] font-bold tracking-[0.04em] text-text-muted uppercase">Covers</dt>
+            <dd className="m-0 mt-0.5 font-bold">{storage.coverUploadsCount}</dd>
+          </div>
       </dl>
     </section>
   );
@@ -249,18 +261,18 @@ function ImportHealthPanel({
   onRetry: () => void;
 }): ReactElement {
   return (
-    <section className="manage-panel settings-panel">
+    <section className="manage-panel text-left">
       <div className="settings-heading-row">
         <h2 className="settings-heading">Chapter import health</h2>
-        <p className="settings-health-chips">
+        <p className="m-0 flex gap-1.5">
           <span className={`settings-health-chip${storage.failedImportsCount ? " is-bad" : ""}`}>{storage.failedImportsCount} failed</span>
           <span className="settings-health-chip">{storage.processingImportsCount} processing</span>
         </p>
       </div>
       {attention.length === 0 ? (
-        <p className="settings-note">No failed or in-flight imports. All clear.</p>
+        <p className="mb-3.5 text-[0.85rem] text-text-muted">No failed or in-flight imports. All clear.</p>
       ) : (
-        <ol className="settings-imports">
+        <ol className="m-0 flex list-none flex-col gap-3 p-0">
           {attention.map((entry) => (
             <ImportRow key={entry.importId} entry={entry} onRetry={onRetry} />
           ))}
@@ -296,10 +308,10 @@ function ImportRow({
   };
 
   return (
-    <li className="settings-import-row">
+    <li className="flex items-start justify-between gap-4 rounded-[10px] border border-border px-3.5 py-3">
       <div className="settings-import-body">
         <h3>{entry.mangaTitle} — {entry.chapterTitle}</h3>
-        <p className="settings-import-meta">
+        <p className="m-0 flex flex-wrap items-center gap-2 text-[0.8rem] text-text-muted">
           <span className={`upload-status upload-status-${entry.status === "failed" ? "failed" : "uploading"}`}>{entry.status}</span>
           {" "}
           {`${entry.processedFiles}/${entry.totalFiles} processed${entry.failedFiles ? ` · ${entry.failedFiles} failed` : ""}`}
@@ -308,11 +320,11 @@ function ImportRow({
         </p>
         {entry.errorMessage ? <p className="settings-import-error">{entry.errorMessage}</p> : null}
         {entry.failedPages.length > 0 ? (
-          <ul className="settings-failed-pages">
+          <ul className="m-0 mt-2 list-none rounded-lg bg-surface-raised px-2.5 py-2 text-[0.78rem]">
             {entry.failedPages.map((page, index) => (
-              <li key={index}>
-                <span className="settings-page-name">{`${page.pageNumber.toString().padStart(3, "0")} · ${page.originalFilename}`}</span>
-                {page.errorMessage ? <span className="settings-page-error">{page.errorMessage}</span> : null}
+              <li key={index} className="flex flex-wrap gap-2 py-0.5">
+                <span className="font-semibold">{`${page.pageNumber.toString().padStart(3, "0")} · ${page.originalFilename}`}</span>
+                {page.errorMessage ? <span className="text-danger-fg">{page.errorMessage}</span> : null}
               </li>
             ))}
           </ul>
@@ -391,11 +403,11 @@ function AuditTrailPanel({ initial }: { initial: AdminLogsResult }): ReactElemen
   const showPager = offset > 0 || hasNext;
 
   return (
-    <section className="manage-panel settings-panel">
+    <section className="manage-panel text-left">
       <div className="settings-heading-row">
         <h2 className="settings-heading">Audit trail</h2>
-        <div className="settings-heading-aside">
-          <p className="settings-health-chips">
+        <div className="inline-flex items-center gap-2.5">
+          <p className="m-0 flex gap-1.5">
             <span className={`settings-health-chip${counts.error ? " is-bad" : ""}`}>{counts.error} {counts.error === 1 ? "error" : "errors"}</span>
             <span className="settings-health-chip">{counts.warn} {counts.warn === 1 ? "warn" : "warns"}</span>
           </p>
@@ -441,11 +453,11 @@ function AuditTrailPanel({ initial }: { initial: AdminLogsResult }): ReactElemen
       {errorMessage ? <p className="settings-import-error">{errorMessage}</p> : null}
       <div aria-busy={loading} style={loading ? { opacity: 0.6 } : undefined}>
         {entries.length === 0 ? (
-          <p className="settings-note">
+          <p className="mb-3.5 text-[0.85rem] text-text-muted">
             No log entries{level ? ` at level ${level}` : ""}.
           </p>
         ) : (
-          <ol className="settings-logs">
+          <ol className="m-0 mb-3 flex list-none flex-col gap-2 p-0">
             {entries.map((entry) => (
               <LogRow key={entry.id} entry={entry} />
             ))}
@@ -491,7 +503,7 @@ function LogRow({ entry }: { entry: AdminLogEntry }): ReactElement {
   const details: ReactElement[] = [];
   if (entry.context) {
     details.push(
-      <pre key="context" className="settings-log-pre">{JSON.stringify(entry.context, null, 2)}</pre>
+      <pre key="context" className="m-0 mt-1.5 overflow-x-auto rounded-lg bg-surface-raised px-2.5 py-2 text-[0.72rem] wrap-anywhere whitespace-pre-wrap">{JSON.stringify(entry.context, null, 2)}</pre>
     );
   }
   if (entry.errorName || entry.errorMessage) {
@@ -501,13 +513,13 @@ function LogRow({ entry }: { entry: AdminLogEntry }): ReactElement {
   }
   if (entry.errorStack) {
     details.push(
-      <pre key="stack" className="settings-log-pre">{entry.errorStack}</pre>
+      <pre key="stack" className="m-0 mt-1.5 overflow-x-auto rounded-lg bg-surface-raised px-2.5 py-2 text-[0.72rem] wrap-anywhere whitespace-pre-wrap">{entry.errorStack}</pre>
     );
   }
 
   return (
-    <li className="settings-log-row">
-      <p className="settings-log-meta">
+    <li className="rounded-[10px] border border-border px-3 py-2">
+      <p className="m-0 flex flex-wrap items-center gap-2 text-[0.75rem] text-text-muted">
         <span className={`settings-log-level is-${entry.level}`}>{entry.level}</span>
         {" "}
         <span>{formatLogTimestamp(entry.createdAt)}</span>
@@ -516,8 +528,10 @@ function LogRow({ entry }: { entry: AdminLogEntry }): ReactElement {
       </p>
       <p className="settings-log-message">{entry.message}</p>
       {details.length > 0 ? (
-        <details className="settings-log-details">
-          <summary>Details</summary>
+        <details className="mt-1.5 text-[0.78rem]">
+          <summary className="cursor-pointer font-semibold text-text-muted">
+            Details
+          </summary>
           {details}
         </details>
       ) : null}
