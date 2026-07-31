@@ -714,34 +714,6 @@ h3 {
   padding: 28px;
 }
 
-.auth-form {
-  display: grid;
-  gap: 16px;
-  margin-top: 24px;
-}
-
-.auth-form label {
-  display: grid;
-  gap: 7px;
-  color: var(--text-label);
-  font-weight: 800;
-}
-
-.auth-form input {
-  width: 100%;
-  min-height: 44px;
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
-  padding: 0 12px;
-  background: var(--surface-raised);
-  color: var(--text);
-}
-
-.auth-form input:focus-visible {
-  border-color: var(--accent-fg);
-  outline: 3px solid var(--surface-accent);
-}
-
 .primary-button {
   min-height: 44px;
   border: 0;
@@ -1038,20 +1010,6 @@ img.user-avatar {
   }
 }
 
-/* Transparent art figure pinned to the right over the dark backdrop. */
-.auth-screen .auth-art {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  height: 100%;
-  width: auto;
-  object-fit: contain;
-  object-position: right center;
-  pointer-events: none;
-  user-select: none;
-}
-
 .auth-screen .auth-panel {
   position: relative;
   z-index: 1;
@@ -1072,52 +1030,6 @@ img.user-avatar {
   font-size: clamp(1.8rem, 4vw, 2.4rem);
 }
 
-.auth-screen .auth-form label {
-  color: var(--text-label);
-}
-
-.password-field {
-  position: relative;
-}
-
-.password-field input {
-  width: 100%;
-  padding-right: 44px;
-}
-
-.password-toggle {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #9aa39d;
-  cursor: pointer;
-}
-
-.password-toggle:hover,
-.password-toggle:focus-visible {
-  color: var(--text-bright);
-}
-
-.password-toggle .icon {
-  width: 18px;
-  height: 18px;
-}
-
-.auth-screen .auth-form input {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.18);
-  color: var(--text-bright);
-}
-
 .auth-screen .auth-switch {
   color: var(--text-secondary);
 }
@@ -1126,11 +1038,6 @@ img.user-avatar {
   .auth-screen {
     justify-content: center;
     padding: 20px;
-  }
-
-  /* Card centers over the art on small screens; dim the art so it stays readable. */
-  .auth-screen .auth-art {
-    opacity: 0.4;
   }
 }
 
