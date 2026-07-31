@@ -161,12 +161,13 @@ function MangaHeader({
   loggedIn: boolean;
 }): ReactElement {
   return (
-    <section className="manga-detail">
-      <div className="manga-detail-cover">
+    <section className="grid grid-cols-[minmax(180px,280px)_minmax(0,1fr)] [align-items:start] gap-7 [@media(max-width:720px)]:grid-cols-[1fr]">
+      <div className="aspect-[3/4] overflow-hidden rounded-lg bg-[var(--cover-bg)] [@media(max-width:720px)]:w-[min(260px,100%)]">
         <Cover
           url={manga.coverUrl}
           seed={manga.title}
           placeholderClass="cover-placeholder cover-placeholder-large"
+          imgClassName="block h-full w-full object-cover"
         />
       </div>
       <div className="manga-detail-body">
@@ -180,38 +181,38 @@ function MangaHeader({
             {loggedIn ? <ReadingStatusControl mangaId={mangaId} /> : null}
           </div>
         </div>
-        <dl className="detail-facts">
-          <div>
-            <dt>Total chapters</dt>
-            <dd>{manga.totalChapters ?? "Unknown"}</dd>
+        <dl className="my-5 flex flex-wrap gap-4 text-[#66746d]">
+          <div className="min-w-[140px]">
+            <dt className="text-[0.78rem] font-extrabold text-text-label uppercase">Total chapters</dt>
+            <dd className="m-0 mt-0.5 font-extrabold text-text">{manga.totalChapters ?? "Unknown"}</dd>
           </div>
           {manga.author ? (
-            <div>
-              <dt>Author</dt>
-              <dd>{manga.author}</dd>
+            <div className="min-w-[140px]">
+              <dt className="text-[0.78rem] font-extrabold text-text-label uppercase">Author</dt>
+              <dd className="m-0 mt-0.5 font-extrabold text-text">{manga.author}</dd>
             </div>
           ) : null}
           {manga.artist ? (
-            <div>
-              <dt>Artist</dt>
-              <dd>{manga.artist}</dd>
+            <div className="min-w-[140px]">
+              <dt className="text-[0.78rem] font-extrabold text-text-label uppercase">Artist</dt>
+              <dd className="m-0 mt-0.5 font-extrabold text-text">{manga.artist}</dd>
             </div>
           ) : null}
           {manga.publisher ? (
-            <div>
-              <dt>Publisher</dt>
-              <dd>{manga.publisher}</dd>
+            <div className="min-w-[140px]">
+              <dt className="text-[0.78rem] font-extrabold text-text-label uppercase">Publisher</dt>
+              <dd className="m-0 mt-0.5 font-extrabold text-text">{manga.publisher}</dd>
             </div>
           ) : null}
           {manga.publishedYear ? (
-            <div>
-              <dt>Published</dt>
-              <dd>{manga.publishedYear}</dd>
+            <div className="min-w-[140px]">
+              <dt className="text-[0.78rem] font-extrabold text-text-label uppercase">Published</dt>
+              <dd className="m-0 mt-0.5 font-extrabold text-text">{manga.publishedYear}</dd>
             </div>
           ) : null}
-          <div>
-            <dt>Updated</dt>
-            <dd>{formatDate(manga.updatedAt)}</dd>
+          <div className="min-w-[140px]">
+            <dt className="text-[0.78rem] font-extrabold text-text-label uppercase">Updated</dt>
+            <dd className="m-0 mt-0.5 font-extrabold text-text">{formatDate(manga.updatedAt)}</dd>
           </div>
         </dl>
         {manga.tags.length > 0 ? (
@@ -226,7 +227,7 @@ function MangaHeader({
             ))}
           </div>
         ) : null}
-        <p className="description">
+        <p className="mb-0 max-w-[68ch] text-text-secondary">
           {manga.description || "No description available."}
         </p>
       </div>
@@ -610,7 +611,9 @@ function ChapterRow({
 
   return (
     <li
-      className={`chapter-row${isCurrent ? " chapter-row-current" : ""}${
+      // .chapter-row-current / -read stay: unlayered modifier rules are the only
+      // thing that can out-rank this element's own utilities.
+      className={`chapter-row flex cursor-pointer items-center justify-between gap-4.5 rounded-lg border border-border bg-surface px-4 py-3 outline-none hover:border-accent-fg hover:bg-surface-accent focus-visible:border-accent-fg focus-visible:bg-surface-accent [@media(max-width:720px)]:flex-col [@media(max-width:720px)]:items-stretch ${isCurrent ? " chapter-row-current" : ""}${
         read ? " chapter-row-read" : ""
       }`}
       aria-label={`Read ${chapter.title}`}
@@ -618,26 +621,26 @@ function ChapterRow({
         `/manga/${encodeURIComponent(mangaId)}/chapter/${encodeURIComponent(chapter.id)}`
       )}
     >
-      <div>
+      <div className="min-w-0">
         <h3>
           {chapter.title}
           {read ? (
-            <span className="ml-2 inline-block text-[0.85rem] text-accent-fg" aria-label="Read">
+            <span className="ml-2 inline-block text-[0.875rem] text-text-muted" aria-label="Read">
               {"✓"}
             </span>
           ) : isCurrent ? (
             <span
-              className="ml-2 inline-block text-[0.75rem] text-accent-fg"
+              className="ml-2 inline-block text-[0.875rem] text-text-muted"
               aria-label="In progress"
             >
               {"▶"}
             </span>
           ) : null}
         </h3>
-        {metaText ? <p>{metaText}</p> : null}
+        {metaText ? <p className="mb-0 text-text-secondary">{metaText}</p> : null}
       </div>
       <div className="flex flex-none items-center gap-3">
-        <span>{formatDate(chapter.updatedAt)}</span>
+        <span className="text-[0.875rem] text-text-muted">{formatDate(chapter.updatedAt)}</span>
         {loggedIn ? (
           <ChapterReadToggle
             chapter={chapter}

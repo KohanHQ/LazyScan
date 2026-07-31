@@ -387,8 +387,7 @@ h3 {
   }
 }
 
-.manga-cover,
-.manga-detail-cover {
+.manga-cover {
   overflow: hidden;
   background: var(--cover-bg);
 }
@@ -397,8 +396,7 @@ h3 {
   aspect-ratio: 3 / 4;
 }
 
-.manga-cover img,
-.manga-detail-cover img {
+.manga-cover img {
   display: block;
   width: 100%;
   height: 100%;
@@ -420,89 +418,11 @@ h3 {
   min-height: 320px;
 }
 
-.chapter-row p,
-.description {
-  color: var(--text-secondary);
-}
-
-.chapter-row span {
-  color: var(--text-muted);
-}
-
-.detail-facts {
-  color: #66746d;
-}
-
-.chapter-row p {
-  margin-bottom: 8px;
-}
-
-.chapter-row span {
-  font-size: 0.875rem;
-}
-
-.manga-detail {
-  display: grid;
-  grid-template-columns: minmax(180px, 280px) minmax(0, 1fr);
-  gap: 28px;
-  align-items: start;
-}
-
-.manga-detail-cover {
-  aspect-ratio: 3 / 4;
-  border-radius: 8px;
-}
-
-.detail-facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin: 20px 0;
-}
-
-.detail-facts div {
-  min-width: 140px;
-}
-
-.detail-facts dt {
-  color: var(--text-label);
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.detail-facts dd {
-  margin: 2px 0 0;
-  color: var(--text);
-  font-weight: 800;
-}
-
 /* Tag chips on the manga detail page, between the facts and the description. */
-.description {
-  max-width: 68ch;
-  margin-bottom: 0;
-}
-
-.chapter-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-}
-
-.chapter-row[role="button"] {
-  cursor: pointer;
-  outline: none;
-}
-
-.chapter-row[role="button"]:hover,
-.chapter-row[role="button"]:focus-visible {
-  border-color: var(--accent-fg);
-  background: var(--surface-accent);
+/* Unlayered `h3 { margin-bottom: 4px }` outranks any utility, so this stays a
+   rule; .chapter-row survives on the row purely as its hook. */
+.chapter-row h3 {
+  margin-bottom: 2px;
 }
 
 .chapter-row-current {
@@ -721,8 +641,7 @@ img.user-avatar {
 
 @media (max-width: 720px) {
   .page-heading,
-  .section-heading,
-  .chapter-row {
+  .section-heading {
     align-items: stretch;
     flex-direction: column;
   }
@@ -731,13 +650,6 @@ img.user-avatar {
     padding-top: 24px;
   }
 
-  .manga-detail {
-    grid-template-columns: 1fr;
-  }
-
-  .manga-detail-cover {
-    width: min(260px, 100%);
-  }
 }
 
 /* ===== App top bar + sidebar ===== */
@@ -1365,22 +1277,6 @@ img.user-avatar {
 .dropzone-count {
   color: var(--accent-fg);
   font-weight: 700;
-}
-
-.chapter-row {
-  padding: 12px 16px;
-}
-
-.chapter-row > div {
-  min-width: 0;
-}
-
-.chapter-row h3 {
-  margin-bottom: 2px;
-}
-
-.chapter-row p {
-  margin-bottom: 0;
 }
 
 /* Username lookup / public profile */
