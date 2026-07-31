@@ -1282,20 +1282,6 @@ img.user-avatar {
   margin: 0;
 }
 
-.profile-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 0;
-}
-
-.profile-identity {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-}
-
 .profile-edit-button {
   margin-left: auto;
   align-self: flex-start;
@@ -1309,29 +1295,6 @@ img.user-avatar {
 .profile-edit-button .icon {
   width: 16px;
   height: 16px;
-}
-
-.profile-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.profile-avatar-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent-fg);
-  color: var(--text-on-accent);
-  font-weight: 800;
-  font-size: 1.4rem;
-}
-
-.profile-username {
-  margin: 0;
-  font-weight: 800;
-  font-size: 1.1rem;
 }
 
 /* Quiet container so the bio reads as the bio, not stray text under the badges —
@@ -1380,94 +1343,8 @@ img.user-avatar {
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11.4 22 11.4 16.5 C7.5 16.3 4.4 13.5 3.1 9.1 C2.9 8.5 3.5 8.1 4 8.4 C6.7 9.9 9.5 10.1 11.1 8.7 L11.3 3.6 C11.3 3.1 12.7 3.1 12.7 3.6 L12.9 8.7 C14.5 10.1 17.3 9.9 20 8.4 C20.5 8.1 21.1 8.5 20.9 9.1 C19.6 13.5 16.5 16.3 12.6 16.5 L12.6 22 Z'/%3E%3C/svg%3E") no-repeat center / contain;
 }
 
-.profile-shelf-heading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.profile-shelf-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.profile-shelf-chip.is-public {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.profile-stat-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin: 14px 0 8px;
-}
-
-.profile-stat {
-  flex: 1 1 110px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 16px 18px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface-raised);
-}
-
-.profile-stat-value {
-  font-size: 1.6rem;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.profile-stat-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
 .profile-most-read-heading {
   margin-top: 20px;
-}
-
-.profile-most-read {
-  list-style: none;
-  margin: 6px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.profile-most-read li {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.profile-most-read li:last-child {
-  border-bottom: 0;
-}
-
-.profile-most-read-title {
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.profile-most-read-count {
-  flex-shrink: 0;
-  color: var(--text-muted);
-  font-size: 0.85rem;
 }
 
 /* Phase 8b: chapter upload */
@@ -1670,41 +1547,6 @@ img.user-avatar {
 }
 
 /* Username lookup / public profile */
-.user-lookup-form {
-  display: grid;
-  gap: 12px;
-}
-
-.user-lookup-form label {
-  display: grid;
-  gap: 7px;
-  color: var(--text-label);
-  font-weight: 800;
-}
-
-/* Input and submit share one box so they line up exactly (a bare <button>
-   otherwise renders taller than the input from UA padding). */
-.user-lookup-form input,
-.user-lookup-form .primary-button {
-  box-sizing: border-box;
-  width: 100%;
-  height: 44px;
-  min-height: 44px;
-}
-
-.user-lookup-form input {
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
-  padding: 0 12px;
-  background: var(--surface-raised);
-  color: var(--text);
-}
-
-.user-lookup-form input:focus-visible {
-  border-color: var(--accent-fg);
-  outline: 3px solid var(--accent-fg);
-}
-
 .profile-meta {
   margin: 4px 0 0;
   color: var(--text-secondary);

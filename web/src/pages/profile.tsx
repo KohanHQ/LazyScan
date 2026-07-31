@@ -86,18 +86,22 @@ function ProfileView({ profile }: { profile: Profile }): ReactElement {
   return (
     <Page title="Profile">
       <section className="manage-panel">
-        <div className="profile-head">
+        <div className="mb-0 flex items-start gap-4">
           <Cover
             url={resolveAvatar(profile.avatarUrl, name)}
             seed={name}
-            placeholderClass="profile-avatar profile-avatar-placeholder"
-            imgClassName="profile-avatar"
+            placeholderClass="flex size-14 items-center justify-center rounded-[50%] bg-accent-fg object-cover text-[1.4rem] font-extrabold text-text-on-accent"
+            imgClassName="size-14 rounded-[50%] object-cover"
           />
-          <div className="profile-identity">
-            <p className="profile-username">{name}</p>
+          <div className="flex flex-col items-start gap-1.5">
+            <p className="m-0 text-[1.1rem] font-extrabold">{name}</p>
+            {/* .profile-meta stays: its `margin-top: 4px` is beaten by the
+                unlayered `h1,h2,h3,p { margin-top: 0 }` reset. */}
             <p className="profile-meta">@{profile.username ?? "user"}</p>
             <Badges badges={profile.badges} />
           </div>
+          {/* .profile-edit-button stays: unlayered `.secondary-button` beats its
+              min-height/padding utilities, and it hooks a `.icon` descendant rule. */}
           <button
             className="secondary-button profile-edit-button"
             type="button"
@@ -108,6 +112,8 @@ function ProfileView({ profile }: { profile: Profile }): ReactElement {
             <span>Edit</span>
           </button>
         </div>
+        {/* .profile-bio stays: Tailwind emits an opaque var(--text) fallback
+            outside its @supports guard, which color-mix-less browsers would paint. */}
         {profile.bio ? (
           <p className="profile-bio">{linkify(profile.bio)}</p>
         ) : null}
@@ -147,15 +153,19 @@ function FavoritesPanel({
   // what others see); a chip notes whether they are publicly visible.
   const chip =
     shelfVisibility === "public" ? (
-      <span className="profile-shelf-chip is-public">Public</span>
+      <span className="inline-flex items-center rounded-[999px] border border-primary px-2 py-0.5 text-[0.7rem] font-bold tracking-[0.02em] text-primary">
+        Public
+      </span>
     ) : (
-      <span className="profile-shelf-chip">Only you</span>
+      <span className="inline-flex items-center rounded-[999px] border border-border px-2 py-0.5 text-[0.7rem] font-bold tracking-[0.02em] text-text-muted">
+        Only you
+      </span>
     );
 
   return (
     <section className="manage-panel">
-      <p className="eyebrow profile-shelf-heading">Favorites {chip}</p>
-      <div className="manga-grid">
+      <p className="eyebrow flex items-center gap-2">Favorites {chip}</p>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4.5">
         {favorites.map((entry) => (
           <MangaCard key={entry.manga.id} manga={entry.manga} />
         ))}
@@ -200,29 +210,40 @@ function StatsPanel(): ReactElement {
       ) : (
         <>
           <p className="eyebrow">Reading stats</p>
-          <div className="profile-stat-grid">
-            <div className="profile-stat">
-              <span className="profile-stat-value">{stats.titlesRead}</span>
-              <span className="profile-stat-label">Titles read</span>
+          <div className="mt-3.5 mb-2 flex flex-wrap gap-3">
+            <div className="flex flex-[1_1_110px] flex-col gap-1 rounded-[10px] border border-border bg-surface-raised px-4.5 py-4">
+              <span className="text-[1.6rem] leading-none font-extrabold">
+                {stats.titlesRead}
+              </span>
+              <span className="text-[0.8rem] text-text-muted">Titles read</span>
             </div>
-            <div className="profile-stat">
-              <span className="profile-stat-value">{stats.chaptersRead}</span>
-              <span className="profile-stat-label">Chapters read</span>
+            <div className="flex flex-[1_1_110px] flex-col gap-1 rounded-[10px] border border-border bg-surface-raised px-4.5 py-4">
+              <span className="text-[1.6rem] leading-none font-extrabold">
+                {stats.chaptersRead}
+              </span>
+              <span className="text-[0.8rem] text-text-muted">Chapters read</span>
             </div>
-            <div className="profile-stat">
-              <span className="profile-stat-value">{stats.pagesRead}</span>
-              <span className="profile-stat-label">Pages read</span>
+            <div className="flex flex-[1_1_110px] flex-col gap-1 rounded-[10px] border border-border bg-surface-raised px-4.5 py-4">
+              <span className="text-[1.6rem] leading-none font-extrabold">
+                {stats.pagesRead}
+              </span>
+              <span className="text-[0.8rem] text-text-muted">Pages read</span>
             </div>
           </div>
+          {/* .profile-most-read-heading stays: `margin-top: 20px` on a <p> loses
+              to the unlayered reset and to .eyebrow's own margin shorthand. */}
           <p className="eyebrow profile-most-read-heading">Most read</p>
           {stats.mostReadManga.length ? (
-            <ul className="profile-most-read">
+            <ul className="m-0 mt-1.5 flex list-none flex-col gap-1 p-0">
               {stats.mostReadManga.map((entry) => (
-                <li key={entry.manga.id}>
-                  <span className="profile-most-read-title">
+                <li
+                  key={entry.manga.id}
+                  className="flex justify-between gap-3 border-b border-b-border py-2 last:border-b-0"
+                >
+                  <span className="overflow-hidden font-semibold text-ellipsis whitespace-nowrap">
                     {entry.manga.title}
                   </span>
-                  <span className="profile-most-read-count">
+                  <span className="shrink-0 text-[0.85rem] text-text-muted">
                     {entry.readChapters}{" "}
                     {entry.readChapters === 1 ? "chapter" : "chapters"}
                   </span>
