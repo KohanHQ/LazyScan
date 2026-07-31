@@ -485,53 +485,11 @@ h3 {
   min-height: 320px;
 }
 
-.manga-card-body {
-  padding: 14px;
-}
-
-/* Clamp the title to two lines and reserve that height so every card lines up
-   regardless of title length; long titles get an ellipsis. */
-.manga-card-body h2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.3;
-  min-height: calc(1.35rem * 1.3 * 2);
-}
-
-/* Card description: muted, clamped to two lines with reserved height. */
-.manga-card-desc {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: calc(0.9rem * 1.45 * 2);
-  font-size: 0.9rem;
-  line-height: 1.45;
-}
-
-/* Compact author/year line on cards; muted color inherits from
-   `.manga-card-body p`. Single line, ellipsis on overflow. */
-.manga-card-meta {
-  margin-bottom: 6px;
-  font-size: 0.8rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.manga-card-body p,
 .chapter-row p,
 .description {
   color: var(--text-secondary);
 }
 
-/* Kept at two classes so it still outranks the per-status `.manga-card-body
-   .status-badge-*` colors below — card badge text renders muted, pill only. */
-.manga-card .manga-card-body span,
 .chapter-row span {
   color: var(--text-muted);
 }
@@ -540,45 +498,10 @@ h3 {
   color: #66746d;
 }
 
-.manga-card-body p,
 .chapter-row p {
   margin-bottom: 8px;
 }
 
-/* Status pill on cards. The per-status `color` below is inert — the muted span
-   rule above outranks it; only the pill background varies. */
-.manga-card-body .status-badge {
-  display: inline-block;
-  margin-bottom: 10px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.manga-card-body .status-badge-ongoing {
-  background: var(--status-ok-bg);
-  color: var(--accent-fg);
-}
-
-.manga-card-body .status-badge-completed {
-  background: var(--status-info-bg);
-  color: var(--status-info-fg);
-}
-
-.manga-card-body .status-badge-hiatus {
-  background: var(--status-warn-bg);
-  color: var(--status-warn-fg);
-}
-
-.manga-card-body .status-badge-cancelled {
-  background: var(--status-warn-bg);
-  color: var(--danger-fg);
-}
-
-.manga-card-body span,
 .chapter-row span {
   font-size: 0.875rem;
 }
@@ -2235,21 +2158,8 @@ img.user-avatar {
   color: var(--accent-fg);
 }
 
-/* Themed select: PopupSelect wraps a trigger button (styled via the caller's
-   select class) and reuses the .library-filter-pop menu. Grid stretches the
-   trigger to the wrapper so it fills full-width form/grid parents. */
-.popup-select {
-  position: relative;
-  display: grid;
-}
-
-.popup-select-trigger {
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-/* Grow rightward from the trigger's left edge and never sit narrower than it. */
+/* PopupSelect reuses the .library-filter-pop menu; the popup grows rightward
+   from the trigger's left edge and never sits narrower than it. */
 .popup-select .library-filter-pop {
   left: 0;
   right: auto;
@@ -4008,30 +3918,12 @@ img.cover-fade.is-loaded {
    (components/boot-splash.tsx drives the scramble). Above toasts (z-1100),
    below the route curtain (z-2000). */
 .boot-splash {
-  position: fixed;
-  inset: 0;
-  z-index: 1500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg);
   transition: opacity 0.3s ease-out;
 }
 
 .boot-splash[data-leaving="true"] {
   opacity: 0;
   pointer-events: none;
-}
-
-/* Monospace so a scrambled glyph never changes the wordmark's width; the
-   padding offsets the trailing letter-space so it stays optically centered. */
-.boot-splash-wordmark {
-  padding-left: 0.34em;
-  color: var(--text);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: clamp(1.3rem, 5vw, 2.2rem);
-  font-weight: 700;
-  letter-spacing: 0.34em;
 }
 
 @media (prefers-reduced-motion: reduce) {
