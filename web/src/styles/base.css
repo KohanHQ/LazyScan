@@ -1116,69 +1116,6 @@ img.user-avatar {
 }
 
 /* Phase 8b: chapter upload */
-.upload-hint {
-  margin: 0 0 14px;
-  color: var(--text-secondary);
-  font-weight: 700;
-}
-
-.upload-progress {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.upload-progress-track {
-  flex: 1;
-  height: 6px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--surface-raised);
-}
-
-.upload-progress-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent);
-  transition: width 0.25s ease;
-}
-
-.upload-progress-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.upload-list {
-  list-style: none;
-  margin: 0 0 18px;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-  max-height: 420px;
-  overflow: auto;
-}
-
-.upload-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-}
-
-.upload-name {
-  font-weight: 700;
-  font-size: 0.9rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .upload-status {
   flex: none;
   font-weight: 800;
@@ -1250,33 +1187,6 @@ img.user-avatar {
 .dropzone.is-dragover {
   border-color: var(--accent-fg);
   background: var(--surface-accent);
-}
-
-.dropzone-input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.dropzone-prompt {
-  display: grid;
-  gap: 4px;
-  pointer-events: none;
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-}
-
-.dropzone-prompt strong {
-  color: var(--text);
-  font-size: 0.95rem;
-}
-
-.dropzone-count {
-  color: var(--accent-fg);
-  font-weight: 700;
 }
 
 /* Username lookup / public profile */

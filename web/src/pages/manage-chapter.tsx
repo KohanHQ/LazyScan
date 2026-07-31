@@ -299,7 +299,7 @@ function ChapterForm({
               onDrop={() => setDragover(false)}
             >
               <input
-                className="dropzone-input"
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                 name="files"
                 type="file"
                 accept={accept}
@@ -307,10 +307,10 @@ function ChapterForm({
                 required
                 onChange={(event) => void onFilesChange(event.target.files)}
               />
-              <div className="dropzone-prompt">
-                <strong>Drag &amp; drop pages here</strong>
+              <div className="pointer-events-none grid gap-1 text-[0.85rem] text-text-secondary">
+                <strong className="text-[0.95rem] text-text">Drag &amp; drop pages here</strong>
                 <span>or click to browse</span>
-                <span className="dropzone-count" hidden={countLabel === ""}>
+                <span className="font-bold text-accent-fg" hidden={countLabel === ""}>
                   {countLabel}
                 </span>
               </div>
@@ -516,19 +516,22 @@ function UploadingPhase({
     <>
       <PageHeading eyebrow="Chapter upload" title="Uploading pages" />
       <section className="manage-panel">
-        <p className="upload-hint">
+        <p className="mb-3.5 font-bold text-text-secondary">
           Uploading {run.targets.length} pages to storage. Keep this tab open.
         </p>
         <UploadProgress key="upload" done={doneCount} total={run.targets.length} />
-        <ol className="upload-list">
+        <ol className="m-0 mb-4.5 grid max-h-[420px] list-none gap-1.5 overflow-auto p-0">
           {run.targets.map((target) => {
             const status = statuses[target.pageId] ?? {
               state: "pending",
               label: "Pending",
             };
             return (
-              <li className="upload-row" key={target.pageId}>
-                <span className="upload-name">
+              <li
+                className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-3 py-2"
+                key={target.pageId}
+              >
+                <span className="overflow-hidden text-[0.9rem] font-bold text-ellipsis whitespace-nowrap">
                   {`${target.pageNumber.toString().padStart(3, "0")} · ${target.filename}`}
                 </span>
                 <span className={`upload-status upload-status-${status.state}`}>
@@ -707,7 +710,7 @@ function ProcessingPhase({
     <>
       <PageHeading eyebrow="Chapter upload" title={heading} />
       <section className="manage-panel">
-        <p className="upload-hint">
+        <p className="mb-3.5 font-bold text-text-secondary">
           {`Processed ${processed}/${total}${failed ? ` · ${failed} failed` : ""}`}
         </p>
         <UploadProgress key="process" done={processed} total={total} />
@@ -715,10 +718,13 @@ function ProcessingPhase({
           <p className="form-error">{detail.import.errorMessage}</p>
         ) : null}
         {pages.length ? (
-          <ol className="upload-list">
+          <ol className="m-0 mb-4.5 grid max-h-[420px] list-none gap-1.5 overflow-auto p-0">
             {pages.map((page) => (
-              <li className="upload-row" key={page.id}>
-                <span className="upload-name">
+              <li
+                  className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-3 py-2"
+                  key={page.id}
+                >
+                <span className="overflow-hidden text-[0.9rem] font-bold text-ellipsis whitespace-nowrap">
                   {`${page.pageNumber.toString().padStart(3, "0")} · ${page.originalFilename}`}
                 </span>
                 <span
@@ -774,20 +780,20 @@ function UploadProgress({
   const percent = Math.round((done / total) * 100);
   return (
     <div
-      className="upload-progress"
+      className="mb-3.5 flex items-center gap-2.5"
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={total}
       aria-valuenow={done}
       aria-label={`${done} of ${total} pages`}
     >
-      <div className="upload-progress-track">
+      <div className="h-1.5 flex-1 overflow-hidden rounded-[999px] bg-surface-raised">
         <div
-          className="upload-progress-fill"
+          className="h-full rounded-[inherit] bg-primary transition-[width] duration-[0.25s] ease-[ease]"
           style={{ width: `${percent}%` }}
         />
       </div>
-      <span className="upload-progress-label">{`${done} / ${total}`}</span>
+      <span className="text-[0.8rem] tabular-nums text-text-muted">{`${done} / ${total}`}</span>
     </div>
   );
 }
