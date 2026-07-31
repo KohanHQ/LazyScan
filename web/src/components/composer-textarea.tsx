@@ -49,7 +49,10 @@ export function ComposerTextarea({
   const nearLimit = value.length >= maxLength * 0.9;
 
   return (
-    <div className="composer-shell">
+    <div className="composer-shell rounded-md border border-border-strong bg-surface-raised">
+      {/* .composer-input stays a base.css class: the two-class
+          `.composer-shell .composer-input` rule is what outranks
+          `.manage-form textarea` on the profile bio field. */}
       <textarea
         ref={inputRef}
         id={id}
@@ -63,9 +66,15 @@ export function ComposerTextarea({
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
       />
-      <div className="composer-footer">
-        {hint !== undefined ? <span className="composer-hint">{hint}</span> : null}
-        <span className={nearLimit ? "composer-count is-warn" : "composer-count"}>
+      <div className="composer-footer flex items-center gap-2.5 border-t border-t-border px-2.5 pt-1.5 pb-2">
+        {hint !== undefined ? (
+          <span className="text-[0.75rem] text-text-muted">{hint}</span>
+        ) : null}
+        <span
+          className={`ml-auto text-[0.75rem] font-semibold tabular-nums ${
+            nearLimit ? "text-status-warn-fg" : "text-text-muted"
+          }`}
+        >
           {value.length} / {maxLength}
         </span>
         {action ?? null}

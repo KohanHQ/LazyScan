@@ -144,7 +144,9 @@ export function Comments({ mangaId }: { mangaId: string }): ReactElement {
       {error !== null ? (
         <ErrorState message={error} />
       ) : comments === null ? (
-        <p className="comment-status">Loading comments…</p>
+        <p className="mb-5 text-[0.9rem] text-text-secondary">
+          Loading comments…
+        </p>
       ) : comments.length === 0 ? (
         <Empty
           title="No comments yet"

@@ -3427,9 +3427,6 @@ button.settings-health-chip-button:disabled {
    the shell so the counter is inside the border; selectors are two-class so
    they beat `.manage-form textarea` on the profile bio field. */
 .composer-shell {
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
-  background: var(--surface-raised);
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
@@ -3460,31 +3457,6 @@ button.settings-health-chip-button:disabled {
   outline: none;
 }
 
-.composer-footer {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 10px 8px;
-  border-top: 1px solid var(--border);
-}
-
-.composer-hint {
-  color: var(--text-muted);
-  font-size: 0.75rem;
-}
-
-.composer-count {
-  margin-left: auto;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.composer-count.is-warn {
-  color: var(--status-warn-fg);
-}
-
 .composer-footer .primary-button {
   min-height: 0;
   padding: 6px 16px;
@@ -3497,8 +3469,7 @@ button.settings-health-chip-button:disabled {
   }
 }
 
-.comment-login,
-.comment-status {
+.comment-login {
   margin: 0 0 20px;
   color: var(--text-secondary);
   font-size: 0.9rem;
@@ -3719,21 +3690,6 @@ button.settings-health-chip-button:disabled {
 }
 
 /* Report dialog body: label/control pairs inside the Radix content grid. */
-.forum-report-fields {
-  display: grid;
-  gap: 6px;
-}
-
-.forum-report-fields label {
-  color: var(--text-label);
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.forum-report-fields label:not(:first-child) {
-  margin-top: 10px;
-}
-
 /* Admin queue rows (settings page): the snippet is the reported text, the note
    is the reporter's own words. */
 .forum-report-snippet {

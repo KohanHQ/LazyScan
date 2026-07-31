@@ -93,8 +93,13 @@ export function ForumReportDialog({
             private.
           </DialogDescription>
         </DialogHeader>
-        <div className="forum-report-fields">
-          <label htmlFor="forum-report-reason">Reason</label>
+        <div className="grid gap-1.5">
+          <label
+            className="text-[0.85rem] font-semibold text-text-label"
+            htmlFor="forum-report-reason"
+          >
+            Reason
+          </label>
           <PopupSelect
             id="forum-report-reason"
             ariaLabel="Report reason"
@@ -105,7 +110,12 @@ export function ForumReportDialog({
             }))}
             onChange={(value) => setReason(value as ForumReportReason)}
           />
-          <label htmlFor="forum-report-note">Note (optional)</label>
+          <label
+            className="mt-2.5 text-[0.85rem] font-semibold text-text-label"
+            htmlFor="forum-report-note"
+          >
+            Note (optional)
+          </label>
           <ComposerTextarea
             id="forum-report-note"
             placeholder="Add any detail that helps triage…"
