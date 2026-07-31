@@ -8,11 +8,11 @@ export function Badges({ badges }: { badges: Badge[] }): ReactElement | null {
     return null;
   }
   return (
-    <div className="profile-badges">
+    <div className="mt-2 flex flex-wrap gap-1.5">
       {badges.map((badge) => (
         <span
           key={badge.code}
-          className={`profile-badge profile-badge--${badge.rarity} profile-badge-${badge.code}`}
+          className={`inline-flex items-center rounded-full bg-primary px-2.5 py-[3px] text-[0.75rem] font-bold tracking-[0.01em] text-primary-foreground profile-badge--${badge.rarity} profile-badge-${badge.code}`}
           title={badge.label}
         >
           {badge.label}

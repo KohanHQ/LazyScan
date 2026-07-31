@@ -452,23 +452,6 @@ h3 {
   }
 }
 
-/* Empty-state icon above the title. */
-.state-empty {
-  text-align: center;
-}
-
-.state-empty-icon {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 8px;
-  color: var(--text-muted);
-}
-
-.state-empty-icon .icon {
-  width: 40px;
-  height: 40px;
-}
-
 .manga-cover,
 .manga-detail-cover {
   overflow: hidden;
@@ -889,12 +872,6 @@ h3 {
 
 /* Reveal after a beat so sub-250ms fetches never flash a loading state. */
 .state-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40vh;
-  border: 0;
-  background: none;
   opacity: 0;
   animation: state-loading-reveal 0.2s ease 0.25s forwards;
 }
@@ -1749,28 +1726,8 @@ img.user-avatar {
   white-space: pre-wrap;
 }
 
-/* Profile badges + reading stats. `--*` palette tokens are dark-theme only, so
-   every var() carries a light fallback (see known-constraints.md). */
-.profile-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.profile-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--text-on-accent);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
-/* Rarity tiers (rarest first in the list; the API sorts them). */
+/* Profile badge rarity tiers (rarest first in the list; the API sorts them).
+   Unlayered, so they still override the chip's Tailwind background/color. */
 .profile-badge--common {
   background: var(--accent);
 }
@@ -3975,19 +3932,6 @@ img.cover-fade.is-loaded {
   animation: state-loading-reveal 0.2s ease 0.25s forwards;
 }
 
-.skeleton-card {
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-}
-
-.skeleton-block {
-  position: relative;
-  overflow: hidden;
-  background: var(--surface-raised);
-}
-
 .skeleton-block::after {
   content: "";
   position: absolute;
@@ -4008,21 +3952,6 @@ img.cover-fade.is-loaded {
   to {
     transform: translateX(100%);
   }
-}
-
-.skeleton-cover {
-  aspect-ratio: 3 / 4;
-}
-
-.skeleton-line {
-  height: 10px;
-  border-radius: 5px;
-  margin: 12px 14px 0;
-}
-
-.skeleton-line-short {
-  width: 55%;
-  margin-bottom: 14px;
 }
 
 @media (prefers-reduced-motion: reduce) {
