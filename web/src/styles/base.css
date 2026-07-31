@@ -3304,78 +3304,12 @@ button.settings-health-chip-button:disabled {
 }
 
 /* ===== Forum (categories -> threads -> flat replies) =====
-   List rows reuse the history-row card look; thread bodies and replies reuse
-   the comment block (.comment-row / -input / -action) wholesale, so only the
-   forum-specific chrome lives here. */
-.forum-list {
-  display: grid;
-  gap: 10px;
-  padding: 0;
-  margin: 0 0 8px;
-  list-style: none;
-}
-
-.forum-row {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  cursor: pointer;
-  outline: none;
-}
-
-.forum-row:hover,
-.forum-row:focus-visible {
-  border-color: var(--accent-fg);
-  background: var(--surface-accent);
-}
-
-/* min-width:0 lets a long title wrap instead of stretching the row. */
-.forum-row-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.forum-row-body h3 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-  overflow-wrap: anywhere;
-}
-
-.forum-row-desc {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  overflow-wrap: anywhere;
-}
-
-.forum-row-meta {
-  display: grid;
-  gap: 2px;
-  flex-shrink: 0;
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  text-align: right;
-}
-
-/* Pinned/locked markers on a thread row; the row's aria-label carries the
-   wording, so the glyph itself stays decorative. */
-.forum-glyph {
-  display: inline-flex;
-  color: var(--accent-fg);
-}
-
+   Thread bodies and replies reuse the comment block (.comment-row / -input /
+   -action) wholesale, so only the forum-specific chrome lives here. */
 .forum-back {
   margin-bottom: 18px;
 }
 
-.forum-thread-form,
 .forum-reply-form {
   margin-top: 20px;
 }
@@ -3439,20 +3373,6 @@ button.settings-health-chip-button:disabled {
   overflow-wrap: anywhere;
   color: var(--text-secondary);
   font-size: 0.85rem;
-}
-
-/* Narrow screens: the meta column drops under the title instead of squeezing
-   it (the breakpoint the rest of the app stacks at). */
-@media (max-width: 640px) {
-  .forum-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .forum-row-meta {
-    text-align: left;
-  }
 }
 
 /* ===== Motion additions (2026-07-26) =====

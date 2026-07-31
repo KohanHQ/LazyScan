@@ -171,7 +171,7 @@ export function ForumCategoryPage({ slug }: { slug: string }): ReactElement {
         />
       ) : (
         <>
-          <ol className="forum-list">
+          <ol className="m-0 mb-2 grid list-none gap-2.5 p-0">
             {threads.map((thread) => (
               <ThreadRow key={thread.id} thread={thread} />
             ))}
@@ -204,8 +204,9 @@ function Heading({
 }): ReactElement {
   return (
     <>
+      {/* .secondary-button stays: font-size + font-weight on a <button>. */}
       <button
-        className="secondary-button forum-back"
+        className="secondary-button mb-4.5"
         type="button"
         onClick={() => navigateTo("/forum")}
       >
@@ -216,7 +217,11 @@ function Heading({
         title={title}
         meta={
           <>
-            {description ? <p className="forum-row-desc">{description}</p> : null}
+            {description ? (
+              <p className="m-0 text-[0.85rem] wrap-anywhere text-text-secondary">
+                {description}
+              </p>
+            ) : null}
             {total !== undefined ? (
               <p className="heading-meta" data-role="count">
                 {total} thread{total === 1 ? "" : "s"}
@@ -261,8 +266,10 @@ function NewThreadForm({ slug }: { slug: string }): ReactElement {
   };
 
   return (
+    // .comment-form stays: the comment-* family converts with comments.tsx and
+    // forum-thread.tsx as one unit (plan sequencing rule 1).
     <form
-      className="comment-form forum-thread-form"
+      className="comment-form mt-5"
       onSubmit={(event) => {
         event.preventDefault();
         submit();
@@ -307,30 +314,32 @@ function ThreadRow({ thread }: { thread: ForumThread }): ReactElement {
   const flags = `${thread.pinned ? ", pinned" : ""}${thread.locked ? ", locked" : ""}`;
 
   return (
+    // The narrow-screen stack is written as a raw media query: Tailwind's
+    // `max-sm:`/`max-[640px]:` compile to `width < 640px` and would drop 640 itself.
     <li
-      className="forum-row"
+      className="flex cursor-pointer items-center gap-4.5 rounded-lg border border-border bg-surface px-4 py-3.5 outline-none hover:border-accent-fg hover:bg-surface-accent focus-visible:border-accent-fg focus-visible:bg-surface-accent [@media(max-width:640px)]:flex-col [@media(max-width:640px)]:items-start [@media(max-width:640px)]:gap-2"
       aria-label={`Open ${thread.title}${flags}`}
       {...clickable(`/forum/thread/${encodeURIComponent(thread.id)}`)}
     >
-      <div className="forum-row-body">
-        <h3>
+      <div className="min-w-0 flex-1">
+        <h3 className="flex items-center gap-1.5 wrap-anywhere">
           {thread.pinned ? (
-            <span className="forum-glyph" title="Pinned">
+            <span className="inline-flex text-accent-fg" title="Pinned">
               <Pin className="icon" size={14} aria-hidden="true" />
             </span>
           ) : null}
           {thread.locked ? (
-            <span className="forum-glyph" title="Locked">
+            <span className="inline-flex text-accent-fg" title="Locked">
               <Lock className="icon" size={14} aria-hidden="true" />
             </span>
           ) : null}
           {thread.title}
         </h3>
-        <p className="forum-row-desc">
+        <p className="m-0 text-[0.85rem] wrap-anywhere text-text-secondary">
           {thread.authorName} · {formatDate(thread.createdAt)}
         </p>
       </div>
-      <p className="forum-row-meta">
+      <p className="m-0 grid shrink-0 gap-0.5 text-right text-[0.8rem] text-text-secondary [@media(max-width:640px)]:text-left">
         <span>
           {thread.replyCount} repl{thread.replyCount === 1 ? "y" : "ies"}
         </span>
