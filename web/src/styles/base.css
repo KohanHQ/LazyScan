@@ -2445,11 +2445,6 @@ button.settings-health-chip-button:disabled {
   background: none;
 }
 
-.muted {
-  color: var(--text-muted);
-  font-size: 0.875rem;
-}
-
 /* Small inline text button for row-level actions. Light theme uses explicit hex;
    dark theme overrides via the theme vars (the file-wide convention). */
 .ghost-button {
@@ -2474,118 +2469,6 @@ button.settings-health-chip-button:disabled {
 
 .ghost-button.danger {
   color: var(--danger-fg);
-}
-
-.chapter-admin-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.chapter-admin-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-
-.chapter-admin-main {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.chapter-admin-title {
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.chapter-admin-badge {
-  padding: 2px 9px;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.chapter-admin-badge.is-published { background: var(--status-ok-bg); color: var(--accent-fg); }
-.chapter-admin-badge.is-draft { background: var(--status-warn-bg); color: var(--status-warn-fg); }
-.chapter-admin-badge.is-processing { background: var(--status-info-bg); color: var(--status-info-fg); }
-.chapter-admin-badge.is-failed { background: var(--status-warn-bg); color: var(--danger-fg); }
-
-.chapter-admin-actions {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.page-reorder-list {
-  list-style: none;
-  margin: 12px 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.page-reorder-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-
-.page-reorder-index {
-  width: 26px;
-  text-align: center;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-
-.page-reorder-thumb {
-  width: 42px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 4px;
-  background: var(--bg);
-}
-
-.page-reorder-thumb.is-empty {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  border: 1px dashed var(--border);
-}
-
-.page-reorder-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.85rem;
-}
-
-.page-reorder-move {
-  display: flex;
-  gap: 4px;
 }
 
 /* Comments (manga detail community section) */
