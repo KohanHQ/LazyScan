@@ -478,32 +478,9 @@ h3 {
 }
 
 /* Tag chips on the manga detail page, between the facts and the description. */
-.detail-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0 0 16px;
-}
-
-.detail-tag {
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 3px 10px;
-  color: var(--text-label);
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
 .description {
   max-width: 68ch;
   margin-bottom: 0;
-}
-
-.chapter-list {
-  display: grid;
-  gap: 10px;
-  padding: 0;
-  list-style: none;
 }
 
 .chapter-row {
@@ -543,27 +520,6 @@ h3 {
 
 .chapter-row-read h3 {
   color: var(--text-secondary);
-}
-
-.chapter-read-badge {
-  display: inline-block;
-  margin-left: 8px;
-  color: var(--accent-fg);
-  font-size: 0.85rem;
-}
-
-.chapter-current-badge {
-  display: inline-block;
-  margin-left: 8px;
-  color: var(--accent-fg);
-  font-size: 0.75rem;
-}
-
-.chapter-row-aside {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .chapter-read-toggle {
@@ -1919,26 +1875,6 @@ img.user-avatar {
 }/* Detail-page favorite / queue actions */
 /* Library actions (favorite/queue) and the reading-status control share one row;
    they use the same pill styling and 40px height, so they read as one cluster. */
-.detail-actions-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin: 4px 0 14px;
-}
-
-.detail-actions-row .detail-actions,
-.detail-actions-row .detail-status {
-  margin: 0;
-}
-
-.detail-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 4px 0 14px;
-}
-
 .detail-action {
   display: inline-flex;
   align-items: center;
@@ -1970,10 +1906,6 @@ img.user-avatar {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--text-on-accent);
-}
-
-.detail-status {
-  margin: 0 0 14px;
 }
 
 .detail-status-control {
@@ -2247,18 +2179,6 @@ img.user-avatar {
 }
 
 /* Chapter list pagination + volume grouping (manga detail). */
-.chapter-volume-header {
-  list-style: none;
-  margin: 6px 0 2px;
-  padding: 4px 2px;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--border);
-}
-
 .chapter-pager {
   display: flex;
   align-items: center;

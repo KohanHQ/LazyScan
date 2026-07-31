@@ -172,11 +172,11 @@ function MangaHeader({
       <div className="manga-detail-body">
         <p className="eyebrow">{statusLabel(manga.status)}</p>
         <h1>{manga.title}</h1>
-        <div className="detail-actions-row">
-          <div className="detail-actions">
+        <div className="mt-1 mb-3.5 flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap gap-2.5">
             {loggedIn ? <LibraryActions mangaId={mangaId} /> : null}
           </div>
-          <div className="detail-status">
+          <div>
             {loggedIn ? <ReadingStatusControl mangaId={mangaId} /> : null}
           </div>
         </div>
@@ -215,9 +215,12 @@ function MangaHeader({
           </div>
         </dl>
         {manga.tags.length > 0 ? (
-          <div className="detail-tags" aria-label="Tags">
+          <div className="mb-4 flex flex-wrap gap-1.5" aria-label="Tags">
             {manga.tags.map((tag) => (
-              <span className="detail-tag" key={tag}>
+              <span
+                className="rounded-[999px] border border-border px-2.5 py-[3px] text-[0.78rem] font-bold text-text-label"
+                key={tag}
+              >
                 {tag}
               </span>
             ))}
@@ -519,7 +522,7 @@ function ChapterList({
 
   return (
     <div ref={regionRef}>
-      <ol className="chapter-list">
+      <ol className="grid list-none gap-2.5 p-0">
         {slice.map((chapter, index) => {
           const previous = index > 0 ? slice[index - 1] : null;
           // First row of each page repeats its volume header — the slice-local
@@ -529,7 +532,10 @@ function ChapterList({
           return (
             <Fragment key={chapter.id}>
               {showHeader ? (
-                <li className="chapter-volume-header" aria-hidden="true">
+                <li
+                  className="mt-1.5 mb-0.5 list-none border-b border-b-border px-0.5 py-1 text-[0.78rem] font-extrabold tracking-[0.05em] text-text-muted uppercase"
+                  aria-hidden="true"
+                >
                   {volumeLabel(chapter.volume)}
                 </li>
               ) : null}
@@ -616,18 +622,21 @@ function ChapterRow({
         <h3>
           {chapter.title}
           {read ? (
-            <span className="chapter-read-badge" aria-label="Read">
+            <span className="ml-2 inline-block text-[0.85rem] text-accent-fg" aria-label="Read">
               {"✓"}
             </span>
           ) : isCurrent ? (
-            <span className="chapter-current-badge" aria-label="In progress">
+            <span
+              className="ml-2 inline-block text-[0.75rem] text-accent-fg"
+              aria-label="In progress"
+            >
               {"▶"}
             </span>
           ) : null}
         </h3>
         {metaText ? <p>{metaText}</p> : null}
       </div>
-      <div className="chapter-row-aside">
+      <div className="flex flex-none items-center gap-3">
         <span>{formatDate(chapter.updatedAt)}</span>
         {loggedIn ? (
           <ChapterReadToggle
