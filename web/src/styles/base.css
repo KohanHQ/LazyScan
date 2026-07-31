@@ -1167,13 +1167,6 @@ img.user-avatar {
   background: var(--danger-surface);
 }
 
-.manage-cover-preview {
-  width: 96px;
-  height: auto;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-}
-
 /* Page content stacks its sections with consistent spacing — .manage-panel has
    no vertical margin of its own. Forms keep the narrow centered .manage-panel
    column by NOT opting into .page-stack. */
@@ -1344,26 +1337,7 @@ img.user-avatar {
   margin-top: 16px;
 }
 
-/* Phase 8 polish: file input, cover thumb, chapter rows */
-.manage-cover-preview {
-  width: 104px;
-  height: 139px;
-  object-fit: cover;
-}
-
-.manage-cover-thumb {
-  display: grid;
-  place-items: center;
-  width: 104px;
-  height: 139px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--cover-bg);
-  color: var(--text-bright);
-  font-size: 2rem;
-  font-weight: 900;
-}
-
+/* Phase 8 polish: file input, chapter rows */
 .manage-form input[type="file"] {
   padding: 7px 12px;
   cursor: pointer;
@@ -1841,11 +1815,6 @@ img.user-avatar {
 .cover-dialog-body {
   gap: 14px;
   margin-bottom: 16px;
-}
-
-.cover-dialog-body .manage-cover-preview,
-.cover-dialog-body .manage-cover-thumb {
-  justify-self: center;
 }
 
 /* Favorites / Queue tabs */
