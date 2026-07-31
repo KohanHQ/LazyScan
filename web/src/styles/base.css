@@ -1793,20 +1793,6 @@ img.user-avatar {
   object-fit: cover;
 }
 
-.hero-text {
-  min-width: 0;
-  color: #f5f3ee;
-}
-
-.hero-eyebrow {
-  margin: 0 0 8px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(245, 243, 238, 0.72);
-}
-
 .hero-title {
   margin: 0;
   font-size: 1.9rem;
@@ -1817,24 +1803,6 @@ img.user-avatar {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.hero-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0 0;
-}
-
-.hero-chip {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(245, 243, 238, 0.16);
-  color: #f5f3ee;
 }
 
 .hero-credits {

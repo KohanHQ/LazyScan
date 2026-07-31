@@ -579,11 +579,11 @@ function HeroSlide(props: {
         <div className="hero-cover">
           <Cover url={manga.coverUrl} seed={manga.title} placeholderClass="cover-placeholder" />
         </div>
-        <div className="hero-text">
-          <p className="hero-eyebrow">{props.eyebrow}</p>
+        <div className="min-w-0 text-[#f5f3ee]">
+          <p className="mb-2 text-[0.72rem] font-bold tracking-[0.12em] text-[rgba(245,243,238,0.72)] uppercase">{props.eyebrow}</p>
           <h2 className="hero-title">{manga.title}</h2>
-          <div className="hero-chips">
-            <span className="hero-chip">{statusLabel(manga.status)}</span>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-[999px] bg-[rgba(245,243,238,0.16)] px-2.5 py-1 text-[0.68rem] font-bold tracking-[0.08em] text-[#f5f3ee] uppercase">{statusLabel(manga.status)}</span>
           </div>
           {credits ? <p className="hero-credits">{credits}</p> : null}
           {manga.description ? <p className="hero-desc">{manga.description}</p> : null}
