@@ -5,7 +5,7 @@ import { unzip } from "fflate";
 
 // Hard cap before unzip — the archive is held in memory, so this is the real OOM
 // guard (the desktop gate below is only UX).
-export const MAX_ARCHIVE_BYTES = 400 * 1024 * 1024; // 400 MB
+export const MAX_ARCHIVE_BYTES = 500 * 1024 * 1024; // 500 MB
 
 // Bomb guard: fflate allocates each entry's header-declared originalSize before
 // inflating, so the declared total is what actually drives memory.
