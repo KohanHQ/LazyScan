@@ -189,12 +189,12 @@ function HistoryContent(): ReactElement {
     <>
       <Heading
         meta={
-          <p className="heading-meta">
+          <p className="m-0 font-bold text-text-secondary">
             {entries.length} title{entries.length === 1 ? "" : "s"}
           </p>
         }
       />
-      <ol className="history-list">
+      <ol className="mb-7 grid list-none gap-2.5 p-0">
         {entries.map((entry) => (
           <HistoryRow
             key={`${entry.mangaId}:${entry.chapterId}`}
@@ -203,7 +203,7 @@ function HistoryContent(): ReactElement {
           />
         ))}
       </ol>
-      <div ref={sentinelRef} className="library-sentinel" aria-hidden="true" />
+      <div ref={sentinelRef} className="h-px" aria-hidden="true" />
       {pageError !== null ? (
         <>
           <ErrorState message={pageError} />
@@ -246,25 +246,33 @@ function HistoryRow({
 
   return (
     <li
-      className="history-row"
+      className="flex cursor-pointer items-center gap-3.5 rounded-lg border border-border bg-surface p-2.5 outline-none hover:border-accent-fg hover:bg-surface-accent focus-visible:border-accent-fg focus-visible:bg-surface-accent"
       aria-label={`Continue reading ${entry.title}`}
       {...clickable(
         `/manga/${encodeURIComponent(entry.mangaId)}/chapter/${encodeURIComponent(entry.chapterId)}`
       )}
     >
-      <div className="history-row-cover">
+      <div className="h-16 w-12 shrink-0 overflow-hidden rounded-sm bg-[var(--cover-bg)]">
         <Cover
           url={entry.coverUrl}
           seed={entry.title}
-          placeholderClass="history-cover-placeholder"
+          placeholderClass="grid h-full w-full place-items-center bg-surface-raised text-[1.4rem] font-black text-[color:var(--text-bright)]"
+          imgClassName="block h-full w-full object-cover"
         />
       </div>
+      {/* .history-row-body stays: it is the hook for its `h3`/`p` descendant
+          rules, and unlayered `h3 { font-size: 1rem }` beats a font utility. */}
       <div className="history-row-body">
         <h3>{entry.title}</h3>
-        <p className="history-row-chapter">{historyChapterLabel(entry)}</p>
+        <p className="overflow-hidden font-bold text-ellipsis whitespace-nowrap">
+          {historyChapterLabel(entry)}
+        </p>
         <p>{meta}</p>
       </div>
-      <span className="history-resume" aria-hidden="true">
+      <span
+        className="ml-auto flex-none self-center text-[0.78rem] font-extrabold text-accent-fg uppercase"
+        aria-hidden="true"
+      >
         Resume
       </span>
       <HistoryRemoveButton
@@ -286,6 +294,8 @@ function HistoryRemoveButton(props: {
 }): ReactElement {
   const [busy, setBusy] = useState(false);
   return (
+    // .history-remove stays: unlayered `button { font: inherit }` beats the font
+    // utilities, and `button:disabled` beats the disabled: ones (.65 vs .6).
     <button
       className="history-remove"
       type="button"

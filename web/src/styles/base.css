@@ -595,59 +595,6 @@ h3 {
   cursor: default;
 }
 
-.history-list {
-  display: grid;
-  gap: 10px;
-  padding: 0;
-  list-style: none;
-  margin-bottom: 28px;
-}
-
-.history-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  cursor: pointer;
-  outline: none;
-}
-
-.history-row:hover,
-.history-row:focus-visible {
-  border-color: var(--accent-fg);
-  background: var(--surface-accent);
-}
-
-.history-row-cover {
-  flex-shrink: 0;
-  width: 48px;
-  height: 64px;
-  overflow: hidden;
-  border-radius: 4px;
-  background: var(--cover-bg);
-}
-
-.history-row-cover img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.history-cover-placeholder {
-  display: grid;
-  width: 100%;
-  height: 100%;
-  place-items: center;
-  background: var(--surface-raised);
-  color: var(--text-bright);
-  font-size: 1.4rem;
-  font-weight: 900;
-}
-
 .history-row-body {
   min-width: 0;
 }
@@ -664,25 +611,6 @@ h3 {
   margin: 0;
   color: var(--text-secondary);
   font-size: 0.8rem;
-}
-
-/* Pinned chapter line above the page/percent/date line. */
-.history-row-chapter {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 700;
-}
-
-/* The whole row is the resume target; this chip just makes it explicit. */
-.history-resume {
-  flex: none;
-  margin-left: auto;
-  align-self: center;
-  color: var(--accent-fg);
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-transform: uppercase;
 }
 
 /* Per-row clear-progress control, pushed to the row's trailing edge. */

@@ -88,12 +88,12 @@ function FeedContent(): ReactElement {
     <>
       <Heading
         meta={
-          <p className="heading-meta">
+          <p className="m-0 font-bold text-text-secondary">
             {entries.length} new chapter{entries.length === 1 ? "" : "s"}
           </p>
         }
       />
-      <ol className="history-list">
+      <ol className="mb-7 grid list-none gap-2.5 p-0">
         {entries.map((entry) => (
           <FeedRow key={entry.chapter.id} entry={entry} />
         ))}
@@ -111,25 +111,33 @@ function FeedRow({ entry }: { entry: LibraryFeedEntry }): ReactElement {
 
   return (
     <li
-      className="history-row"
+      className="flex cursor-pointer items-center gap-3.5 rounded-lg border border-border bg-surface p-2.5 outline-none hover:border-accent-fg hover:bg-surface-accent focus-visible:border-accent-fg focus-visible:bg-surface-accent"
       aria-label={`Read ${entry.manga.title} — ${chapterLabel}`}
       {...clickable(
         `/manga/${encodeURIComponent(entry.manga.id)}/chapter/${encodeURIComponent(entry.chapter.id)}`
       )}
     >
-      <div className="history-row-cover">
+      <div className="h-16 w-12 shrink-0 overflow-hidden rounded-sm bg-[var(--cover-bg)]">
         <Cover
           url={entry.manga.coverUrl}
           seed={entry.manga.title}
-          placeholderClass="history-cover-placeholder"
+          placeholderClass="grid h-full w-full place-items-center bg-surface-raised text-[1.4rem] font-black text-[color:var(--text-bright)]"
+          imgClassName="block h-full w-full object-cover"
         />
       </div>
+      {/* .history-row-body stays: it is the hook for its `h3`/`p` descendant
+          rules, and unlayered `h3 { font-size: 1rem }` beats a font utility. */}
       <div className="history-row-body">
         <h3>{entry.manga.title}</h3>
-        <p className="history-row-chapter">{chapterLabel}</p>
+        <p className="overflow-hidden font-bold text-ellipsis whitespace-nowrap">
+          {chapterLabel}
+        </p>
         <p>{formatDate(entry.readyAt)}</p>
       </div>
-      <span className="history-resume" aria-hidden="true">
+      <span
+        className="ml-auto flex-none self-center text-[0.78rem] font-extrabold text-accent-fg uppercase"
+        aria-hidden="true"
+      >
         Read
       </span>
     </li>
