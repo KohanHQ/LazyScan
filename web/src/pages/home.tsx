@@ -347,11 +347,11 @@ function Rail(props: {
   return (
     <section
       ref={sectionRef}
-      className={`manga-rail rail-reveal${revealed ? " is-visible" : ""}`}
+      className={`mb-7 rail-reveal${revealed ? " is-visible" : ""}`}
       aria-label={props.eyebrow}
       data-role={props.role}
     >
-      <div className="rail-heading">
+      <div className="mb-3">
         <p className="eyebrow">{props.eyebrow}</p>
         <h2>{props.title}</h2>
       </div>
@@ -877,8 +877,8 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
           </p>
         </div>
         <div className="heading-aside">
-          <div className="library-search-wrap">
-            <div className="library-search-box">
+          <div className="inline-flex items-center gap-2">
+            <div className="relative inline-flex">
               <input
                 ref={searchInputRef}
                 className="library-search"
@@ -933,7 +933,7 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
                   data-role="tag-options"
                   hidden={tags.length === 0}
                 >
-                  <p className="library-filter-label">Tags</p>
+                  <p className="mb-1.5 text-[0.75rem] font-bold text-text-secondary uppercase">Tags</p>
                   <div className="library-filter-tag-list">
                     <button
                       className={`library-filter-tag${tagFilter === "" ? " is-active" : ""}`}
@@ -970,9 +970,9 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
             </button>
           </div>
           <div ref={advPanelRef} className="library-advanced-panel" hidden={!advOpen}>
-            <div className="library-advanced-grid">
-              <div className="library-advanced-field">
-                <label htmlFor="adv-author">Author</label>
+            <div className="mb-3 grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-[0.75rem] font-bold text-text-secondary" htmlFor="adv-author">Author</label>
                 <input
                   id="adv-author"
                   className="library-advanced-input"
@@ -982,8 +982,8 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
                   onChange={(e) => setAdv({ ...adv, author: e.target.value })}
                 />
               </div>
-              <div className="library-advanced-field">
-                <label htmlFor="adv-artist">Artist</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[0.75rem] font-bold text-text-secondary" htmlFor="adv-artist">Artist</label>
                 <input
                   id="adv-artist"
                   className="library-advanced-input"
@@ -993,8 +993,8 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
                   onChange={(e) => setAdv({ ...adv, artist: e.target.value })}
                 />
               </div>
-              <div className="library-advanced-field">
-                <label htmlFor="adv-publisher">Publisher</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[0.75rem] font-bold text-text-secondary" htmlFor="adv-publisher">Publisher</label>
                 <input
                   id="adv-publisher"
                   className="library-advanced-input"
@@ -1004,8 +1004,8 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
                   onChange={(e) => setAdv({ ...adv, publisher: e.target.value })}
                 />
               </div>
-              <div className="library-advanced-field">
-                <label htmlFor="adv-year">Year</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[0.75rem] font-bold text-text-secondary" htmlFor="adv-year">Year</label>
                 <input
                   id="adv-year"
                   className="library-advanced-input"
@@ -1015,8 +1015,8 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
                   onChange={(e) => setAdv({ ...adv, year: e.target.value })}
                 />
               </div>
-              <div className="library-advanced-field">
-                <label htmlFor="adv-sort">Sort</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[0.75rem] font-bold text-text-secondary" htmlFor="adv-sort">Sort</label>
                 <PopupSelect
                   id="adv-sort"
                   className="library-advanced-select"
@@ -1031,8 +1031,8 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
                   onChange={(value) => setAdv({ ...adv, sort: value })}
                 />
               </div>
-              <div className="library-advanced-field">
-                <label htmlFor="adv-order">Order</label>
+              <div className="flex flex-col gap-1">
+                <label className="text-[0.75rem] font-bold text-text-secondary" htmlFor="adv-order">Order</label>
                 <PopupSelect
                   id="adv-order"
                   className="library-advanced-select"
@@ -1046,7 +1046,7 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
                 />
               </div>
             </div>
-            <div className="library-advanced-actions">
+            <div className="flex justify-end gap-2">
               <button
                 className="library-advanced-clear"
                 type="button"
@@ -1072,7 +1072,7 @@ function Library({ firstPage }: { firstPage: Manga[] }): ReactElement {
           items.map((manga) => <MangaCard key={manga.id} manga={manga} />)
         )}
       </section>
-      <div ref={sentinelRef} className="library-sentinel" aria-hidden="true" />
+      <div ref={sentinelRef} className="h-px" aria-hidden="true" />
       {pageError !== null ? (
         <>
           <ErrorState message={pageError} />

@@ -188,18 +188,6 @@ h3 {
 
 /* Horizontal card rails on home ("Recently updated", "Continue reading").
    The track scrolls sideways; cards keep a fixed width so covers stay uniform. */
-.manga-rail {
-  margin-bottom: 28px;
-}
-
-.rail-heading {
-  margin-bottom: 12px;
-}
-
-.rail-heading h2 {
-  margin: 0;
-}
-
 .rail-track {
   display: flex;
   gap: 14px;
@@ -1141,19 +1129,8 @@ img.user-avatar {
 }
 
 /* Library search */
-.library-search-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
 /* Inner box scopes the absolute funnel/kbd/pop to the input, not the wrap (which
    also holds the Advanced button). */
-.library-search-box {
-  position: relative;
-  display: inline-flex;
-}
-
 .library-search {
   min-height: 40px;
   width: min(260px, 42vw);
@@ -1298,14 +1275,6 @@ img.user-avatar {
   display: none;
 }
 
-.library-filter-label {
-  margin: 0 0 6px;
-  color: #0f6f5c;
-  font-size: 0.72rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
 .library-filter-tag-list {
   display: flex;
   flex-wrap: wrap;
@@ -1345,10 +1314,6 @@ img.user-avatar {
 }
 
 /* Infinite-scroll affordances */
-.library-sentinel {
-  height: 1px;
-}
-
 .library-more {
   display: block;
   margin: 20px auto 0;
@@ -1407,25 +1372,6 @@ img.user-avatar {
   display: none;
 }
 
-.library-advanced-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.library-advanced-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.library-advanced-field label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-
 .library-advanced-input,
 .library-advanced-select {
   padding: 6px 10px;
@@ -1440,12 +1386,6 @@ img.user-avatar {
 .library-advanced-select:focus {
   outline: none;
   border-color: var(--accent-fg);
-}
-
-.library-advanced-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
 }
 
 .library-advanced-clear {
@@ -1574,12 +1514,6 @@ img.user-avatar {
 }
 
 /* Library sort/year filter controls */
-.library-filter-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-
 .library-filter-select,
 .library-filter-input {
   padding: 6px 10px;
