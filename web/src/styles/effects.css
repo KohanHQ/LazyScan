@@ -1,0 +1,99 @@
+/* Motion and choreography extracted from base.css (Tailwind migration Stage 5).
+   Utilities express box-model, colour and typography; keyframes do not, so they
+   live here instead. Moved verbatim — no rule was rewritten.
+
+   @keyframes are name-scoped and cascade-order-independent, which is why they
+   can be lifted out of base.css without changing a single computed style. Rules
+   that merely *reference* these animations stay in base.css for now: two of them
+   (.state-loading-dots span, .skeleton-block::after) are overridden by a later
+   reduced-motion block, so moving them would reorder a real conflict. */
+
+@keyframes button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes action-pop {
+  0% {
+    transform: scale(0.7);
+  }
+  55% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes state-loading-reveal {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes state-loading-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+
+@keyframes auth-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes hero-kenburns {
+  from {
+    transform: scale(1.1);
+  }
+  to {
+    transform: scale(1.16);
+  }
+}
+
+@keyframes dialog-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-content-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes dialog-content-out {
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}

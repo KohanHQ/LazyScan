@@ -361,29 +361,11 @@ h3 {
   animation: button-spin 0.6s linear infinite;
 }
 
-@keyframes button-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Pop the icon when a detail action (favorite heart / queue bookmark) flips to
    its filled active state. */
 @media (prefers-reduced-motion: no-preference) {
   .detail-action.is-active .icon {
     animation: action-pop 0.28s ease;
-  }
-}
-
-@keyframes action-pop {
-  0% {
-    transform: scale(0.7);
-  }
-  55% {
-    transform: scale(1.18);
-  }
-  100% {
-    transform: scale(1);
   }
 }
 
@@ -538,12 +520,6 @@ h3 {
   animation: state-loading-reveal 0.2s ease 0.25s forwards;
 }
 
-@keyframes state-loading-reveal {
-  to {
-    opacity: 1;
-  }
-}
-
 .state-loading-dots {
   display: inline-flex;
   gap: 8px;
@@ -564,19 +540,6 @@ h3 {
 
 .state-loading-dots span:nth-child(3) {
   animation-delay: 0.3s;
-}
-
-@keyframes state-loading-bounce {
-  0%,
-  60%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.5;
-  }
-  30% {
-    transform: translateY(-8px);
-    opacity: 1;
-  }
 }
 
 .state-error {
@@ -866,15 +829,6 @@ img.user-avatar {
 @media (prefers-reduced-motion: no-preference) {
   .auth-screen {
     animation: auth-fade-in 0.28s ease-out;
-  }
-}
-
-@keyframes auth-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
   }
 }
 
@@ -1810,15 +1764,6 @@ img.user-avatar {
   }
 }
 
-@keyframes hero-kenburns {
-  from {
-    transform: scale(1.1);
-  }
-  to {
-    transform: scale(1.16);
-  }
-}
-
 .hero-fade {
   position: absolute;
   inset: 0;
@@ -2315,32 +2260,6 @@ button.settings-health-chip-button:disabled {
   }
 }
 
-@keyframes dialog-fade-in {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes dialog-fade-out {
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes dialog-content-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-}
-
-@keyframes dialog-content-out {
-  to {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-}
-
 /* Cover images fade in once loaded (softens R2 pop-in). The Cover component
    adds .is-loaded on load, or immediately for cache-complete images. */
 img.cover-fade {
@@ -2376,15 +2295,6 @@ img.cover-fade.is-loaded {
     transparent 70%
   );
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
-}
-
-@keyframes skeleton-shimmer {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(100%);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
