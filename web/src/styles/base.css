@@ -2172,13 +2172,6 @@ img.user-avatar {
 }
 
 /* Favorites / Queue tabs */
-.library-tabs {
-  display: flex;
-  gap: 8px;
-  border-bottom: 1px solid var(--border-strong);
-  margin-bottom: 20px;
-}
-
 .library-tab {
   border: none;
   background: none;
@@ -2235,20 +2228,6 @@ img.user-avatar {
 }
 
 /* Library sort/year filter controls */
-.library-filters {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.library-filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 .library-filter-label {
   font-size: 0.75rem;
   font-weight: 700;
