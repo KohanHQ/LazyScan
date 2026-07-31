@@ -35,7 +35,12 @@ apps/
         guards.ts          # auth guard
 
       styles/
-        base.css
+        index.css          # aggregator; import order is load-bearing
+        tailwind.css       # layer order, theme, utilities
+        tokens.css         # :root defaults + design tokens
+        reset.css          # bare-element resets (@layer base)
+        components.css     # handrolled remainder, unlayered
+        effects.css        # keyframes + motion overrides, imported last
         reader.css
 
       utils/

@@ -1,8 +1,6 @@
 // Font faces first: they must exist before the stylesheets that reference them.
 import "@fontsource-variable/inter";
-import "@/styles/tailwind.css";
-import "@/styles/base.css";
-import "@/styles/effects.css";
+import "@/styles/index.css";
 import "@/styles/reader.css";
 import { createRoot } from "react-dom/client";
 import { App } from "@/app";

@@ -1,0 +1,62 @@
+/* Bare-element resets (Tailwind migration Stage 6, moved verbatim out of
+   base.css). `@layer base` sits below `utilities` in tailwind.css's layer
+   statement, so a utility on an element now beats the reset instead of being
+   inert — that was the migration's last structural blocker.
+
+   Two resets are NOT here: `button:disabled` and `h2 { margin-bottom;
+   font-size }` stay unlayered in components.css because layering them flips a
+   rendered computed style (shadcn's disabled:opacity-50 and DialogTitle's
+   text-lg would take over). The h2 margin-top reset IS layered below — no
+   utility contests it. */
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  h1,
+  h2,
+  h3,
+  p {
+    margin-top: 0;
+  }
+
+  h1 {
+    margin-bottom: 0;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1.05;
+  }
+
+  /* Native number spinners can't be themed; keyboard arrows and typing remain. */
+  input[type="number"] {
+    appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+
+  h3 {
+    margin-bottom: 4px;
+    font-size: 1rem;
+  }
+}

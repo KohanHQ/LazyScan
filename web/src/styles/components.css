@@ -1,82 +1,10 @@
-:root {
-  color: var(--text);
-  background: var(--bg);
-  /* "Inter Variable" is the family name @fontsource-variable/inter declares;
-     bare Inter stays ahead of the system stack for locally-installed copies. */
-  font-family:
-    "Inter Variable", Inter, ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-synthesis: none;
-  line-height: 1.5;
-  text-rendering: optimizelegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Handrolled component styles left after the Tailwind migration (Stage 6: the
+   remainder of base.css, moved verbatim). Unlayered on purpose — unlayered CSS
+   outranks every layer, which is what keeps these rules winning over the
+   utilities that share their elements. */
 
-  /* Design tokens. Surfaces — cold graphite, hue 220° sat 8% (de-blued slate,
-     faint blue tint). */
-  --bg: #17181b;
-  --surface: #1e2024;
-  --surface-raised: #26282c;
-  --surface-accent: #222b2a;
-  /* Backdrop behind cover art and its letter placeholders. */
-  --cover-bg: #24322d;
-
-  /* Text */
-  --text: #e8e4dd;
-  /* Cream foreground for light-on-dark panels and cover placeholders. */
-  --text-bright: #f5f2ec;
-  /* text-secondary/-muted clear WCAG 4.5:1 on both dark surfaces; hue kept.
-     Tunable one-liners if too bright. */
-  --text-secondary: #a29a8c;
-  --text-muted: #9a927f;
-  --text-label: #b8b2a8;
-  --text-on-accent: #ffffff;
-
-  /* Accent */
-  --accent: #24594e;
-  --accent-hover: #1d4b41;
-  --accent-fg: #2dd4a8;
-
-  /* Borders */
-  --border: #31343a;
-  --border-strong: #3d4148;
-  --border-overlay: rgba(255, 255, 255, 0.12);
-
-  /* Danger */
-  --danger: #f87171;
-  --danger-fg: #e0a99d;
-  --danger-border: #6b2a1f;
-  --danger-surface: #2a1510;
-
-  /* Status */
-  --status-ok-bg: #13352c;
-  --status-warn-bg: #3a2e16;
-  --status-warn-fg: #e0b65c;
-  --status-info-bg: #18293f;
-  --status-info-fg: #7db1ec;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
-}
-
-button,
-input {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
+/* Stays unlayered (not in reset.css): in @layer base, shadcn's
+   disabled:opacity-50 and utility cursors would take over on disabled buttons. */
 button:disabled {
   cursor: not-allowed;
   opacity: 0.65;
@@ -135,38 +63,11 @@ button:disabled {
   text-transform: uppercase;
 }
 
-h1,
-h2,
-h3,
-p {
-  margin-top: 0;
-}
-
-h1 {
-  margin-bottom: 0;
-  font-size: clamp(2rem, 5vw, 3.2rem);
-  line-height: 1.05;
-}
-
-/* Native number spinners can't be themed; keyboard arrows and typing remain. */
-input[type="number"] {
-  appearance: textfield;
-}
-
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  appearance: none;
-  margin: 0;
-}
-
+/* Stays unlayered (not in reset.css): in @layer base, shadcn DialogTitle's
+   text-lg would beat this font-size on every dialog heading. */
 h2 {
   margin-bottom: 0;
   font-size: 1.35rem;
-}
-
-h3 {
-  margin-bottom: 4px;
-  font-size: 1rem;
 }
 
 .heading-meta {
@@ -378,7 +279,6 @@ h3 {
   min-height: 320px;
 }
 
-/* Tag chips on the manga detail page, between the facts and the description. */
 /* Unlayered `h3 { margin-bottom: 4px }` outranks any utility, so this stays a
    rule; .chapter-row survives on the row purely as its hook. */
 .chapter-row h3 {
@@ -1785,8 +1685,7 @@ img.user-avatar {
 }
 
 /* Settings (owner/superuser operations page). Panels reuse .manage-panel; these
-   rules only style the stat grid and the import-health rows. `--*` tokens are
-   dark-theme only, so every var() carries a light fallback. */
+   rules only style the stat grid and the import-health rows. */
 .settings-heading {
   margin: 0 0 4px;
   font-size: 1.05rem;

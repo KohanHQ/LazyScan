@@ -7,7 +7,7 @@ export function statusLabel(status: MangaStatus): string {
   return status.replace(/^\w/, (letter) => letter.toUpperCase());
 }
 
-// Pill background only. The per-status foreground colours base.css declared were
+// Pill background only. The per-status foreground colours components.css declared were
 // always dead — a broader muted-span rule outranked them — so the text stays muted.
 const STATUS_BG: Record<MangaStatus, string> = {
   ongoing: "bg-status-ok-bg",

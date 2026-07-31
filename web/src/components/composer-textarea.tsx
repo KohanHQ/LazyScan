@@ -50,7 +50,7 @@ export function ComposerTextarea({
 
   return (
     <div className="composer-shell rounded-md border border-border-strong bg-surface-raised">
-      {/* .composer-input stays a base.css class: the two-class
+      {/* .composer-input stays a components.css class: the two-class
           `.composer-shell .composer-input` rule is what outranks
           `.manage-form textarea` on the profile bio field. */}
       <textarea

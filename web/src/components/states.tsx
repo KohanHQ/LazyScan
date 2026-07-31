@@ -50,14 +50,14 @@ export function ErrorState({ message }: { message: string }): ReactElement {
 }
 
 // Card-grid loading placeholder: cover + title blocks with a shimmer sweep
-// (base.css). Mirrors .manga-grid's layout so the swap doesn't shift the page;
+// (components.css). Mirrors .manga-grid's layout so the swap doesn't shift the page;
 // the grid class carries the delayed reveal so fast fetches never flash it.
 export function CardGridSkeleton({
   count = 10,
 }: {
   count?: number;
 }): ReactElement {
-  // .skeleton-block stays as the hook for the shimmer ::after sweep in base.css.
+  // .skeleton-block stays as the hook for the shimmer ::after sweep in components.css.
   const block = "skeleton-block relative overflow-hidden bg-surface-raised";
   return (
     <section

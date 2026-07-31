@@ -60,7 +60,7 @@ type htmlBodyData struct {
 // htmlBodyTemplate is the HTML alternative part: table layout and inline
 // styles only (the subset email clients reliably render), no remote images or
 // fonts — rendering needs no network and leaks nothing to third parties.
-// Palette mirrors the LazyScan web app (web/src/styles/base.css).
+// Palette mirrors the LazyScan web app (web/src/styles/tokens.css).
 var htmlBodyTemplate = template.Must(template.New("otp").Parse(`<!DOCTYPE html>
 <html>
 <head>

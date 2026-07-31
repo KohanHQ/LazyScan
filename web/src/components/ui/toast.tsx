@@ -74,8 +74,8 @@ function ToastProvider({ children }: { children: React.ReactNode }) {
                   : "border-accent-fg/40 bg-surface-raised text-accent-fg"
               )}
             >
-              {/* base.css's unlayered `button { font: inherit }` beats any font
-                  utility on the button itself, so the type scale lives here. */}
+              {/* Was forced here by the unlayered `button { font: inherit }`;
+                  reset.css layers it since Stage 6, but the span stays (parity). */}
               <span className="text-sm font-medium">{toast.message}</span>
             </button>
           </div>

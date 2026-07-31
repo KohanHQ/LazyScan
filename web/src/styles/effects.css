@@ -1,12 +1,18 @@
-/* Motion and choreography extracted from base.css (Tailwind migration Stage 5).
-   Utilities express box-model, colour and typography; keyframes do not, so they
-   live here instead. Moved verbatim — no rule was rewritten.
+/* Motion and choreography extracted from the old base.css (Tailwind migration
+   Stage 5; base.css became tokens/reset/components.css at Stage 6). Utilities
+   express box-model, colour and typography; keyframes do not, so they live here
+   instead. Moved verbatim — no rule was rewritten.
 
    @keyframes are name-scoped and cascade-order-independent, which is why they
-   can be lifted out of base.css without changing a single computed style. Rules
-   that merely *reference* these animations stay in base.css for now: two of them
-   (.state-loading-dots span, .skeleton-block::after) are overridden by a later
-   reduced-motion block, so moving them would reorder a real conflict. */
+   could be lifted out without changing a single computed style. Rules that
+   merely *reference* these animations stay in components.css: two of them
+   (.state-loading-dots span, .skeleton-block::after) are overridden by the
+   reduced-motion block below, so moving them would reorder a real conflict.
+
+   THIS FILE MUST BE IMPORTED LAST — after components.css. Those two overrides
+   tie on specificity with the rules they override, so only document order
+   decides them, and nothing fails at build time if the order breaks.
+   styles/index.css owns that order (F-071). */
 
 @keyframes button-spin {
   to {
@@ -100,7 +106,7 @@
 
 
 
-/* --- Pass B: motion overrides lifted out of base.css -------------------------
+/* --- Pass B: motion overrides lifted out of the base stylesheet --------------
    Only rules whose every declaration is choreography moved; anything also
    carrying box-model or colour stayed put, since splitting it would be a
    rewrite rather than a move.

@@ -36,7 +36,7 @@ const PAGE_SIZE = 50;
 const HERO_SIZE = 10;
 const HERO_INTERVAL_MS = 6000;
 const RAIL_SIZE = 10;
-// Floor for one carousel step (card 132px + the copy's 14px gap, base.css). The
+// Floor for one carousel step (card 132px + the copy's 14px gap, components.css). The
 // live stride widens to fit 6 whole cards in the container; this is the minimum.
 const RAIL_STRIDE_PX = 146;
 const RAIL_GAP_PX = 14;
@@ -208,7 +208,7 @@ export function HomePage(): ReactElement {
 
 // Horizontal card rail (e.g. "Recently updated"). Renders nothing when there are
 // no cards, so an empty feed leaves no gap between the hero and the library.
-// Rails fade + rise into view on scroll (.rail-reveal in base.css); without
+// Rails fade + rise into view on scroll (.rail-reveal in components.css); without
 // IntersectionObserver or under reduced motion they render visible outright.
 // `carousel` opts a rail into the infinite auto-stepping variant: one card
 // stride every few seconds with a slide transition, wrapping silently at the

@@ -1,6 +1,7 @@
-/* Tailwind entry. Preflight is deliberately NOT imported: base.css is the app's
-   unlayered global stylesheet, and preflight's reset would fight it on every
-   element. base.css already carries the reset that matters here. */
+/* Tailwind entry, pulled in first by index.css. Preflight is deliberately NOT
+   imported: components.css is the app's unlayered global stylesheet, and
+   preflight's reset would fight it on every element. reset.css already carries
+   the reset that matters here. */
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
@@ -9,9 +10,9 @@
    apply. Without this they would fall back to prefers-color-scheme. */
 @custom-variant dark (&);
 
-/* Bridges the base.css token layer into Tailwind. `inline` makes utilities emit
+/* Bridges the tokens.css token layer into Tailwind. `inline` makes utilities emit
    var(--bg) directly rather than freezing a snapshot of it at :root — without it
-   the dark theme cannot repoint them. Names map 1:1 onto base.css on purpose;
+   the dark theme cannot repoint them. Names map 1:1 onto tokens.css on purpose;
    the text-text-* stutter is the cost, and shadcn's aliases supersede it. */
 @theme inline {
   /* Surfaces */
@@ -51,7 +52,7 @@
   --color-status-info-bg: var(--status-info-bg);
   --color-status-info-fg: var(--status-info-fg);
 
-  /* shadcn semantic aliases → same base.css tokens. shadcn's `accent` means
+  /* shadcn semantic aliases → same tokens.css tokens. shadcn's `accent` means
      hover wash, not brand — brand green lives at `primary`. */
   --color-background: var(--bg);
   --color-foreground: var(--text);

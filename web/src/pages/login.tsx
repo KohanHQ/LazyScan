@@ -15,7 +15,7 @@ type AuthMode = "login" | "register";
 const RESEND_COOLDOWN_SECONDS = 60;
 
 // Shared across the four auth views so every screen stays byte-identical.
-// The auth-screen/auth-panel shell keeps its base.css classes: the mount fade,
+// The auth-screen/auth-panel shell keeps its components.css classes: the mount fade,
 // the 767px block and the panel's color-mix background can't be utilities.
 const ART =
   "pointer-events-none absolute inset-y-0 right-0 h-full w-auto object-contain object-right select-none [@media(max-width:767px)]:opacity-40";
