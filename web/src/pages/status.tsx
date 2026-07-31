@@ -57,8 +57,10 @@ function StatusContent(): ReactElement {
   return (
     <>
       <PageHeading title="Tracking" />
-      <div className="library-tabs" role="tablist">
+      <div className="mb-5 flex gap-2 border-b border-b-border-strong" role="tablist">
         {TABS.map((entry) => (
+          // .library-tab stays: unlayered `button { font: inherit }` beats font
+          // utilities, and `border: none` + a 2px bottom edge is not expressible.
           <button
             key={entry.key}
             className={`library-tab${entry.key === tab ? " is-active" : ""}`}
@@ -83,8 +85,13 @@ function StatusContent(): ReactElement {
             icon={<Inbox className="icon" size={20} />}
           />
         ) : (
-          <section className="manga-grid" aria-label={label}>
+          <section
+            className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4.5"
+            aria-label={label}
+          >
             {entries.map((entry) => (
+              // .library-card stays: it is the hook for `.library-card > .manga-card`,
+              // which stretches a card this page cannot add a class to.
               <div className="library-card" key={entry.manga.id}>
                 <MangaCard manga={entry.manga} />
                 <RemoveButton mangaId={entry.manga.id} onRemoved={reload} />
@@ -109,6 +116,8 @@ function RemoveButton(props: {
   // A failed remove toasts and re-enables the button, so it doubles as the retry
   // control (success reloads the tab, unmounting this).
   return (
+    // .library-remove stays: unlayered `button { font: inherit }` beats the font
+    // utilities, and `button:disabled` beats the disabled: ones (.65 vs .6).
     <button
       className="library-remove"
       type="button"
