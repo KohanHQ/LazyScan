@@ -6,9 +6,6 @@ import "@/styles/reader.css";
 import { createRoot } from "react-dom/client";
 import { App } from "@/app";
 import { ToastProvider } from "@/components/ui/toast";
-import { initTheme } from "@/state/theme";
-
-initTheme();
 
 const root = document.querySelector("#app");
 

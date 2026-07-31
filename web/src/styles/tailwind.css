@@ -5,9 +5,9 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 
-/* The app flips themes with a data-theme attribute on <html> (state/theme.ts),
-   not shadcn's default .dark class. */
-@custom-variant dark (&:where([data-theme="dark"] *));
+/* Dark-only app: shadcn components carry `dark:` utilities and they must always
+   apply. Without this they would fall back to prefers-color-scheme. */
+@custom-variant dark (&);
 
 /* Bridges the base.css token layer into Tailwind. `inline` makes utilities emit
    var(--bg) directly rather than freezing a snapshot of it at :root — without it

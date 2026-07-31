@@ -12,44 +12,44 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Design tokens. Each is a (light, dark) pair — see [data-theme="dark"].
-     Light collapses roles dark splits (one green served five dark accents), so a
-     token is keyed on the pair, never on either side alone. */
-  /* Surfaces */
-  --bg: #f5f2ec;
-  --surface: #fffaf2;
-  --surface-raised: #f9f6ee;
-  --surface-accent: #edf7f2;
+  /* Design tokens. Surfaces — cold graphite, hue 220° sat 8% (de-blued slate,
+     faint blue tint). */
+  --bg: #17181b;
+  --surface: #1e2024;
+  --surface-raised: #26282c;
+  --surface-accent: #222b2a;
 
   /* Text */
-  --text: #17201b;
-  --text-secondary: #66746d;
-  --text-muted: #6a6258;
-  --text-label: #43524a;
+  --text: #e8e4dd;
+  /* text-secondary/-muted clear WCAG 4.5:1 on both dark surfaces; hue kept.
+     Tunable one-liners if too bright. */
+  --text-secondary: #a29a8c;
+  --text-muted: #9a927f;
+  --text-label: #b8b2a8;
   --text-on-accent: #ffffff;
 
   /* Accent */
-  --accent: #0f6f5c;
-  --accent-hover: #0a5a4a;
-  --accent-fg: #0f6f5c;
+  --accent: #24594e;
+  --accent-hover: #1d4b41;
+  --accent-fg: #2dd4a8;
 
   /* Borders */
-  --border: #ded8ce;
-  --border-strong: #c9d2cd;
-  --border-overlay: #ded8ce;
+  --border: #31343a;
+  --border-strong: #3d4148;
+  --border-overlay: rgba(255, 255, 255, 0.12);
 
   /* Danger */
-  --danger: #b3473a;
-  --danger-fg: #9b2f1f;
-  --danger-border: #e1b4aa;
-  --danger-surface: #fff5f2;
+  --danger: #f87171;
+  --danger-fg: #e0a99d;
+  --danger-border: #6b2a1f;
+  --danger-surface: #2a1510;
 
   /* Status */
-  --status-ok-bg: #e3f3ee;
-  --status-warn-bg: #fbeede;
-  --status-warn-fg: #9a6b16;
-  --status-info-bg: #e4edf7;
-  --status-info-fg: #2b5c9b;
+  --status-ok-bg: #13352c;
+  --status-warn-bg: #3a2e16;
+  --status-warn-fg: #e0b65c;
+  --status-info-bg: #18293f;
+  --status-info-fg: #7db1ec;
 }
 
 * {
@@ -60,6 +60,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
 }
 
 button,
@@ -80,17 +82,6 @@ button:disabled {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-}
-
-.top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  min-height: 64px;
-  padding: 0 28px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
 }
 
 .brand-button,
@@ -546,10 +537,18 @@ h3 {
 }
 
 .manga-card-body p,
-.manga-card-body span,
 .chapter-row p,
-.chapter-row span,
-.description,
+.description {
+  color: var(--text-secondary);
+}
+
+/* Kept at two classes so it still outranks the per-status `.manga-card-body
+   .status-badge-*` colors below — card badge text renders muted, pill only. */
+.manga-card .manga-card-body span,
+.chapter-row span {
+  color: var(--text-muted);
+}
+
 .detail-facts {
   color: #66746d;
 }
@@ -559,8 +558,8 @@ h3 {
   margin-bottom: 8px;
 }
 
-/* Status pill on cards. Scoped under .manga-card-body to outrank the generic
-   `.manga-card-body span` muted rule. */
+/* Status pill on cards. The per-status `color` below is inert — the muted span
+   rule above outranks it; only the pill background varies. */
 .manga-card-body .status-badge {
   display: inline-block;
   margin-bottom: 10px;
@@ -694,7 +693,7 @@ h3 {
 }
 
 .chapter-row-read {
-  opacity: 0.7;
+  opacity: 0.55;
 }
 
 .chapter-row-read h3 {
@@ -798,6 +797,7 @@ h3 {
   width: 100%;
   height: 100%;
   place-items: center;
+  background: var(--surface-raised);
   color: #f5f2ec;
   font-size: 1.4rem;
   font-weight: 900;
@@ -1059,7 +1059,7 @@ img.user-avatar {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 100;
   padding: 8px 0;
 }
@@ -1108,144 +1108,12 @@ img.user-avatar {
   background: var(--danger-surface);
 }
 
-/* Dark palette. Light values + rationale live on :root. */
-[data-theme="dark"] {
-  /* Surfaces — cold graphite, hue 220° sat 8% (de-blued slate, faint blue tint) */
-  --bg: #17181b;
-  --surface: #1e2024;
-  --surface-raised: #26282c;
-  --surface-accent: #222b2a;
-
-  /* Text */
-  --text: #e8e4dd;
-  /* Bumped from #8a8278/#6a6258 (4.2:1 / 2.7:1 on --surface) to clear WCAG 4.5:1
-     on both dark surfaces; hue kept. Tunable one-liners if too bright. */
-  --text-secondary: #a29a8c;
-  --text-muted: #9a927f;
-  --text-label: #b8b2a8;
-  --text-on-accent: #ffffff;
-
-  /* Accent */
-  --accent: #24594e;
-  --accent-hover: #1d4b41;
-  --accent-fg: #2dd4a8;
-
-  /* Borders */
-  --border: #31343a;
-  --border-strong: #3d4148;
-  --border-overlay: rgba(255, 255, 255, 0.12);
-
-  /* Danger */
-  --danger: #f87171;
-  --danger-fg: #e0a99d;
-  --danger-border: #6b2a1f;
-  --danger-surface: #2a1510;
-
-  /* Status */
-  --status-ok-bg: #13352c;
-  --status-warn-bg: #3a2e16;
-  --status-warn-fg: #e0b65c;
-  --status-info-bg: #18293f;
-  --status-info-fg: #7db1ec;
-}
-
-/* Alt dark palette: original neutral gray. Uncomment (and comment the blue
-   block above) to reuse. */
-/*
-[data-theme="dark"] {
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #222;
-  --bg-tertiary: #2a2a2a;
-  --bg-card: #252525;
-  --border: #3a3a3a;
-  --text-primary: #e8e4dd;
-  --text-secondary: #8a8278;
-  --text-muted: #6a6258;
-  --accent: #0f6f5c;
-  --accent-hover: #0a5a4a;
-}
-*/
-
-/* Theme crossfade: active only for ~260ms while toggleTheme() flips the
-   attribute (state/theme.ts), so the universal selector's repaint cost is
-   bounded to the switch and there's no color sweep on initial load. */
-@media (prefers-reduced-motion: no-preference) {
-  [data-theme-transition] * {
-    transition:
-      background-color 0.25s ease,
-      border-color 0.25s ease,
-      color 0.25s ease;
-  }
-
-  /* Structural chrome snaps its background/border instantly during the flip (only
-     text crossfades), so the layout's full-width/centred surfaces don't reveal
-     their seams mid-crossfade. The hero is included because its blend uses a CSS
-     var that snaps anyway — snapping the body too keeps them aligned. Content
-     (cards, badges) still crossfades via the universal rule above. */
-  [data-theme-transition] body,
-  [data-theme-transition] .app-topbar,
-  [data-theme-transition] .app-sidebar,
-  [data-theme-transition] .app-main,
-  [data-theme-transition] .hero,
-  [data-theme-transition] .hero-fade {
-    transition: color 0.25s ease;
-  }
-}
-
-[data-theme="dark"] body {
-  background: var(--bg);
-  color: var(--text);
-}
-
-[data-theme="dark"] .top-bar {
-  border-color: var(--border);
-  
-}
-
-[data-theme="dark"] .chapter-row-read {
-  opacity: 0.55;
-}
-
-[data-theme="dark"] .manga-card-body p,
-[data-theme="dark"] .chapter-row p {
-  color: var(--text-secondary);
-}
-
-[data-theme="dark"] .manga-card-body span,
-[data-theme="dark"] .chapter-row span {
-  color: var(--text-muted);
-}
-
-[data-theme="dark"] .description {
-  color: var(--text-secondary);
-}
-
-[data-theme="dark"] .user-dropdown {
-  
-  
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="dark"] .user-dropdown-identity {
-  border-color: var(--border);
-}
-
-[data-theme="dark"] .history-cover-placeholder {
-  background: var(--surface-raised);
-}
-
 @media (max-width: 720px) {
-  .top-bar,
   .page-heading,
   .section-heading,
   .chapter-row {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .top-bar {
-    gap: 10px;
-    padding: 14px 16px;
   }
 
   .top-nav {
@@ -1533,13 +1401,6 @@ img.user-avatar {
   justify-content: center;
   overflow: hidden;
   padding: 24px clamp(24px, 8vw, 120px);
-  /* Light theme: cream gradient matching the app's light backdrop (#f5f2ec). */
-  background: linear-gradient(90deg, #f5f2ec 0%, #edf7f2 100%);
-}
-
-/* Dark theme: gradient across the dark base palette (token-driven, follows the
-   palette automatically). */
-[data-theme="dark"] .auth-screen {
   background: linear-gradient(90deg, var(--bg) 0%, var(--surface) 100%);
 }
 
@@ -1578,16 +1439,10 @@ img.user-avatar {
   z-index: 1;
   width: min(420px, 100%);
   margin: 0;
-  background: rgba(255, 250, 242, 0.8);
-  border: 1px solid var(--border-overlay);
-  color: #17201b;
-  backdrop-filter: blur(10px);
-}
-
-[data-theme="dark"] .auth-screen .auth-panel {
   background: color-mix(in srgb, var(--surface) 82%, transparent);
-
+  border: 1px solid var(--border-overlay);
   color: #f5f2ec;
+  backdrop-filter: blur(10px);
 }
 
 .auth-screen .eyebrow {
@@ -1595,12 +1450,8 @@ img.user-avatar {
 }
 
 .auth-screen .auth-panel h1 {
-  color: #17201b;
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
-}
-
-[data-theme="dark"] .auth-screen .auth-panel h1 {
   color: #ffffff;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
 }
 
 .auth-screen .auth-form label {
@@ -1643,8 +1494,7 @@ img.user-avatar {
   height: 18px;
 }
 
-/* Light theme inputs inherit the global .auth-form input (white field). */
-[data-theme="dark"] .auth-screen .auth-form input {
+.auth-screen .auth-form input {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.18);
   color: #f5f2ec;
@@ -1652,43 +1502,6 @@ img.user-avatar {
 
 .auth-screen .auth-switch {
   color: var(--text-secondary);
-}
-
-/* On-screen theme toggle: app chrome is hidden on auth pages, so the login
-   screen carries its own sun/moon flip. */
-.auth-theme-toggle {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 1px solid var(--border-overlay);
-  border-radius: 8px;
-  background: rgba(255, 250, 242, 0.9);
-  color: #17201b;
-  cursor: pointer;
-}
-
-.auth-theme-toggle:hover,
-.auth-theme-toggle:focus-visible {
-  border-color: var(--accent-fg);
-  color: var(--accent-fg);
-}
-
-.auth-theme-toggle .icon {
-  width: 20px;
-  height: 20px;
-}
-
-[data-theme="dark"] .auth-theme-toggle {
-
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
-  color: #f5f2ec;
 }
 
 @media (max-width: 767px) {
@@ -2524,21 +2337,14 @@ img.user-avatar {
 .library-filter-tag:hover,
 .library-filter-tag:focus-visible {
   border-color: var(--accent-fg);
+  background: var(--surface-raised);
   color: var(--accent-fg);
 }
 
 .library-filter-tag.is-active {
   border-color: var(--accent-fg);
-  background: var(--surface-accent);
-  color: var(--accent-fg);
-}
-
-[data-theme="dark"] .library-filter-tag:hover,
-[data-theme="dark"] .library-filter-tag:focus-visible,
-[data-theme="dark"] .library-filter-tag.is-active {
-  
   background: var(--surface-raised);
-  
+  color: var(--accent-fg);
 }
 
 .library-empty {
@@ -2584,7 +2390,7 @@ img.user-avatar {
 .library-advanced-btn.is-active {
   background: var(--accent-fg);
   border-color: var(--accent-fg);
-  color: #fff;
+  color: #111;
 }
 
 /* Drop the advanced panel as an absolute dropdown below the search row (scope the
@@ -2603,7 +2409,7 @@ img.user-avatar {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .library-advanced-panel[hidden] {
@@ -2673,7 +2479,7 @@ img.user-avatar {
   border: 1px solid var(--accent-fg);
   border-radius: 6px;
   background: var(--accent-fg);
-  color: #fff;
+  color: #111;
   font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
@@ -2682,24 +2488,6 @@ img.user-avatar {
 .library-advanced-submit:hover,
 .library-advanced-submit:focus-visible {
   background: var(--accent-fg);
-}
-
-[data-theme="dark"] .library-advanced-btn.is-active {
-  
-  
-  color: #111;
-}
-
-[data-theme="dark"] .library-advanced-panel {
-  
-  
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="dark"] .library-advanced-submit {
-  
-  
-  color: #111;
 }
 
 /* In-app dialogs (confirm/alert) */
@@ -2799,7 +2587,7 @@ img.user-avatar {
   padding: 4px 10px;
   border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background: rgba(249, 246, 238, 0.92);
+  background: rgba(37, 37, 37, 0.92);
   color: var(--text);
   font-size: 0.78rem;
   font-weight: 800;
@@ -2974,18 +2762,6 @@ img.user-avatar {
 .detail-status-select:disabled {
   opacity: 0.65;
   cursor: not-allowed;
-}
-
-[data-theme="dark"] .library-remove {
-  background: rgba(37, 37, 37, 0.92);
-  
-  
-}
-
-[data-theme="dark"] .detail-action.is-active {
-  
-  
-  color: #ffffff;
 }
 
 /* Home popularity hero. Always-dark island, light-on-dark in both themes: the
