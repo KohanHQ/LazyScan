@@ -5,9 +5,37 @@ import type { ReaderDirection } from "./fixture";
 const M = FIXTURE.mangaWithChapters;
 const C = FIXTURE.chapter;
 
-// reducedMotion covers the JS-gated motion (hero rotator, carousel autoplay,
-// rail reveal, boot scramble, route fade) because each of those reads the media
-// query itself. These are the CSS-only leftovers it does not reach.
+// The autoplay timers (home hero rotator, fresh-chapters carousel) are the one
+// source of nondeterminism the rest of this file does not cover, and they cost
+// an intermittent `home` failure (31-07-2026): both had stepped exactly one
+// position before the shot.
+//
+// Note what does NOT fix it. The config sets `reducedMotion: 'reduce'` and the
+// app gates both timers on that query — but the committed baselines render the
+// carousel's *motion* path (six cards = two titles x three copies; the
+// reduced-motion fallback is a plain static rail). So that emulation is not
+// reaching the app's matchMedia, and forcing the query true instead switches
+// the code path and invalidates every home baseline. Verified: it fails 12/12.
+//
+// Dropping the autoplay intervals keeps the exact rendered path and only stops
+// it from advancing. Both are seconds-scale (carousel 3500ms, hero 6000ms), so
+// the threshold separates them from frame-scale timers that must keep running —
+// notably the boot-splash scramble at 40ms, whose detach is settle()'s "shell is
+// live" signal. Blanket-disabling setInterval hangs every shot on that wait.
+// setTimeout is untouched: React commit/paint and the cover fade depend on it.
+const FREEZE_AUTOPLAY = (): void => {
+  const native = window.setInterval;
+  window.setInterval = ((handler: TimerHandler, timeout?: number, ...rest: unknown[]) =>
+    (timeout ?? 0) >= 1000
+      ? 0
+      : (native as (h: TimerHandler, t?: number, ...a: unknown[]) => number)(
+          handler,
+          timeout,
+          ...rest
+        )) as typeof window.setInterval;
+};
+
+// CSS-only leftovers that the reduced-motion guard does not reach.
 const KILL_MOTION = `
   .boot-splash,
   .hero-slide,
@@ -29,6 +57,7 @@ const KILL_MOTION = `
 `;
 
 test.beforeEach(async ({ page }) => {
+  await page.addInitScript(FREEZE_AUTOPLAY);
   // Screenshots are read-only by definition, but the reader autosaves progress
   // and marks chapters read. Writes are answered with a generic success envelope
   // rather than aborted: the fixture stays untouched for the shots that follow,
@@ -65,6 +94,41 @@ async function settle(page: Page): Promise<void> {
     return [...document.images].every((img) => img.complete);
   });
   await page.evaluate(() => window.scrollTo(0, 0));
+  await assertMotionPinned(page);
+}
+
+// Tripwire for the failure FREEZE_AUTOPLAY prevents: a rotated hero or a stepped
+// carousel produces a screenshot that differs by a whole card, which reads as a
+// mystery diff. Fail here instead, naming the cause. No-ops on pages that have
+// neither element.
+async function assertMotionPinned(page: Page): Promise<void> {
+  const state = await page.evaluate(() => {
+    const slides = [...document.querySelectorAll(".hero-slide")];
+    const track = document.querySelector(".rail-carousel-track");
+    return {
+      slideCount: slides.length,
+      activeIndex: slides.findIndex((s) => s.classList.contains("is-active")),
+      trackTransform: track ? getComputedStyle(track).transform : null,
+    };
+  });
+  if (state.slideCount > 0 && state.activeIndex > 0) {
+    throw new Error(
+      `hero rotator advanced to slide ${state.activeIndex} before the shot — ` +
+        "autoplay was not frozen"
+    );
+  }
+  // An untranslated track is `none` or the identity matrix; anything else means
+  // the carousel stepped.
+  if (
+    state.trackTransform !== null &&
+    state.trackTransform !== "none" &&
+    state.trackTransform !== "matrix(1, 0, 0, 1, 0, 0)"
+  ) {
+    throw new Error(
+      `carousel track translated (${state.trackTransform}) before the shot — ` +
+        "autoplay was not frozen"
+    );
+  }
 }
 
 async function shot(
