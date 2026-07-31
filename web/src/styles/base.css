@@ -234,10 +234,6 @@ h3 {
 }
 
 /* Silent wrap reset: the jump back to position 0 must not animate. */
-.rail-carousel-track.is-instant {
-  transition: none;
-}
-
 /* Copy and track widths come inline from stride arithmetic (home.tsx), not
    max-content: Gecko mis-measures nested-flex max-content and breaks the wrap. */
 .rail-carousel-copy {
@@ -245,12 +241,6 @@ h3 {
   flex: 0 0 auto;
   gap: 14px;
   padding-right: 14px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rail-carousel-track {
-    transition: none;
-  }
 }
 
 .rail-card {
@@ -1266,12 +1256,6 @@ img.user-avatar {
   transition-delay: 0s;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .library-filter-pop {
-    transition: none;
-  }
-}
-
 .library-filter-option {
   display: block;
   width: 100%;
@@ -1758,12 +1742,6 @@ img.user-avatar {
 
 /* Slow drift on the active slide's backdrop (Ken Burns). Replays whenever a
    slide gains .is-active; the static scale(1.1) above is the rest state. */
-@media (prefers-reduced-motion: no-preference) {
-  .hero-slide.is-active .hero-bg {
-    animation: hero-kenburns 8s ease-out forwards;
-  }
-}
-
 .hero-fade {
   position: absolute;
   inset: 0;
@@ -1882,12 +1860,6 @@ img.user-avatar {
 .hero-slide:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -3px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-slide {
-    transition: none;
-  }
 }
 
 @media (max-width: 640px) {
@@ -2271,12 +2243,6 @@ img.cover-fade.is-loaded {
   opacity: 1;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  img.cover-fade {
-    transition: none;
-  }
-}
-
 /* Skeleton placeholders for card grids (states.tsx CardGridSkeleton). Same
    delayed reveal as .state-loading so fast fetches never flash it. */
 .skeleton-grid {
@@ -2295,16 +2261,6 @@ img.cover-fade.is-loaded {
     transparent 70%
   );
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .skeleton-block::after {
-    animation: none;
-  }
-
-  .state-loading-dots span {
-    animation: none;
-  }
 }
 
 /* Home rails fade + rise into view; the Rail component adds .is-visible from

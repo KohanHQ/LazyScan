@@ -97,3 +97,53 @@
     transform: translateX(100%);
   }
 }
+
+
+
+/* --- Pass B: motion overrides lifted out of base.css -------------------------
+   Only rules whose every declaration is choreography moved; anything also
+   carrying box-model or colour stayed put, since splitting it would be a
+   rewrite rather than a move.
+
+   `.rail-cover img, .manga-cover img { transition: transform }` deliberately
+   did NOT move. It ties on specificity (0,1,1) with `img.cover-fade
+   { transition: opacity }`, and a cover inside a rail matches both, so the
+   winner is decided purely by document order. Moving it here would flip that
+   and replace the cover fade-in with a transform transition — invisible to the
+   screenshot gate, which disables transitions. */
+
+.rail-carousel-track.is-instant {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-slide.is-active .hero-bg {
+    animation: hero-kenburns 8s ease-out forwards;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-carousel-track {
+    transition: none;
+  }
+
+  .library-filter-pop {
+    transition: none;
+  }
+
+  .hero-slide {
+    transition: none;
+  }
+
+  img.cover-fade {
+    transition: none;
+  }
+
+  .skeleton-block::after {
+    animation: none;
+  }
+
+  .state-loading-dots span {
+    animation: none;
+  }
+}
