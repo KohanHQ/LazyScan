@@ -160,7 +160,7 @@ export function ForumCategoryPage({ slug }: { slug: string }): ReactElement {
           <NewThreadForm slug={slug} />
         ) : null
       ) : (
-        <p className="comment-login">Log in to start a thread.</p>
+        <p className="mb-5 text-[0.9rem] text-text-secondary">Log in to start a thread.</p>
       )}
 
       {threads.length === 0 ? (
@@ -266,10 +266,8 @@ function NewThreadForm({ slug }: { slug: string }): ReactElement {
   };
 
   return (
-    // .comment-form stays: the comment-* family converts with comments.tsx and
-    // forum-thread.tsx as one unit (plan sequencing rule 1).
     <form
-      className="comment-form mt-5"
+      className="mb-5 mt-5 grid gap-2.5"
       onSubmit={(event) => {
         event.preventDefault();
         submit();
@@ -305,7 +303,7 @@ function NewThreadForm({ slug }: { slug: string }): ReactElement {
           </button>
         }
       />
-      {error !== null ? <p className="comment-error">{error}</p> : null}
+      {error !== null ? <p className="m-0 text-[0.85rem] text-danger-fg">{error}</p> : null}
     </form>
   );
 }

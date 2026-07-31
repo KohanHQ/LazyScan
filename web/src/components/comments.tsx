@@ -138,7 +138,7 @@ export function Comments({ mangaId }: { mangaId: string }): ReactElement {
       {currentUserId ? (
         <CommentForm mangaId={mangaId} onCreated={onCreated} />
       ) : (
-        <p className="comment-login">Log in to comment.</p>
+        <p className="mb-5 text-[0.9rem] text-text-secondary">Log in to comment.</p>
       )}
 
       {error !== null ? (
@@ -155,7 +155,7 @@ export function Comments({ mangaId }: { mangaId: string }): ReactElement {
         />
       ) : (
         <>
-          <ol className="comment-list">
+          <ol className="m-0 mb-2 grid list-none gap-2.5 p-0">
             {comments.map((comment) => (
               <CommentRow
                 key={comment.id}
@@ -217,7 +217,7 @@ function CommentForm({
 
   return (
     <form
-      className="comment-form"
+      className="mb-5 grid gap-2.5"
       onSubmit={(event) => {
         event.preventDefault();
         submit();
@@ -242,7 +242,7 @@ function CommentForm({
           </button>
         }
       />
-      {error !== null ? <p className="comment-error">{error}</p> : null}
+      {error !== null ? <p className="m-0 text-[0.85rem] text-danger-fg">{error}</p> : null}
     </form>
   );
 }
@@ -307,9 +307,9 @@ function CommentRow({
   const edited = comment.updatedAt !== comment.createdAt;
 
   return (
-    <li className="comment-row">
-      <div className="comment-meta">
-        <span className="comment-avatar" aria-hidden="true">
+    <li className="grid gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-3">
+      <div className="flex items-center gap-2">
+        <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded-[50%] bg-surface-accent" aria-hidden="true">
           <Cover
             url={resolveAvatar(comment.authorAvatar, comment.authorName)}
             seed={comment.authorName}
@@ -317,8 +317,8 @@ function CommentRow({
             imgClassName="user-avatar"
           />
         </span>
-        <span className="comment-author">{comment.authorName}</span>
-        <span className="comment-date">
+        <span className="text-[0.9rem] font-semibold text-text">{comment.authorName}</span>
+        <span className="ml-auto text-[0.8rem] text-text-secondary">
           {formatDate(comment.createdAt)}
           {edited ? " · edited" : ""}
         </span>
@@ -333,7 +333,7 @@ function CommentRow({
             disabled={busy}
             onChange={setDraft}
           />
-          <div className="comment-actions">
+          <div className="flex items-center gap-2">
             <button
               className="primary-button"
               type="button"
@@ -358,9 +358,9 @@ function CommentRow({
         </>
       ) : (
         <>
-          <p className="comment-body">{linkify(comment.body)}</p>
+          <p className="m-0 text-[0.95rem] wrap-anywhere whitespace-pre-wrap text-text [&_a]:text-accent-fg [&_a]:wrap-anywhere">{linkify(comment.body)}</p>
           {canEdit || canDelete ? (
-            <div className="comment-actions">
+            <div className="flex items-center gap-2">
               {canEdit ? (
                 <button
                   className="comment-action"
@@ -385,7 +385,7 @@ function CommentRow({
           ) : null}
         </>
       )}
-      {error !== null ? <p className="comment-error">{error}</p> : null}
+      {error !== null ? <p className="m-0 text-[0.85rem] text-danger-fg">{error}</p> : null}
     </li>
   );
 }

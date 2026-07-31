@@ -248,7 +248,7 @@ function ReportRow({
       {report.note !== null ? (
         <p className="mb-1.5 border-l-2 border-l-border-strong pl-2.5 text-[0.85rem] wrap-anywhere whitespace-pre-wrap text-text-secondary">{report.note}</p>
       ) : null}
-      <div className="comment-actions">
+      <div className="flex items-center gap-2">
         {/* Post reports carry no thread id in the DTO, so only thread targets
             can be linked back to a page. */}
         {report.targetType === "thread" ? (

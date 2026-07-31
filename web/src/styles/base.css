@@ -2167,12 +2167,6 @@ button.settings-health-chip-button:disabled {
 }
 
 /* Comments (manga detail community section) */
-.comment-form {
-  display: grid;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
 .comment-input {
   width: 100%;
   min-height: 44px;
@@ -2236,84 +2230,11 @@ button.settings-health-chip-button:disabled {
   }
 }
 
-.comment-login {
-  margin: 0 0 20px;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.comment-error {
-  margin: 0;
-  color: var(--danger-fg);
-  font-size: 0.85rem;
-}
-
-.comment-list {
-  display: grid;
-  gap: 10px;
-  padding: 0;
-  margin: 0 0 8px;
-  list-style: none;
-}
-
-.comment-row {
-  display: grid;
-  gap: 6px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-}
-
-.comment-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.comment-avatar {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: var(--surface-accent);
-  display: grid;
-  place-items: center;
-}
-
-.comment-author {
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--text);
-}
-
-.comment-date {
-  margin-left: auto;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.comment-body {
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  color: var(--text);
-  font-size: 0.95rem;
-}
-
 /* Links inside user-authored text (lib/linkify.tsx); no global anchor rule
    exists, so the color is set here. */
-.comment-body a,
 .profile-bio a {
   color: var(--accent-fg);
   overflow-wrap: anywhere;
-}
-
-.comment-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
 }
 
 .comment-action {
@@ -2340,25 +2261,8 @@ button.settings-health-chip-button:disabled {
 }
 
 /* ===== Forum (categories -> threads -> flat replies) =====
-   Thread bodies and replies reuse the comment block (.comment-row / -input /
-   -action) wholesale, so only the forum-specific chrome lives here. */
-.forum-back {
-  margin-bottom: 18px;
-}
-
-.forum-reply-form {
-  margin-top: 20px;
-}
-
-.forum-thread-card {
-  display: grid;
-  gap: 8px;
-  padding: 18px 20px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-}
-
+   Replies reuse the comment composer (.comment-input / -action), so only the
+   forum-specific chrome lives here. */
 /* Thread titles run to 200 chars, so they take a tighter scale than the h1
    default and wrap on unbroken strings. */
 .forum-thread-title {
@@ -2366,12 +2270,6 @@ button.settings-health-chip-button:disabled {
   font-size: clamp(1.4rem, 3.5vw, 2rem);
   line-height: 1.15;
   overflow-wrap: anywhere;
-}
-
-.forum-thread-stats {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
 }
 
 /* Locked threads replace the composer with this notice (hidden, not disabled);
