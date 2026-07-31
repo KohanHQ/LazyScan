@@ -78,7 +78,7 @@ export function ForumPage(): ReactElement {
           icon={<MessageSquare className="icon" size={20} />}
         />
       ) : (
-        <ol className="forum-list">
+        <ol className="m-0 mb-2 grid list-none gap-2.5 p-0">
           {categories.map((category) => (
             <CategoryRow key={category.id} category={category} />
           ))}
@@ -90,18 +90,22 @@ export function ForumPage(): ReactElement {
 
 function CategoryRow({ category }: { category: ForumCategory }): ReactElement {
   return (
+    // The narrow-screen stack is written as a raw media query: Tailwind's
+    // `max-sm:`/`max-[640px]:` compile to `width < 640px` and would drop 640 itself.
     <li
-      className="forum-row"
+      className="flex cursor-pointer items-center gap-4.5 rounded-lg border border-border bg-surface px-4 py-3.5 outline-none hover:border-accent-fg hover:bg-surface-accent focus-visible:border-accent-fg focus-visible:bg-surface-accent [@media(max-width:640px)]:flex-col [@media(max-width:640px)]:items-start [@media(max-width:640px)]:gap-2"
       aria-label={`Open ${category.name}`}
       {...clickable(`/forum/${encodeURIComponent(category.slug)}`)}
     >
-      <div className="forum-row-body">
-        <h3>{category.name}</h3>
+      <div className="min-w-0 flex-1">
+        <h3 className="flex items-center gap-1.5 wrap-anywhere">{category.name}</h3>
         {category.description !== null ? (
-          <p className="forum-row-desc">{category.description}</p>
+          <p className="m-0 text-[0.85rem] wrap-anywhere text-text-secondary">
+            {category.description}
+          </p>
         ) : null}
       </div>
-      <p className="forum-row-meta">
+      <p className="m-0 grid shrink-0 gap-0.5 text-right text-[0.8rem] text-text-secondary [@media(max-width:640px)]:text-left">
         <span>
           {category.threadCount} thread{category.threadCount === 1 ? "" : "s"}
         </span>
