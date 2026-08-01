@@ -1,0 +1,155 @@
+/* Motion and choreography extracted from the old base.css (Tailwind migration
+   Stage 5; base.css became tokens/reset/components.css at Stage 6). Utilities
+   express box-model, colour and typography; keyframes do not, so they live here
+   instead. Moved verbatim — no rule was rewritten.
+
+   @keyframes are name-scoped and cascade-order-independent, which is why they
+   could be lifted out without changing a single computed style. Rules that
+   merely *reference* these animations stay in components.css: two of them
+   (.state-loading-dots span, .skeleton-block::after) are overridden by the
+   reduced-motion block below, so moving them would reorder a real conflict.
+
+   THIS FILE MUST BE IMPORTED LAST — after components.css. Those two overrides
+   tie on specificity with the rules they override, so only document order
+   decides them, and nothing fails at build time if the order breaks.
+   styles/index.css owns that order (F-071). */
+
+@keyframes button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes action-pop {
+  0% {
+    transform: scale(0.7);
+  }
+  55% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes state-loading-reveal {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes state-loading-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+
+@keyframes auth-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes hero-kenburns {
+  from {
+    transform: scale(1.1);
+  }
+  to {
+    transform: scale(1.16);
+  }
+}
+
+@keyframes dialog-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-content-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes dialog-content-out {
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+
+
+/* --- Pass B: motion overrides lifted out of the base stylesheet --------------
+   Only rules whose every declaration is choreography moved; anything also
+   carrying box-model or colour stayed put, since splitting it would be a
+   rewrite rather than a move.
+
+   `.rail-cover img, .manga-cover img { transition: transform }` deliberately
+   did NOT move. It ties on specificity (0,1,1) with `img.cover-fade
+   { transition: opacity }`, and a cover inside a rail matches both, so the
+   winner is decided purely by document order. Moving it here would flip that
+   and replace the cover fade-in with a transform transition — invisible to the
+   screenshot gate, which disables transitions. */
+
+.rail-carousel-track.is-instant {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-slide.is-active .hero-bg {
+    animation: hero-kenburns 8s ease-out forwards;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-carousel-track {
+    transition: none;
+  }
+
+  .library-filter-pop {
+    transition: none;
+  }
+
+  .hero-slide {
+    transition: none;
+  }
+
+  img.cover-fade {
+    transition: none;
+  }
+
+  .skeleton-block::after {
+    animation: none;
+  }
+
+  .state-loading-dots span {
+    animation: none;
+  }
+}

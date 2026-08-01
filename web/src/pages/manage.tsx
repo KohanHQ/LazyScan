@@ -78,24 +78,29 @@ function ManageHub({ user }: { user: CurrentUser }): ReactElement {
       <PageHeading
         title="Manage"
         meta={
-          <p className="heading-meta">
+          <p className="m-0 font-bold text-text-secondary">
             {manageable.length} title{manageable.length === 1 ? "" : "s"}
           </p>
         }
       />
-      <section className="manga-grid" aria-label="Manageable manga">
+      <section
+        className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4.5"
+        aria-label="Manageable manga"
+      >
         {/* The "New manga" affordance lives as a dashed add-card at the front of
-            the grid, so creating reads as part of the list. */}
+            the grid, so creating reads as part of the list.
+            font-weight sits on the label span, not the button: the unlayered
+            `button { font: inherit }` reset beats font utilities on a button. */}
         <button
-          className="manga-card manga-card-add"
+          className="flex min-h-[260px] flex-col items-center justify-center gap-2 overflow-hidden rounded-lg border border-dashed border-border bg-transparent text-text-label transition-[border-color,color] duration-200 ease-[ease] hover:border-primary hover:text-accent-fg focus-visible:border-accent-fg focus-visible:text-accent-fg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-accent-fg"
           type="button"
           aria-label="New manga"
           onClick={() => navigateTo("/manage/manga/new")}
         >
-          <span className="manga-card-add-plus" aria-hidden="true">
+          <span className="text-[2.6rem] leading-none font-normal" aria-hidden="true">
             +
           </span>
-          <span className="manga-card-add-label">New manga</span>
+          <span className="font-bold">New manga</span>
         </button>
         {manageable.map((manga) => (
           <MangaCard key={manga.id} manga={manga} variant="manage" />

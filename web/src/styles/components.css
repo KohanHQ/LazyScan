@@ -1,74 +1,10 @@
-:root {
-  color: var(--text);
-  background: var(--bg);
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  font-synthesis: none;
-  line-height: 1.5;
-  text-rendering: optimizelegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Handrolled component styles left after the Tailwind migration (Stage 6: the
+   remainder of base.css, moved verbatim). Unlayered on purpose — unlayered CSS
+   outranks every layer, which is what keeps these rules winning over the
+   utilities that share their elements. */
 
-  /* Design tokens. Each is a (light, dark) pair — see [data-theme="dark"].
-     Light collapses roles dark splits (one green served five dark accents), so a
-     token is keyed on the pair, never on either side alone. */
-  /* Surfaces */
-  --bg: #f5f2ec;
-  --surface: #fffaf2;
-  --surface-raised: #f9f6ee;
-  --surface-accent: #edf7f2;
-
-  /* Text */
-  --text: #17201b;
-  --text-secondary: #66746d;
-  --text-muted: #6a6258;
-  --text-label: #43524a;
-  --text-on-accent: #ffffff;
-
-  /* Accent */
-  --accent: #0f6f5c;
-  --accent-hover: #0a5a4a;
-  --accent-fg: #0f6f5c;
-
-  /* Borders */
-  --border: #ded8ce;
-  --border-strong: #c9d2cd;
-  --border-overlay: #ded8ce;
-
-  /* Danger */
-  --danger: #b3473a;
-  --danger-fg: #9b2f1f;
-  --danger-border: #e1b4aa;
-  --danger-surface: #fff5f2;
-
-  /* Status */
-  --status-ok-bg: #e3f3ee;
-  --status-warn-bg: #fbeede;
-  --status-warn-fg: #9a6b16;
-  --status-info-bg: #e4edf7;
-  --status-info-fg: #2b5c9b;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-button,
-input {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
+/* Stays unlayered (not in reset.css): in @layer base, shadcn's
+   disabled:opacity-50 and utility cursors would take over on disabled buttons. */
 button:disabled {
   cursor: not-allowed;
   opacity: 0.65;
@@ -80,19 +16,7 @@ button:disabled {
   flex-direction: column;
 }
 
-.top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  min-height: 64px;
-  padding: 0 28px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-}
-
 .brand-button,
-.nav-link,
 .text-button {
   border: 0;
   background: transparent;
@@ -105,38 +29,9 @@ button:disabled {
   font-weight: 800;
 }
 
-.top-nav {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.nav-link {
-  min-height: 38px;
-  padding: 0 10px;
-  border-radius: 6px;
-  color: var(--text-label);
-  font-weight: 700;
-}
-
-.nav-link:hover,
-.nav-link:focus-visible,
 .text-button:hover,
 .text-button:focus-visible {
   color: var(--accent-fg);
-}
-
-.user-pill {
-  max-width: 240px;
-  overflow: hidden;
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface-accent);
-  color: var(--text-label);
-  font-size: 0.875rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .app-main {
@@ -168,38 +63,11 @@ button:disabled {
   text-transform: uppercase;
 }
 
-h1,
-h2,
-h3,
-p {
-  margin-top: 0;
-}
-
-h1 {
-  margin-bottom: 0;
-  font-size: clamp(2rem, 5vw, 3.2rem);
-  line-height: 1.05;
-}
-
-/* Native number spinners can't be themed; keyboard arrows and typing remain. */
-input[type="number"] {
-  appearance: textfield;
-}
-
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  appearance: none;
-  margin: 0;
-}
-
+/* Stays unlayered (not in reset.css): in @layer base, shadcn DialogTitle's
+   text-lg would beat this font-size on every dialog heading. */
 h2 {
   margin-bottom: 0;
   font-size: 1.35rem;
-}
-
-h3 {
-  margin-bottom: 4px;
-  font-size: 1rem;
 }
 
 .heading-meta {
@@ -221,18 +89,6 @@ h3 {
 
 /* Horizontal card rails on home ("Recently updated", "Continue reading").
    The track scrolls sideways; cards keep a fixed width so covers stay uniform. */
-.manga-rail {
-  margin-bottom: 28px;
-}
-
-.rail-heading {
-  margin-bottom: 12px;
-}
-
-.rail-heading h2 {
-  margin: 0;
-}
-
 .rail-track {
   display: flex;
   gap: 14px;
@@ -267,10 +123,6 @@ h3 {
 }
 
 /* Silent wrap reset: the jump back to position 0 must not animate. */
-.rail-carousel-track.is-instant {
-  transition: none;
-}
-
 /* Copy and track widths come inline from stride arithmetic (home.tsx), not
    max-content: Gecko mis-measures nested-flex max-content and breaks the wrap. */
 .rail-carousel-copy {
@@ -278,12 +130,6 @@ h3 {
   flex: 0 0 auto;
   gap: 14px;
   padding-right: 14px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rail-carousel-track {
-    transition: none;
-  }
 }
 
 .rail-card {
@@ -303,7 +149,7 @@ h3 {
   aspect-ratio: 3 / 4;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #24322d;
+  background: var(--cover-bg);
   transition: border-color 0.2s ease;
 }
 
@@ -382,41 +228,6 @@ h3 {
   outline-offset: 2px;
 }
 
-/* "New manga" add-card: a dashed tile at the front of the manage grid. Stretches
-   to the row height alongside real cards. */
-.manga-card-add {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 260px;
-  border-style: dashed;
-  background: transparent;
-  color: var(--text-label);
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    color 0.2s ease;
-}
-
-.manga-card-add:hover {
-  border-color: var(--accent);
-  color: var(--accent-fg);
-}
-
-.manga-card-add:focus-visible {
-  border-color: var(--accent-fg);
-  color: var(--accent-fg);
-}
-
-.manga-card-add-plus {
-  font-size: 2.6rem;
-  font-weight: 400;
-  line-height: 1;
-}
-
 /* Inline spinner for async buttons (favorite / add-to-queue). Inherits the
    button's currentColor, so it reads on both the default and active states. */
 .button-spinner {
@@ -429,12 +240,6 @@ h3 {
   animation: button-spin 0.6s linear infinite;
 }
 
-@keyframes button-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Pop the icon when a detail action (favorite heart / queue bookmark) flips to
    its filled active state. */
 @media (prefers-reduced-motion: no-preference) {
@@ -443,47 +248,16 @@ h3 {
   }
 }
 
-@keyframes action-pop {
-  0% {
-    transform: scale(0.7);
-  }
-  55% {
-    transform: scale(1.18);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-/* Empty-state icon above the title. */
-.state-empty {
-  text-align: center;
-}
-
-.state-empty-icon {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 8px;
-  color: var(--text-muted);
-}
-
-.state-empty-icon .icon {
-  width: 40px;
-  height: 40px;
-}
-
-.manga-cover,
-.manga-detail-cover {
+.manga-cover {
   overflow: hidden;
-  background: #24322d;
+  background: var(--cover-bg);
 }
 
 .manga-cover {
   aspect-ratio: 3 / 4;
 }
 
-.manga-cover img,
-.manga-detail-cover img {
+.manga-cover img {
   display: block;
   width: 100%;
   height: 100%;
@@ -495,8 +269,8 @@ h3 {
   width: 100%;
   height: 100%;
   place-items: center;
-  background: #24322d;
-  color: #f5f2ec;
+  background: var(--cover-bg);
+  color: var(--text-bright);
   font-size: 3rem;
   font-weight: 900;
 }
@@ -505,181 +279,10 @@ h3 {
   min-height: 320px;
 }
 
-.manga-card-body {
-  padding: 14px;
-}
-
-/* Clamp the title to two lines and reserve that height so every card lines up
-   regardless of title length; long titles get an ellipsis. */
-.manga-card-body h2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.3;
-  min-height: calc(1.35rem * 1.3 * 2);
-}
-
-/* Card description: muted, clamped to two lines with reserved height. */
-.manga-card-desc {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: calc(0.9rem * 1.45 * 2);
-  font-size: 0.9rem;
-  line-height: 1.45;
-}
-
-/* Compact author/year line on cards; muted color inherits from
-   `.manga-card-body p`. Single line, ellipsis on overflow. */
-.manga-card-meta {
-  margin-bottom: 6px;
-  font-size: 0.8rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.manga-card-body p,
-.manga-card-body span,
-.chapter-row p,
-.chapter-row span,
-.description,
-.detail-facts {
-  color: #66746d;
-}
-
-.manga-card-body p,
-.chapter-row p {
-  margin-bottom: 8px;
-}
-
-/* Status pill on cards. Scoped under .manga-card-body to outrank the generic
-   `.manga-card-body span` muted rule. */
-.manga-card-body .status-badge {
-  display: inline-block;
-  margin-bottom: 10px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.manga-card-body .status-badge-ongoing {
-  background: var(--status-ok-bg);
-  color: var(--accent-fg);
-}
-
-.manga-card-body .status-badge-completed {
-  background: var(--status-info-bg);
-  color: var(--status-info-fg);
-}
-
-.manga-card-body .status-badge-hiatus {
-  background: var(--status-warn-bg);
-  color: var(--status-warn-fg);
-}
-
-.manga-card-body .status-badge-cancelled {
-  background: var(--status-warn-bg);
-  color: var(--danger-fg);
-}
-
-.manga-card-body span,
-.chapter-row span {
-  font-size: 0.875rem;
-}
-
-.manga-detail {
-  display: grid;
-  grid-template-columns: minmax(180px, 280px) minmax(0, 1fr);
-  gap: 28px;
-  align-items: start;
-}
-
-.manga-detail-cover {
-  aspect-ratio: 3 / 4;
-  border-radius: 8px;
-}
-
-.detail-facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin: 20px 0;
-}
-
-.detail-facts div {
-  min-width: 140px;
-}
-
-.detail-facts dt {
-  color: var(--text-label);
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.detail-facts dd {
-  margin: 2px 0 0;
-  color: var(--text);
-  font-weight: 800;
-}
-
-/* Tag chips on the manga detail page, between the facts and the description. */
-.detail-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0 0 16px;
-}
-
-.detail-tag {
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 3px 10px;
-  color: var(--text-label);
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
-.description {
-  max-width: 68ch;
-  margin-bottom: 0;
-}
-
-.chapter-list {
-  display: grid;
-  gap: 10px;
-  padding: 0;
-  list-style: none;
-}
-
-.chapter-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-}
-
-.chapter-row[role="button"] {
-  cursor: pointer;
-  outline: none;
-}
-
-.chapter-row[role="button"]:hover,
-.chapter-row[role="button"]:focus-visible {
-  border-color: var(--accent-fg);
-  background: var(--surface-accent);
+/* Unlayered `h3 { margin-bottom: 4px }` outranks any utility, so this stays a
+   rule; .chapter-row survives on the row purely as its hook. */
+.chapter-row h3 {
+  margin-bottom: 2px;
 }
 
 .chapter-row-current {
@@ -692,32 +295,11 @@ h3 {
 }
 
 .chapter-row-read {
-  opacity: 0.7;
+  opacity: 0.55;
 }
 
 .chapter-row-read h3 {
   color: var(--text-secondary);
-}
-
-.chapter-read-badge {
-  display: inline-block;
-  margin-left: 8px;
-  color: var(--accent-fg);
-  font-size: 0.85rem;
-}
-
-.chapter-current-badge {
-  display: inline-block;
-  margin-left: 8px;
-  color: var(--accent-fg);
-  font-size: 0.75rem;
-}
-
-.chapter-row-aside {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .chapter-read-toggle {
@@ -749,58 +331,6 @@ h3 {
   cursor: default;
 }
 
-.history-list {
-  display: grid;
-  gap: 10px;
-  padding: 0;
-  list-style: none;
-  margin-bottom: 28px;
-}
-
-.history-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  cursor: pointer;
-  outline: none;
-}
-
-.history-row:hover,
-.history-row:focus-visible {
-  border-color: var(--accent-fg);
-  background: var(--surface-accent);
-}
-
-.history-row-cover {
-  flex-shrink: 0;
-  width: 48px;
-  height: 64px;
-  overflow: hidden;
-  border-radius: 4px;
-  background: #24322d;
-}
-
-.history-row-cover img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.history-cover-placeholder {
-  display: grid;
-  width: 100%;
-  height: 100%;
-  place-items: center;
-  color: #f5f2ec;
-  font-size: 1.4rem;
-  font-weight: 900;
-}
-
 .history-row-body {
   min-width: 0;
 }
@@ -817,25 +347,6 @@ h3 {
   margin: 0;
   color: var(--text-secondary);
   font-size: 0.8rem;
-}
-
-/* Pinned chapter line above the page/percent/date line. */
-.history-row-chapter {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 700;
-}
-
-/* The whole row is the resume target; this chip just makes it explicit. */
-.history-resume {
-  flex: none;
-  margin-left: auto;
-  align-self: center;
-  color: var(--accent-fg);
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-transform: uppercase;
 }
 
 /* Per-row clear-progress control, pushed to the row's trailing edge. */
@@ -883,20 +394,8 @@ h3 {
 
 /* Reveal after a beat so sub-250ms fetches never flash a loading state. */
 .state-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40vh;
-  border: 0;
-  background: none;
   opacity: 0;
   animation: state-loading-reveal 0.2s ease 0.25s forwards;
-}
-
-@keyframes state-loading-reveal {
-  to {
-    opacity: 1;
-  }
 }
 
 .state-loading-dots {
@@ -921,19 +420,6 @@ h3 {
   animation-delay: 0.3s;
 }
 
-@keyframes state-loading-bounce {
-  0%,
-  60%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.5;
-  }
-  30% {
-    transform: translateY(-8px);
-    opacity: 1;
-  }
-}
-
 .state-error {
   border-color: var(--danger-border);
   background: var(--danger-surface);
@@ -945,40 +431,12 @@ h3 {
   padding: 28px;
 }
 
-.auth-form {
-  display: grid;
-  gap: 16px;
-  margin-top: 24px;
-}
-
-.auth-form label {
-  display: grid;
-  gap: 7px;
-  color: var(--text-label);
-  font-weight: 800;
-}
-
-.auth-form input {
-  width: 100%;
-  min-height: 44px;
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
-  padding: 0 12px;
-  background: var(--surface-raised);
-  color: var(--text);
-}
-
-.auth-form input:focus-visible {
-  border-color: var(--accent-fg);
-  outline: 3px solid var(--surface-accent);
-}
-
 .primary-button {
   min-height: 44px;
   border: 0;
   border-radius: 6px;
   background: var(--accent);
-  color: #ffffff;
+  color: var(--text-on-accent);
   font-weight: 700;
   font-size: 0.9rem;
   letter-spacing: 0.01em;
@@ -1010,33 +468,6 @@ h3 {
   font-weight: 700;
 }
 
-.theme-toggle {
-  font-size: 1.1rem;
-  padding: 0 6px;
-}
-
-.user-menu {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: var(--accent-fg);
-  color: #fff;
-  font-weight: 800;
-  font-size: 0.875rem;
-  cursor: pointer;
-  position: relative;
-}
-
-.user-menu:hover,
-.user-menu:focus-visible {
-  background: #0a5a4a;
-}
-
 .user-avatar {
   line-height: 1;
 }
@@ -1049,223 +480,17 @@ img.user-avatar {
   display: block;
 }
 
-.user-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  min-width: 200px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  z-index: 100;
-  padding: 8px 0;
-}
-
-.user-dropdown-identity {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 14px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 4px;
-}
-
-.user-dropdown-name {
-  color: var(--text);
-  font-size: 0.9rem;
-  font-weight: 800;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.user-dropdown-email {
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.user-dropdown-item {
-  display: block;
-  width: 100%;
-  border: 0;
-  background: transparent;
-  padding: 8px 14px;
-  text-align: left;
-  color: var(--danger-fg);
-  font-weight: 700;
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.user-dropdown-item:hover,
-.user-dropdown-item:focus-visible {
-  background: var(--danger-surface);
-}
-
-/* Dark palette. Light values + rationale live on :root. */
-[data-theme="dark"] {
-  /* Surfaces — cold graphite, hue 220° sat 8% (de-blued slate, faint blue tint) */
-  --bg: #17181b;
-  --surface: #1e2024;
-  --surface-raised: #26282c;
-  --surface-accent: #222b2a;
-
-  /* Text */
-  --text: #e8e4dd;
-  /* Bumped from #8a8278/#6a6258 (4.2:1 / 2.7:1 on --surface) to clear WCAG 4.5:1
-     on both dark surfaces; hue kept. Tunable one-liners if too bright. */
-  --text-secondary: #a29a8c;
-  --text-muted: #9a927f;
-  --text-label: #b8b2a8;
-  --text-on-accent: #ffffff;
-
-  /* Accent */
-  --accent: #24594e;
-  --accent-hover: #1d4b41;
-  --accent-fg: #2dd4a8;
-
-  /* Borders */
-  --border: #31343a;
-  --border-strong: #3d4148;
-  --border-overlay: rgba(255, 255, 255, 0.12);
-
-  /* Danger */
-  --danger: #f87171;
-  --danger-fg: #e0a99d;
-  --danger-border: #6b2a1f;
-  --danger-surface: #2a1510;
-
-  /* Status */
-  --status-ok-bg: #13352c;
-  --status-warn-bg: #3a2e16;
-  --status-warn-fg: #e0b65c;
-  --status-info-bg: #18293f;
-  --status-info-fg: #7db1ec;
-}
-
-/* Alt dark palette: original neutral gray. Uncomment (and comment the blue
-   block above) to reuse. */
-/*
-[data-theme="dark"] {
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #222;
-  --bg-tertiary: #2a2a2a;
-  --bg-card: #252525;
-  --border: #3a3a3a;
-  --text-primary: #e8e4dd;
-  --text-secondary: #8a8278;
-  --text-muted: #6a6258;
-  --accent: #0f6f5c;
-  --accent-hover: #0a5a4a;
-}
-*/
-
-/* Theme crossfade: active only for ~260ms while toggleTheme() flips the
-   attribute (state/theme.ts), so the universal selector's repaint cost is
-   bounded to the switch and there's no color sweep on initial load. */
-@media (prefers-reduced-motion: no-preference) {
-  [data-theme-transition] * {
-    transition:
-      background-color 0.25s ease,
-      border-color 0.25s ease,
-      color 0.25s ease;
-  }
-
-  /* Structural chrome snaps its background/border instantly during the flip (only
-     text crossfades), so the layout's full-width/centred surfaces don't reveal
-     their seams mid-crossfade. The hero is included because its blend uses a CSS
-     var that snaps anyway — snapping the body too keeps them aligned. Content
-     (cards, badges) still crossfades via the universal rule above. */
-  [data-theme-transition] body,
-  [data-theme-transition] .app-topbar,
-  [data-theme-transition] .app-sidebar,
-  [data-theme-transition] .app-main,
-  [data-theme-transition] .hero,
-  [data-theme-transition] .hero-fade {
-    transition: color 0.25s ease;
-  }
-}
-
-[data-theme="dark"] body {
-  background: var(--bg);
-  color: var(--text);
-}
-
-[data-theme="dark"] .top-bar {
-  border-color: var(--border);
-  
-}
-
-[data-theme="dark"] .chapter-row-read {
-  opacity: 0.55;
-}
-
-[data-theme="dark"] .manga-card-body p,
-[data-theme="dark"] .chapter-row p {
-  color: var(--text-secondary);
-}
-
-[data-theme="dark"] .manga-card-body span,
-[data-theme="dark"] .chapter-row span {
-  color: var(--text-muted);
-}
-
-[data-theme="dark"] .description {
-  color: var(--text-secondary);
-}
-
-[data-theme="dark"] .user-dropdown {
-  
-  
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="dark"] .user-dropdown-identity {
-  border-color: var(--border);
-}
-
-[data-theme="dark"] .history-cover-placeholder {
-  background: var(--surface-raised);
-}
-
 @media (max-width: 720px) {
-  .top-bar,
   .page-heading,
-  .section-heading,
-  .chapter-row {
+  .section-heading {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .top-bar {
-    gap: 10px;
-    padding: 14px 16px;
-  }
-
-  .top-nav {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .user-pill {
-    max-width: 150px;
   }
 
   .app-main {
     padding-top: 24px;
   }
 
-  .manga-detail {
-    grid-template-columns: 1fr;
-  }
-
-  .manga-detail-cover {
-    width: min(260px, 100%);
-  }
 }
 
 /* ===== App top bar + sidebar ===== */
@@ -1286,8 +511,7 @@ img.user-avatar {
     color 0.2s ease;
 }
 
-.topbar-toggle,
-.topbar-icon-button {
+.topbar-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1299,22 +523,13 @@ img.user-avatar {
 }
 
 .topbar-toggle:hover,
-.topbar-toggle:focus-visible,
-.topbar-icon-button:hover,
-.topbar-icon-button:focus-visible {
+.topbar-toggle:focus-visible {
   color: var(--accent-fg);
   background: var(--surface-accent);
 }
 
 .topbar-spacer {
   flex: 1;
-}
-
-.topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  position: relative;
 }
 
 .icon {
@@ -1363,56 +578,12 @@ img.user-avatar {
   pointer-events: auto;
 }
 
-.sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
+/* What the button cannot express as utilities: unlayered `button { font: inherit }`
+   beats Tailwind's font utilities, and `border: 0` is the UA button reset. */
 .sidebar-link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
   border: 0;
-  border-radius: 8px;
-  background: transparent;
-  padding: 10px 12px;
-  color: var(--text-label);
   font-weight: 700;
   font-size: 0.95rem;
-  text-align: left;
-}
-
-.sidebar-link:hover,
-.sidebar-link:focus-visible,
-.sidebar-link-active {
-  background: var(--surface-accent);
-  color: var(--accent-fg);
-}
-
-.sidebar-icon {
-  display: inline-flex;
-  flex: 0 0 auto;
-}
-
-.sidebar-label {
-  white-space: nowrap;
-}
-
-/* Footer pinned to the bottom of the sidebar: account avatar, login/logout door,
-   copyright. */
-.sidebar-footer {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-top: 12px;
-}
-
-.sidebar-avatar {
-  width: 24px;
-  height: 24px;
 }
 
 .sidebar-avatar .user-avatar {
@@ -1483,13 +654,11 @@ img.user-avatar {
 }
 
 .app-shell[data-hero="true"]:not([data-scrolled="true"]) .topbar-toggle,
-.app-shell[data-hero="true"]:not([data-scrolled="true"]) .brand-button,
-.app-shell[data-hero="true"]:not([data-scrolled="true"]) .topbar-icon-button {
+.app-shell[data-hero="true"]:not([data-scrolled="true"]) .brand-button {
   color: #f5f3ee;
 }
 
-.app-shell[data-hero="true"]:not([data-scrolled="true"]) .topbar-toggle:hover,
-.app-shell[data-hero="true"]:not([data-scrolled="true"]) .topbar-icon-button:hover {
+.app-shell[data-hero="true"]:not([data-scrolled="true"]) .topbar-toggle:hover {
   background: rgba(245, 243, 238, 0.18);
   color: #ffffff;
 }
@@ -1531,13 +700,6 @@ img.user-avatar {
   justify-content: center;
   overflow: hidden;
   padding: 24px clamp(24px, 8vw, 120px);
-  /* Light theme: cream gradient matching the app's light backdrop (#f5f2ec). */
-  background: linear-gradient(90deg, #f5f2ec 0%, #edf7f2 100%);
-}
-
-/* Dark theme: gradient across the dark base palette (token-driven, follows the
-   palette automatically). */
-[data-theme="dark"] .auth-screen {
   background: linear-gradient(90deg, var(--bg) 0%, var(--surface) 100%);
 }
 
@@ -1548,44 +710,15 @@ img.user-avatar {
   }
 }
 
-@keyframes auth-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* Transparent art figure pinned to the right over the dark backdrop. */
-.auth-screen .auth-art {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  height: 100%;
-  width: auto;
-  object-fit: contain;
-  object-position: right center;
-  pointer-events: none;
-  user-select: none;
-}
-
 .auth-screen .auth-panel {
   position: relative;
   z-index: 1;
   width: min(420px, 100%);
   margin: 0;
-  background: rgba(255, 250, 242, 0.8);
-  border: 1px solid var(--border-overlay);
-  color: #17201b;
-  backdrop-filter: blur(10px);
-}
-
-[data-theme="dark"] .auth-screen .auth-panel {
   background: color-mix(in srgb, var(--surface) 82%, transparent);
-
-  color: #f5f2ec;
+  border: 1px solid var(--border-overlay);
+  color: var(--text-bright);
+  backdrop-filter: blur(10px);
 }
 
 .auth-screen .eyebrow {
@@ -1593,111 +726,18 @@ img.user-avatar {
 }
 
 .auth-screen .auth-panel h1 {
-  color: #17201b;
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
-}
-
-[data-theme="dark"] .auth-screen .auth-panel h1 {
   color: #ffffff;
-}
-
-.auth-screen .auth-form label {
-  color: var(--text-label);
-}
-
-.password-field {
-  position: relative;
-}
-
-.password-field input {
-  width: 100%;
-  padding-right: 44px;
-}
-
-.password-toggle {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #9aa39d;
-  cursor: pointer;
-}
-
-.password-toggle:hover,
-.password-toggle:focus-visible {
-  color: #f5f2ec;
-}
-
-.password-toggle .icon {
-  width: 18px;
-  height: 18px;
-}
-
-/* Light theme inputs inherit the global .auth-form input (white field). */
-[data-theme="dark"] .auth-screen .auth-form input {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.18);
-  color: #f5f2ec;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
 }
 
 .auth-screen .auth-switch {
   color: var(--text-secondary);
 }
 
-/* On-screen theme toggle: app chrome is hidden on auth pages, so the login
-   screen carries its own sun/moon flip. */
-.auth-theme-toggle {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 1px solid var(--border-overlay);
-  border-radius: 8px;
-  background: rgba(255, 250, 242, 0.9);
-  color: #17201b;
-  cursor: pointer;
-}
-
-.auth-theme-toggle:hover,
-.auth-theme-toggle:focus-visible {
-  border-color: var(--accent-fg);
-  color: var(--accent-fg);
-}
-
-.auth-theme-toggle .icon {
-  width: 20px;
-  height: 20px;
-}
-
-[data-theme="dark"] .auth-theme-toggle {
-
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
-  color: #f5f2ec;
-}
-
 @media (max-width: 767px) {
   .auth-screen {
     justify-content: center;
     padding: 20px;
-  }
-
-  /* Card centers over the art on small screens; dim the art so it stays readable. */
-  .auth-screen .auth-art {
-    opacity: 0.4;
   }
 }
 
@@ -1827,33 +867,9 @@ img.user-avatar {
   background: var(--danger-surface);
 }
 
-.manage-bar {
-  display: flex;
-  gap: 12px;
-  margin: 18px 0 8px;
-}
-
-.manage-cover-preview {
-  width: 96px;
-  height: auto;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-}
-
-.form-success {
-  margin: 0;
-  color: var(--accent-fg);
-  font-weight: 700;
-}
-
-/* Shared page-content layout (emitted by renderPage). Sits at the full page width
-   inside .app-main and stacks its sections with consistent spacing — .manage-panel
-   has no vertical margin of its own. Forms keep the narrow centered .manage-panel
+/* Page content stacks its sections with consistent spacing — .manage-panel has
+   no vertical margin of its own. Forms keep the narrow centered .manage-panel
    column by NOT opting into .page-stack. */
-.page-content {
-  width: 100%;
-}
-
 .page-stack {
   display: flex;
   flex-direction: column;
@@ -1864,20 +880,6 @@ img.user-avatar {
 .page-stack .manage-panel {
   width: 100%;
   margin: 0;
-}
-
-.profile-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 0;
-}
-
-.profile-identity {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
 }
 
 .profile-edit-button {
@@ -1895,29 +897,6 @@ img.user-avatar {
   height: 16px;
 }
 
-.profile-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.profile-avatar-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent-fg);
-  color: #ffffff;
-  font-weight: 800;
-  font-size: 1.4rem;
-}
-
-.profile-username {
-  margin: 0;
-  font-weight: 800;
-  font-size: 1.1rem;
-}
-
 /* Quiet container so the bio reads as the bio, not stray text under the badges —
    never a card. pre-wrap keeps the user's own line breaks. */
 .profile-bio {
@@ -1930,28 +909,8 @@ img.user-avatar {
   white-space: pre-wrap;
 }
 
-/* Profile badges + reading stats. `--*` palette tokens are dark-theme only, so
-   every var() carries a light fallback (see known-constraints.md). */
-.profile-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.profile-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #ffffff;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
-/* Rarity tiers (rarest first in the list; the API sorts them). */
+/* Profile badge rarity tiers (rarest first in the list; the API sorts them).
+   Unlayered, so they still override the chip's Tailwind background/color. */
 .profile-badge--common {
   background: var(--accent);
 }
@@ -1984,160 +943,11 @@ img.user-avatar {
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11.4 22 11.4 16.5 C7.5 16.3 4.4 13.5 3.1 9.1 C2.9 8.5 3.5 8.1 4 8.4 C6.7 9.9 9.5 10.1 11.1 8.7 L11.3 3.6 C11.3 3.1 12.7 3.1 12.7 3.6 L12.9 8.7 C14.5 10.1 17.3 9.9 20 8.4 C20.5 8.1 21.1 8.5 20.9 9.1 C19.6 13.5 16.5 16.3 12.6 16.5 L12.6 22 Z'/%3E%3C/svg%3E") no-repeat center / contain;
 }
 
-.profile-shelf-heading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.profile-shelf-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.profile-shelf-chip.is-public {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.profile-stat-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin: 14px 0 8px;
-}
-
-.profile-stat {
-  flex: 1 1 110px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 16px 18px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface-raised);
-}
-
-.profile-stat-value {
-  font-size: 1.6rem;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.profile-stat-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
 .profile-most-read-heading {
   margin-top: 20px;
 }
 
-.profile-most-read {
-  list-style: none;
-  margin: 6px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.profile-most-read li {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.profile-most-read li:last-child {
-  border-bottom: 0;
-}
-
-.profile-most-read-title {
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.profile-most-read-count {
-  flex-shrink: 0;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
 /* Phase 8b: chapter upload */
-.upload-hint {
-  margin: 0 0 14px;
-  color: var(--text-secondary);
-  font-weight: 700;
-}
-
-.upload-progress {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.upload-progress-track {
-  flex: 1;
-  height: 6px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--surface-raised);
-}
-
-.upload-progress-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent);
-  transition: width 0.25s ease;
-}
-
-.upload-progress-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.upload-list {
-  list-style: none;
-  margin: 0 0 18px;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-  max-height: 420px;
-  overflow: auto;
-}
-
-.upload-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-}
-
-.upload-name {
-  font-weight: 700;
-  font-size: 0.9rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .upload-status {
   flex: none;
   font-weight: 800;
@@ -2164,26 +974,7 @@ img.user-avatar {
   margin-top: 16px;
 }
 
-/* Phase 8 polish: file input, cover thumb, chapter rows */
-.manage-cover-preview {
-  width: 104px;
-  height: 139px;
-  object-fit: cover;
-}
-
-.manage-cover-thumb {
-  display: grid;
-  place-items: center;
-  width: 104px;
-  height: 139px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: #24322d;
-  color: #f5f2ec;
-  font-size: 2rem;
-  font-weight: 900;
-}
-
+/* Phase 8 polish: file input, chapter rows */
 .manage-form input[type="file"] {
   padding: 7px 12px;
   cursor: pointer;
@@ -2195,7 +986,7 @@ img.user-avatar {
   border-radius: 6px;
   padding: 8px 14px;
   background: var(--accent);
-  color: #ffffff;
+  color: var(--text-on-accent);
   font-weight: 700;
   font-size: 0.9rem;
   letter-spacing: 0.01em;
@@ -2230,85 +1021,7 @@ img.user-avatar {
   background: var(--surface-accent);
 }
 
-.dropzone-input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.dropzone-prompt {
-  display: grid;
-  gap: 4px;
-  pointer-events: none;
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-}
-
-.dropzone-prompt strong {
-  color: var(--text);
-  font-size: 0.95rem;
-}
-
-.dropzone-count {
-  color: var(--accent-fg);
-  font-weight: 700;
-}
-
-.chapter-row {
-  padding: 12px 16px;
-}
-
-.chapter-row > div {
-  min-width: 0;
-}
-
-.chapter-row h3 {
-  margin-bottom: 2px;
-}
-
-.chapter-row p {
-  margin-bottom: 0;
-}
-
 /* Username lookup / public profile */
-.user-lookup-form {
-  display: grid;
-  gap: 12px;
-}
-
-.user-lookup-form label {
-  display: grid;
-  gap: 7px;
-  color: var(--text-label);
-  font-weight: 800;
-}
-
-/* Input and submit share one box so they line up exactly (a bare <button>
-   otherwise renders taller than the input from UA padding). */
-.user-lookup-form input,
-.user-lookup-form .primary-button {
-  box-sizing: border-box;
-  width: 100%;
-  height: 44px;
-  min-height: 44px;
-}
-
-.user-lookup-form input {
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
-  padding: 0 12px;
-  background: var(--surface-raised);
-  color: var(--text);
-}
-
-.user-lookup-form input:focus-visible {
-  border-color: var(--accent-fg);
-  outline: 3px solid var(--accent-fg);
-}
-
 .profile-meta {
   margin: 4px 0 0;
   color: var(--text-secondary);
@@ -2316,19 +1029,8 @@ img.user-avatar {
 }
 
 /* Library search */
-.library-search-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
 /* Inner box scopes the absolute funnel/kbd/pop to the input, not the wrap (which
    also holds the Advanced button). */
-.library-search-box {
-  position: relative;
-  display: inline-flex;
-}
-
 .library-search {
   min-height: 40px;
   width: min(260px, 42vw);
@@ -2431,12 +1133,6 @@ img.user-avatar {
   transition-delay: 0s;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .library-filter-pop {
-    transition: none;
-  }
-}
-
 .library-filter-option {
   display: block;
   width: 100%;
@@ -2459,21 +1155,8 @@ img.user-avatar {
   color: var(--accent-fg);
 }
 
-/* Themed select: PopupSelect wraps a trigger button (styled via the caller's
-   select class) and reuses the .library-filter-pop menu. Grid stretches the
-   trigger to the wrapper so it fills full-width form/grid parents. */
-.popup-select {
-  position: relative;
-  display: grid;
-}
-
-.popup-select-trigger {
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-/* Grow rightward from the trigger's left edge and never sit narrower than it. */
+/* PopupSelect reuses the .library-filter-pop menu; the popup grows rightward
+   from the trigger's left edge and never sits narrower than it. */
 .popup-select .library-filter-pop {
   left: 0;
   right: auto;
@@ -2490,14 +1173,6 @@ img.user-avatar {
 
 .library-filter-tags[hidden] {
   display: none;
-}
-
-.library-filter-label {
-  margin: 0 0 6px;
-  color: #0f6f5c;
-  font-size: 0.72rem;
-  font-weight: 800;
-  text-transform: uppercase;
 }
 
 .library-filter-tag-list {
@@ -2522,21 +1197,14 @@ img.user-avatar {
 .library-filter-tag:hover,
 .library-filter-tag:focus-visible {
   border-color: var(--accent-fg);
+  background: var(--surface-raised);
   color: var(--accent-fg);
 }
 
 .library-filter-tag.is-active {
   border-color: var(--accent-fg);
-  background: var(--surface-accent);
-  color: var(--accent-fg);
-}
-
-[data-theme="dark"] .library-filter-tag:hover,
-[data-theme="dark"] .library-filter-tag:focus-visible,
-[data-theme="dark"] .library-filter-tag.is-active {
-  
   background: var(--surface-raised);
-  
+  color: var(--accent-fg);
 }
 
 .library-empty {
@@ -2546,10 +1214,6 @@ img.user-avatar {
 }
 
 /* Infinite-scroll affordances */
-.library-sentinel {
-  height: 1px;
-}
-
 .library-more {
   display: block;
   margin: 20px auto 0;
@@ -2582,7 +1246,7 @@ img.user-avatar {
 .library-advanced-btn.is-active {
   background: var(--accent-fg);
   border-color: var(--accent-fg);
-  color: #fff;
+  color: #111;
 }
 
 /* Drop the advanced panel as an absolute dropdown below the search row (scope the
@@ -2601,30 +1265,11 @@ img.user-avatar {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .library-advanced-panel[hidden] {
   display: none;
-}
-
-.library-advanced-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.library-advanced-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.library-advanced-field label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-secondary);
 }
 
 .library-advanced-input,
@@ -2641,12 +1286,6 @@ img.user-avatar {
 .library-advanced-select:focus {
   outline: none;
   border-color: var(--accent-fg);
-}
-
-.library-advanced-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
 }
 
 .library-advanced-clear {
@@ -2671,7 +1310,7 @@ img.user-avatar {
   border: 1px solid var(--accent-fg);
   border-radius: 6px;
   background: var(--accent-fg);
-  color: #fff;
+  color: #111;
   font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
@@ -2680,24 +1319,6 @@ img.user-avatar {
 .library-advanced-submit:hover,
 .library-advanced-submit:focus-visible {
   background: var(--accent-fg);
-}
-
-[data-theme="dark"] .library-advanced-btn.is-active {
-  
-  
-  color: #111;
-}
-
-[data-theme="dark"] .library-advanced-panel {
-  
-  
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="dark"] .library-advanced-submit {
-  
-  
-  color: #111;
 }
 
 /* In-app dialogs (confirm/alert) */
@@ -2729,17 +1350,6 @@ img.user-avatar {
   font-size: 1.2rem;
 }
 
-.dialog-message {
-  margin: 0 0 20px;
-  color: var(--text-label);
-}
-
-.dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
 /* Cover-replace modal body: reuses .manage-form for input styling; the current
    cover thumbnail is centered above the file field. */
 .cover-dialog-body {
@@ -2747,19 +1357,7 @@ img.user-avatar {
   margin-bottom: 16px;
 }
 
-.cover-dialog-body .manage-cover-preview,
-.cover-dialog-body .manage-cover-thumb {
-  justify-self: center;
-}
-
 /* Favorites / Queue tabs */
-.library-tabs {
-  display: flex;
-  gap: 8px;
-  border-bottom: 1px solid var(--border-strong);
-  margin-bottom: 20px;
-}
-
 .library-tab {
   border: none;
   background: none;
@@ -2797,7 +1395,7 @@ img.user-avatar {
   padding: 4px 10px;
   border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background: rgba(249, 246, 238, 0.92);
+  background: rgba(37, 37, 37, 0.92);
   color: var(--text);
   font-size: 0.78rem;
   font-weight: 800;
@@ -2816,26 +1414,6 @@ img.user-avatar {
 }
 
 /* Library sort/year filter controls */
-.library-filters {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.library-filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.library-filter-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-
 .library-filter-select,
 .library-filter-input {
   padding: 6px 10px;
@@ -2875,26 +1453,6 @@ img.user-avatar {
 }/* Detail-page favorite / queue actions */
 /* Library actions (favorite/queue) and the reading-status control share one row;
    they use the same pill styling and 40px height, so they read as one cluster. */
-.detail-actions-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin: 4px 0 14px;
-}
-
-.detail-actions-row .detail-actions,
-.detail-actions-row .detail-status {
-  margin: 0;
-}
-
-.detail-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 4px 0 14px;
-}
-
 .detail-action {
   display: inline-flex;
   align-items: center;
@@ -2925,11 +1483,7 @@ img.user-avatar {
 .detail-action.is-active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #ffffff;
-}
-
-.detail-status {
-  margin: 0 0 14px;
+  color: var(--text-on-accent);
 }
 
 .detail-status-control {
@@ -2972,18 +1526,6 @@ img.user-avatar {
 .detail-status-select:disabled {
   opacity: 0.65;
   cursor: not-allowed;
-}
-
-[data-theme="dark"] .library-remove {
-  background: rgba(37, 37, 37, 0.92);
-  
-  
-}
-
-[data-theme="dark"] .detail-action.is-active {
-  
-  
-  color: #ffffff;
 }
 
 /* Home popularity hero. Always-dark island, light-on-dark in both themes: the
@@ -3034,21 +1576,6 @@ img.user-avatar {
 
 /* Slow drift on the active slide's backdrop (Ken Burns). Replays whenever a
    slide gains .is-active; the static scale(1.1) above is the rest state. */
-@media (prefers-reduced-motion: no-preference) {
-  .hero-slide.is-active .hero-bg {
-    animation: hero-kenburns 8s ease-out forwards;
-  }
-}
-
-@keyframes hero-kenburns {
-  from {
-    transform: scale(1.1);
-  }
-  to {
-    transform: scale(1.16);
-  }
-}
-
 .hero-fade {
   position: absolute;
   inset: 0;
@@ -3100,20 +1627,6 @@ img.user-avatar {
   object-fit: cover;
 }
 
-.hero-text {
-  min-width: 0;
-  color: #f5f3ee;
-}
-
-.hero-eyebrow {
-  margin: 0 0 8px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(245, 243, 238, 0.72);
-}
-
 .hero-title {
   margin: 0;
   font-size: 1.9rem;
@@ -3124,24 +1637,6 @@ img.user-avatar {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.hero-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0 0;
-}
-
-.hero-chip {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(245, 243, 238, 0.16);
-  color: #f5f3ee;
 }
 
 .hero-credits {
@@ -3169,12 +1664,6 @@ img.user-avatar {
   outline-offset: -3px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hero-slide {
-    transition: none;
-  }
-}
-
 @media (max-width: 640px) {
   .hero-content {
     padding: 20px;
@@ -3196,75 +1685,15 @@ img.user-avatar {
 }
 
 /* Settings (owner/superuser operations page). Panels reuse .manage-panel; these
-   rules only style the stat grid and the import-health rows. `--*` tokens are
-   dark-theme only, so every var() carries a light fallback. */
-.settings-panel {
-  text-align: left;
-}
-
+   rules only style the stat grid and the import-health rows. */
 .settings-heading {
   margin: 0 0 4px;
   font-size: 1.05rem;
 }
 
-.settings-note {
-  margin: 0 0 14px;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-.settings-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 12px;
-  margin: 0;
-}
-
-.settings-stats dt {
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.settings-stats dd {
-  margin: 2px 0 0;
-  font-weight: 700;
-}
-
-.settings-imports {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-}
-
-.settings-import-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-}
-
 .settings-import-body h3 {
   margin: 0 0 4px;
   font-size: 0.95rem;
-}
-
-.settings-import-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.8rem;
 }
 
 .settings-import-error {
@@ -3273,43 +1702,7 @@ img.user-avatar {
   font-size: 0.8rem;
 }
 
-.settings-failed-pages {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: var(--surface-raised);
-  font-size: 0.78rem;
-}
-
-.settings-failed-pages li {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 2px 0;
-}
-
-.settings-page-name {
-  font-weight: 600;
-}
-
-.settings-page-error {
-  color: var(--danger-fg);
-}
-
 /* Chapter list pagination + volume grouping (manga detail). */
-.chapter-volume-header {
-  list-style: none;
-  margin: 6px 0 2px;
-  padding: 4px 2px;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--border);
-}
-
 .chapter-pager {
   display: flex;
   align-items: center;
@@ -3329,15 +1722,6 @@ img.user-avatar {
   color: var(--text-muted);
   font-size: 0.85rem;
   font-weight: 700;
-}
-
-/* Settings regrouping: storage hero value, catalog grid (reuses
-   .settings-stats), and import-health heading chips. */
-.settings-storage-value {
-  margin: 0;
-  font-size: 1.8rem;
-  font-weight: 800;
-  line-height: 1.2;
 }
 
 .settings-storage-sub {
@@ -3360,12 +1744,6 @@ img.user-avatar {
   margin: 0;
 }
 
-.settings-health-chips {
-  display: flex;
-  gap: 6px;
-  margin: 0;
-}
-
 .settings-health-chip {
   display: inline-flex;
   align-items: center;
@@ -3385,13 +1763,6 @@ button.settings-health-chip-button {
 
 button.settings-health-chip-button:disabled {
   cursor: default;
-}
-
-/* Audit-trail heading aside: level chips + the catalog-style filter button. */
-.settings-heading-aside {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
 }
 
 /* Reuses the home catalog filter look (.library-filter / -pop / -option); this
@@ -3417,100 +1788,8 @@ button.settings-health-chip-button:disabled {
   color: var(--danger-fg);
 }
 
-/* Storage-by-title pie (settings). Pure conic-gradient, no chart library. */
-.settings-storage-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-/* Cap the text column so its long note line doesn't claim the full row width
-   and push the pie onto the next line; the figure pins to the right edge. */
-.settings-storage-row > div:first-child {
-  flex: 1 1 320px;
-  min-width: 260px;
-  max-width: 560px;
-}
-
-.settings-pie-figure {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin: 0 0 0 auto;
-}
-
-.settings-pie {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  border: 1px solid var(--border);
-}
-
-.settings-pie-legend {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.78rem;
-}
-
-.settings-pie-legend li {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.settings-pie-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.settings-pie-label {
-  font-weight: 600;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.settings-pie-share {
-  color: var(--text-muted);
-}
-
-/* Audit trail (settings): log rows + collapsible details. The level-filter
-   button is styled above (.settings-logs-filter near .settings-heading-aside). */
-.settings-logs {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0 0 12px;
-  padding: 0;
-}
-
-.settings-log-row {
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-}
-
-.settings-log-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-}
-
+/* Audit trail (settings) level chip. The level-filter button is styled above
+   (.settings-logs-filter). */
 .settings-log-level {
   display: inline-flex;
   align-items: center;
@@ -3548,31 +1827,9 @@ button.settings-health-chip-button:disabled {
   overflow-wrap: anywhere;
 }
 
-.settings-log-details {
-  margin: 6px 0 0;
-  font-size: 0.78rem;
-}
-
-.settings-log-details summary {
-  cursor: pointer;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
 .settings-log-error {
   margin: 6px 0 0;
   color: var(--danger-fg);
-}
-
-.settings-log-pre {
-  margin: 6px 0 0;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: var(--surface-raised);
-  font-size: 0.72rem;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 
 /* --- Chapter management (manage-manga edit page) --- */
@@ -3601,11 +1858,6 @@ button.settings-health-chip-button:disabled {
   background: none;
 }
 
-.muted {
-  color: var(--text-muted);
-  font-size: 0.875rem;
-}
-
 /* Small inline text button for row-level actions. Light theme uses explicit hex;
    dark theme overrides via the theme vars (the file-wide convention). */
 .ghost-button {
@@ -3632,131 +1884,7 @@ button.settings-health-chip-button:disabled {
   color: var(--danger-fg);
 }
 
-.chapter-admin-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.chapter-admin-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-
-.chapter-admin-main {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.chapter-admin-title {
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.chapter-admin-badge {
-  padding: 2px 9px;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.chapter-admin-badge.is-published { background: var(--status-ok-bg); color: var(--accent-fg); }
-.chapter-admin-badge.is-draft { background: var(--status-warn-bg); color: var(--status-warn-fg); }
-.chapter-admin-badge.is-processing { background: var(--status-info-bg); color: var(--status-info-fg); }
-.chapter-admin-badge.is-failed { background: var(--status-warn-bg); color: var(--danger-fg); }
-
-.chapter-admin-actions {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-/* Wider modal for the page preview/reorder grid. */
-.dialog--wide {
-  max-width: 720px;
-  width: 100%;
-}
-
-.page-reorder-list {
-  list-style: none;
-  margin: 12px 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.page-reorder-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-
-.page-reorder-index {
-  width: 26px;
-  text-align: center;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-
-.page-reorder-thumb {
-  width: 42px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 4px;
-  background: var(--bg);
-}
-
-.page-reorder-thumb.is-empty {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  border: 1px dashed var(--border);
-}
-
-.page-reorder-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.85rem;
-}
-
-.page-reorder-move {
-  display: flex;
-  gap: 4px;
-}
-
 /* Comments (manga detail community section) */
-.comment-form {
-  display: grid;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
 .comment-input {
   width: 100%;
   min-height: 44px;
@@ -3778,9 +1906,6 @@ button.settings-health-chip-button:disabled {
    the shell so the counter is inside the border; selectors are two-class so
    they beat `.manage-form textarea` on the profile bio field. */
 .composer-shell {
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
-  background: var(--surface-raised);
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
@@ -3811,31 +1936,6 @@ button.settings-health-chip-button:disabled {
   outline: none;
 }
 
-.composer-footer {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 10px 8px;
-  border-top: 1px solid var(--border);
-}
-
-.composer-hint {
-  color: var(--text-muted);
-  font-size: 0.75rem;
-}
-
-.composer-count {
-  margin-left: auto;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.composer-count.is-warn {
-  color: var(--status-warn-fg);
-}
-
 .composer-footer .primary-button {
   min-height: 0;
   padding: 6px 16px;
@@ -3848,85 +1948,11 @@ button.settings-health-chip-button:disabled {
   }
 }
 
-.comment-login,
-.comment-status {
-  margin: 0 0 20px;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.comment-error {
-  margin: 0;
-  color: var(--danger-fg);
-  font-size: 0.85rem;
-}
-
-.comment-list {
-  display: grid;
-  gap: 10px;
-  padding: 0;
-  margin: 0 0 8px;
-  list-style: none;
-}
-
-.comment-row {
-  display: grid;
-  gap: 6px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-}
-
-.comment-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.comment-avatar {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: var(--surface-accent);
-  display: grid;
-  place-items: center;
-}
-
-.comment-author {
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--text);
-}
-
-.comment-date {
-  margin-left: auto;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.comment-body {
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  color: var(--text);
-  font-size: 0.95rem;
-}
-
 /* Links inside user-authored text (lib/linkify.tsx); no global anchor rule
    exists, so the color is set here. */
-.comment-body a,
 .profile-bio a {
   color: var(--accent-fg);
   overflow-wrap: anywhere;
-}
-
-.comment-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
 }
 
 .comment-action {
@@ -3953,91 +1979,8 @@ button.settings-health-chip-button:disabled {
 }
 
 /* ===== Forum (categories -> threads -> flat replies) =====
-   List rows reuse the history-row card look; thread bodies and replies reuse
-   the comment block (.comment-row / -input / -action) wholesale, so only the
+   Replies reuse the comment composer (.comment-input / -action), so only the
    forum-specific chrome lives here. */
-.forum-list {
-  display: grid;
-  gap: 10px;
-  padding: 0;
-  margin: 0 0 8px;
-  list-style: none;
-}
-
-.forum-row {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  cursor: pointer;
-  outline: none;
-}
-
-.forum-row:hover,
-.forum-row:focus-visible {
-  border-color: var(--accent-fg);
-  background: var(--surface-accent);
-}
-
-/* min-width:0 lets a long title wrap instead of stretching the row. */
-.forum-row-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.forum-row-body h3 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-  overflow-wrap: anywhere;
-}
-
-.forum-row-desc {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  overflow-wrap: anywhere;
-}
-
-.forum-row-meta {
-  display: grid;
-  gap: 2px;
-  flex-shrink: 0;
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  text-align: right;
-}
-
-/* Pinned/locked markers on a thread row; the row's aria-label carries the
-   wording, so the glyph itself stays decorative. */
-.forum-glyph {
-  display: inline-flex;
-  color: var(--accent-fg);
-}
-
-.forum-back {
-  margin-bottom: 18px;
-}
-
-.forum-thread-form,
-.forum-reply-form {
-  margin-top: 20px;
-}
-
-.forum-thread-card {
-  display: grid;
-  gap: 8px;
-  padding: 18px 20px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-}
-
 /* Thread titles run to 200 chars, so they take a tighter scale than the h1
    default and wrap on unbroken strings. */
 .forum-thread-title {
@@ -4045,12 +1988,6 @@ button.settings-health-chip-button:disabled {
   font-size: clamp(1.4rem, 3.5vw, 2rem);
   line-height: 1.15;
   overflow-wrap: anywhere;
-}
-
-.forum-thread-stats {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
 }
 
 /* Locked threads replace the composer with this notice (hidden, not disabled);
@@ -4070,55 +2007,8 @@ button.settings-health-chip-button:disabled {
 }
 
 /* Report dialog body: label/control pairs inside the Radix content grid. */
-.forum-report-fields {
-  display: grid;
-  gap: 6px;
-}
-
-.forum-report-fields label {
-  color: var(--text-label);
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.forum-report-fields label:not(:first-child) {
-  margin-top: 10px;
-}
-
 /* Admin queue rows (settings page): the snippet is the reported text, the note
    is the reporter's own words. */
-.forum-report-snippet {
-  margin: 0 0 4px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  color: var(--text);
-  font-size: 0.9rem;
-}
-
-.forum-report-note {
-  margin: 0 0 6px;
-  padding-left: 10px;
-  border-left: 2px solid var(--border-strong);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-}
-
-/* Narrow screens: the meta column drops under the title instead of squeezing
-   it (the breakpoint the rest of the app stacks at). */
-@media (max-width: 640px) {
-  .forum-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .forum-row-meta {
-    text-align: left;
-  }
-}
-
 /* ===== Motion additions (2026-07-26) =====
    All opacity/transform only; every effect has a reduced-motion fallback. */
 
@@ -4143,32 +2033,6 @@ button.settings-health-chip-button:disabled {
   }
 }
 
-@keyframes dialog-fade-in {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes dialog-fade-out {
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes dialog-content-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-}
-
-@keyframes dialog-content-out {
-  to {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-}
-
 /* Cover images fade in once loaded (softens R2 pop-in). The Cover component
    adds .is-loaded on load, or immediately for cache-complete images. */
 img.cover-fade {
@@ -4180,30 +2044,11 @@ img.cover-fade.is-loaded {
   opacity: 1;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  img.cover-fade {
-    transition: none;
-  }
-}
-
 /* Skeleton placeholders for card grids (states.tsx CardGridSkeleton). Same
    delayed reveal as .state-loading so fast fetches never flash it. */
 .skeleton-grid {
   opacity: 0;
   animation: state-loading-reveal 0.2s ease 0.25s forwards;
-}
-
-.skeleton-card {
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-}
-
-.skeleton-block {
-  position: relative;
-  overflow: hidden;
-  background: var(--surface-raised);
 }
 
 .skeleton-block::after {
@@ -4217,40 +2062,6 @@ img.cover-fade.is-loaded {
     transparent 70%
   );
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
-}
-
-@keyframes skeleton-shimmer {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(100%);
-  }
-}
-
-.skeleton-cover {
-  aspect-ratio: 3 / 4;
-}
-
-.skeleton-line {
-  height: 10px;
-  border-radius: 5px;
-  margin: 12px 14px 0;
-}
-
-.skeleton-line-short {
-  width: 55%;
-  margin-bottom: 14px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .skeleton-block::after {
-    animation: none;
-  }
-
-  .state-loading-dots span {
-    animation: none;
-  }
 }
 
 /* Home rails fade + rise into view; the Rail component adds .is-visible from
@@ -4297,30 +2108,12 @@ img.cover-fade.is-loaded {
    (components/boot-splash.tsx drives the scramble). Above toasts (z-1100),
    below the route curtain (z-2000). */
 .boot-splash {
-  position: fixed;
-  inset: 0;
-  z-index: 1500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg);
   transition: opacity 0.3s ease-out;
 }
 
 .boot-splash[data-leaving="true"] {
   opacity: 0;
   pointer-events: none;
-}
-
-/* Monospace so a scrambled glyph never changes the wordmark's width; the
-   padding offsets the trailing letter-space so it stays optically centered. */
-.boot-splash-wordmark {
-  padding-left: 0.34em;
-  color: var(--text);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: clamp(1.3rem, 5vw, 2.2rem);
-  font-weight: 700;
-  letter-spacing: 0.34em;
 }
 
 @media (prefers-reduced-motion: reduce) {

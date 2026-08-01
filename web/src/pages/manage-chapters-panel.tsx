@@ -49,12 +49,14 @@ function visibilityLabel(chapter: ReaderChapter): string {
 
 function visibilityClass(chapter: ReaderChapter): string {
   if (chapter.status === "ready") {
-    return chapter.publishedAt ? "is-published" : "is-draft";
+    return chapter.publishedAt
+      ? "bg-status-ok-bg text-accent-fg"
+      : "bg-status-warn-bg text-status-warn-fg";
   }
   if (chapter.status === "failed") {
-    return "is-failed";
+    return "bg-status-warn-bg text-danger-fg";
   }
-  return "is-processing";
+  return "bg-status-info-bg text-status-info-fg";
 }
 
 function chapterLabel(chapter: ReaderChapter): string {
@@ -114,24 +116,27 @@ export function ChaptersPanel({ manga }: { manga: Manga }): ReactElement {
       ) : state.kind === "error" ? (
         <ErrorState message={state.message} />
       ) : state.chapters.length === 0 ? (
-        <p className="muted">
+        <p className="text-[0.875rem] text-text-muted">
           No chapters yet. Use &quot;Upload chapter&quot; above to add one.
         </p>
       ) : (
-        <ul className="chapter-admin-list">
+        <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {state.chapters.map((chapter) => (
-            <li className="chapter-admin-row" key={chapter.id}>
-              <div className="chapter-admin-main">
-                <span className="chapter-admin-title">
+            <li
+              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5"
+              key={chapter.id}
+            >
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="overflow-hidden font-semibold text-ellipsis">
                   {chapterLabel(chapter)}
                 </span>
                 <span
-                  className={`chapter-admin-badge ${visibilityClass(chapter)}`}
+                  className={`rounded-[999px] px-[9px] py-0.5 text-[0.7rem] font-extrabold tracking-[0.02em] uppercase ${visibilityClass(chapter)}`}
                 >
                   {visibilityLabel(chapter)}
                 </span>
               </div>
-              <div className="chapter-admin-actions">
+              <div className="flex flex-wrap gap-1.5">
                 <button
                   className="ghost-button"
                   type="button"
@@ -458,35 +463,38 @@ function PagesDialog({
           <ErrorState message={state.message} />
         ) : (
           <>
-            <p className="muted">
+            <p className="text-[0.875rem] text-text-muted">
               Use the arrows to reorder, then save. Page numbers renumber 1..N in
               this order.
             </p>
-            <ol className="page-reorder-list">
+            <ol className="my-3 flex max-h-[60vh] list-none flex-col gap-1.5 overflow-y-auto p-0">
               {order.map((id, index) => {
                 const page = byId?.get(id);
                 if (!page) {
                   return null;
                 }
                 return (
-                  <li className="page-reorder-row" key={page.id}>
-                    <span className="page-reorder-index">{index + 1}</span>
+                  <li
+                    className="flex items-center gap-2.5 rounded-md border border-border px-2 py-1.5"
+                    key={page.id}
+                  >
+                    <span className="w-[26px] text-center font-bold text-text-muted">{index + 1}</span>
                     {page.imageUrl ? (
                       <img
-                        className="page-reorder-thumb"
+                        className="h-15 w-[42px] rounded-sm bg-bg object-cover"
                         src={page.imageUrl}
                         alt=""
                         loading="lazy"
                       />
                     ) : (
-                      <span className="page-reorder-thumb is-empty">
+                      <span className="h-15 w-[42px] rounded-sm bg-bg object-cover inline-flex items-center justify-center border border-dashed border-border text-[0.6rem] text-text-muted uppercase">
                         {page.status}
                       </span>
                     )}
-                    <span className="page-reorder-name">
+                    <span className="min-w-0 flex-1 overflow-hidden text-[0.85rem] text-ellipsis whitespace-nowrap">
                       {page.originalFilename}
                     </span>
-                    <span className="page-reorder-move">
+                    <span className="flex gap-1">
                       <button
                         className="ghost-button"
                         type="button"

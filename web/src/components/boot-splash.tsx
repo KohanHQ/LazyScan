@@ -61,8 +61,16 @@ export function BootSplash({ done }: { done: boolean }): ReactElement | null {
     return null;
   }
   return (
-    <div className="boot-splash" data-leaving={leaving} aria-hidden="true">
-      <span className="boot-splash-wordmark">{text}</span>
+    <div
+      className="boot-splash fixed inset-0 z-[1500] flex items-center justify-center bg-bg"
+      data-leaving={leaving}
+      aria-hidden="true"
+    >
+      {/* Monospace keeps a scrambled glyph from changing the wordmark's width;
+          the padding offsets the trailing letter-space to re-center it. */}
+      <span className="pl-[0.34em] font-[ui-monospace,SFMono-Regular,Menlo,Consolas,monospace] text-[clamp(1.3rem,5vw,2.2rem)] font-bold tracking-[0.34em] text-text">
+        {text}
+      </span>
     </div>
   );
 }

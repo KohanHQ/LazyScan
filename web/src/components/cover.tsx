@@ -7,7 +7,7 @@ import {
 import { cn } from "@/lib/utils";
 
 // Cover image with a letter-placeholder fallback; onError swaps in the placeholder.
-// Images fade in on load (.cover-fade in base.css) to soften R2 pop-in.
+// Images fade in on load (.cover-fade in components.css) to soften R2 pop-in.
 // `loading` defaults lazy; the carousel passes eager because its off-window
 // copies would never enter a scroll viewport for lazy to fire.
 export function Cover(props: {

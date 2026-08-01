@@ -9,11 +9,17 @@ export function PageHeading(props: {
   return (
     <section className="page-heading">
       <div>
-        {props.eyebrow ? <p className="eyebrow">{props.eyebrow}</p> : null}
+        {props.eyebrow ? (
+          <p className="mt-0 mb-1.5 text-[0.78rem] font-extrabold tracking-normal text-accent-fg uppercase">
+            {props.eyebrow}
+          </p>
+        ) : null}
         <h1>{props.title}</h1>
         {props.meta}
       </div>
-      {props.aside ? <div className="heading-aside">{props.aside}</div> : null}
+      {props.aside ? (
+        <div className="flex items-center gap-3.5">{props.aside}</div>
+      ) : null}
     </section>
   );
 }

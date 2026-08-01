@@ -521,8 +521,8 @@ function CoverDialog({
           <Cover
             url={coverUrl}
             seed={manga.title}
-            placeholderClass="manage-cover-thumb"
-            imgClassName="manage-cover-preview"
+            placeholderClass="grid h-[139px] w-26 place-items-center justify-self-center rounded-md border border-border bg-[var(--cover-bg)] text-[2rem] font-black text-[color:var(--text-bright)]"
+            imgClassName="h-[139px] w-26 justify-self-center rounded-md border border-border object-cover"
           />
           <label className="field-wide">
             <span>New cover</span>

@@ -108,10 +108,13 @@ function LookupView({
       <PageHeading eyebrow="Profiles" title="Find a user" />
       <section className="manage-panel">
         {note ? <p className="form-error">{note}</p> : null}
-        <form className="user-lookup-form" onSubmit={onSubmit}>
-          <label>
+        <form className="grid gap-3" onSubmit={onSubmit}>
+          <label className="grid gap-[7px] font-extrabold text-text-label">
             <span>Username</span>
+            {/* Input and submit share one box so they line up exactly (a bare
+                <button> renders taller than the input from UA padding). */}
             <input
+              className="h-11 min-h-11 w-full rounded-md border border-border-strong bg-surface-raised px-3 py-0 text-text focus-visible:border-accent-fg focus-visible:outline-3 focus-visible:outline-accent-fg"
               name="username"
               type="text"
               required
@@ -122,7 +125,7 @@ function LookupView({
               autoComplete="off"
             />
           </label>
-          <button className="primary-button" type="submit">
+          <button className="primary-button h-11 min-h-11 w-full" type="submit">
             View profile
           </button>
         </form>
@@ -148,19 +151,23 @@ function ProfileView({ profile }: { profile: PublicProfile }): ReactElement {
       }
     >
       <section className="manage-panel">
-        <div className="profile-head">
+        <div className="mb-0 flex items-start gap-4">
           <Cover
             url={resolveAvatar(profile.avatarUrl, name)}
             seed={name}
-            placeholderClass="profile-avatar profile-avatar-placeholder"
-            imgClassName="profile-avatar"
+            placeholderClass="flex size-14 items-center justify-center rounded-[50%] bg-accent-fg object-cover text-[1.4rem] font-extrabold text-text-on-accent"
+            imgClassName="size-14 rounded-[50%] object-cover"
           />
           <div>
-            <p className="profile-username">{name}</p>
+            <p className="m-0 text-[1.1rem] font-extrabold">{name}</p>
+            {/* .profile-meta stays: its `margin-top: 4px` is beaten by the
+                unlayered `h1,h2,h3,p { margin-top: 0 }` reset. */}
             <p className="profile-meta">Joined {formatDate(profile.createdAt)}</p>
             <Badges badges={profile.badges} />
           </div>
         </div>
+        {/* .profile-bio stays: Tailwind emits an opaque var(--text) fallback
+            outside its @supports guard, which color-mix-less browsers would paint. */}
         {profile.bio ? (
           <p className="profile-bio">{linkify(profile.bio)}</p>
         ) : null}
@@ -169,7 +176,7 @@ function ProfileView({ profile }: { profile: PublicProfile }): ReactElement {
         <section className="manage-panel">
           <p className="eyebrow">Favorites</p>
           {profile.shelf.favorites.length ? (
-            <div className="manga-grid">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4.5">
               {profile.shelf.favorites.map((manga) => (
                 <MangaCard key={manga.id} manga={manga} />
               ))}

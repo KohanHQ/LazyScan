@@ -17,6 +17,13 @@ import { getSession, logout } from "@/state/session";
 import { useSession } from "@/state/hooks";
 import { resolveAvatar } from "@/utils/avatar";
 
+// .sidebar-link survives to carry the button's font scale and border reset:
+// unlayered `button { font: inherit }` beats any Tailwind font utility.
+const LINK =
+  "sidebar-link flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-surface-accent hover:text-accent-fg focus-visible:bg-surface-accent focus-visible:text-accent-fg";
+const LINK_ON = "bg-surface-accent text-accent-fg";
+const LINK_OFF = "bg-transparent text-text-label";
+
 function isActive(path: string, route: string): boolean {
   if (route === "/") {
     return path === "/" || path.startsWith("/manga");
@@ -31,16 +38,16 @@ export function Sidebar({ path }: { path: string }): ReactElement {
     const active = isActive(path, route);
     return (
       <button
-        className={`sidebar-link${active ? " sidebar-link-active" : ""}`}
+        className={`${LINK} ${active ? LINK_ON : LINK_OFF}`}
         type="button"
         title={label}
         aria-current={active ? "page" : undefined}
         onClick={() => navigateTo(route)}
       >
-        <span className="sidebar-icon" aria-hidden="true">
+        <span className="inline-flex flex-none" aria-hidden="true">
           {icon}
         </span>
-        <span className="sidebar-label">{label}</span>
+        <span className="whitespace-nowrap">{label}</span>
       </button>
     );
   };
@@ -56,7 +63,7 @@ export function Sidebar({ path }: { path: string }): ReactElement {
 
   return (
     <>
-      <nav className="sidebar-nav" aria-label="Primary">
+      <nav className="flex flex-col gap-1" aria-label="Primary">
         {navItem("/", "Library", <Library className="icon" size={20} />)}
         {navItem("/forum", "Forum", <MessageSquare className="icon" size={20} />)}
         {session.user
@@ -81,15 +88,20 @@ export function Sidebar({ path }: { path: string }): ReactElement {
           ? navItem("/settings", "Settings", <Settings className="icon" size={20} />)
           : null}
       </nav>
-      <div className="sidebar-footer">
+      <div className="mt-auto flex flex-col gap-1 pt-3">
         {session.user ? (
           <button
-            className="sidebar-link sidebar-account"
+            className={`${LINK} ${LINK_OFF} sidebar-account`}
             type="button"
             title={accountName}
             onClick={() => navigateTo("/profile")}
           >
-            <span className="sidebar-icon sidebar-avatar" aria-hidden="true">
+            {/* .sidebar-avatar stays: it is the hook for the
+                `.sidebar-avatar .user-avatar` rule sizing Cover's output. */}
+            <span
+              className="sidebar-avatar inline-flex size-6 flex-none"
+              aria-hidden="true"
+            >
               <Cover
                 url={resolveAvatar(session.user.avatarUrl, accountName)}
                 seed={accountName}
@@ -97,11 +109,11 @@ export function Sidebar({ path }: { path: string }): ReactElement {
                 imgClassName="user-avatar"
               />
             </span>
-            <span className="sidebar-label">{accountName}</span>
+            <span className="whitespace-nowrap">{accountName}</span>
           </button>
         ) : null}
         <button
-          className="sidebar-link sidebar-door"
+          className={`${LINK} ${LINK_OFF} sidebar-door`}
           type="button"
           title={authLabel}
           aria-label={authLabel}
@@ -114,10 +126,10 @@ export function Sidebar({ path }: { path: string }): ReactElement {
             }
           }}
         >
-          <span className="sidebar-icon" aria-hidden="true">
+          <span className="inline-flex flex-none" aria-hidden="true">
             <DoorOpen className="icon" size={20} />
           </span>
-          <span className="sidebar-label">{authLabel}</span>
+          <span className="whitespace-nowrap">{authLabel}</span>
         </button>
         <p className="sidebar-copy">© 2026 LazyScan</p>
       </div>

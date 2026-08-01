@@ -127,7 +127,7 @@ function BackLink({
 }): ReactElement {
   return (
     <button
-      className="secondary-button forum-back"
+      className="secondary-button mb-4.5"
       type="button"
       onClick={() =>
         navigateTo(slug === null ? "/forum" : `/forum/${encodeURIComponent(slug)}`)
@@ -252,7 +252,7 @@ function ThreadView({ initial }: { initial: ThreadData }): ReactElement {
         />
       ) : (
         <>
-          <ol className="comment-list">
+          <ol className="m-0 mb-2 grid list-none gap-2.5 p-0">
             {posts.map((post) => (
               <PostRow
                 key={post.id}
@@ -299,7 +299,7 @@ function ThreadView({ initial }: { initial: ThreadData }): ReactElement {
           }}
         />
       ) : (
-        <p className="comment-login">Log in to reply.</p>
+        <p className="mb-5 text-[0.9rem] text-text-secondary">Log in to reply.</p>
       )}
 
       {reportTarget !== null ? (
@@ -408,7 +408,7 @@ function ThreadCard({
   const edited = thread.updatedAt !== thread.createdAt;
 
   return (
-    <article className="forum-thread-card">
+    <article className="grid gap-2 rounded-lg border border-border bg-surface px-5 py-4.5">
       {editing ? (
         <>
           <input
@@ -428,7 +428,7 @@ function ThreadCard({
             disabled={busy}
             onChange={setBody}
           />
-          <div className="comment-actions">
+          <div className="flex items-center gap-2">
             <button
               className="primary-button"
               type="button"
@@ -455,8 +455,8 @@ function ThreadCard({
       ) : (
         <>
           <h1 className="forum-thread-title">{thread.title}</h1>
-          <div className="comment-meta">
-            <span className="comment-avatar" aria-hidden="true">
+          <div className="flex items-center gap-2">
+            <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded-[50%] bg-surface-accent" aria-hidden="true">
               <Cover
                 url={resolveAvatar(thread.authorAvatar, thread.authorName)}
                 seed={thread.authorName}
@@ -464,19 +464,19 @@ function ThreadCard({
                 imgClassName="user-avatar"
               />
             </span>
-            <span className="comment-author">{thread.authorName}</span>
-            <span className="comment-date">
+            <span className="text-[0.9rem] font-semibold text-text">{thread.authorName}</span>
+            <span className="ml-auto text-[0.8rem] text-text-secondary">
               {formatDate(thread.createdAt)}
               {edited ? " · edited" : ""}
             </span>
           </div>
-          <p className="comment-body">{linkify(thread.body)}</p>
-          <p className="forum-thread-stats">
+          <p className="m-0 text-[0.95rem] wrap-anywhere whitespace-pre-wrap text-text [&_a]:text-accent-fg [&_a]:wrap-anywhere">{linkify(thread.body)}</p>
+          <p className="m-0 text-[0.8rem] text-text-secondary">
             {replyCount} repl{replyCount === 1 ? "y" : "ies"}
             {thread.pinned ? " · pinned" : ""}
             {thread.locked ? " · locked" : ""}
           </p>
-          <div className="comment-actions">
+          <div className="flex items-center gap-2">
             {canEdit ? (
               <button
                 className="comment-action"
@@ -530,7 +530,7 @@ function ThreadCard({
           </div>
         </>
       )}
-      {error !== null ? <p className="comment-error">{error}</p> : null}
+      {error !== null ? <p className="m-0 text-[0.85rem] text-danger-fg">{error}</p> : null}
       {confirming ? (
         <ConfirmDialog
           title="Delete thread?"
@@ -591,7 +591,7 @@ function ReplyForm({
 
   return (
     <form
-      className="comment-form forum-reply-form"
+      className="mb-5 grid gap-2.5 mt-5"
       onSubmit={(event) => {
         event.preventDefault();
         submit();
@@ -605,6 +605,7 @@ function ReplyForm({
         value={body}
         disabled={busy}
         onChange={setBody}
+        hint="Be kind. Keep it on topic."
         action={
           <button
             className="primary-button"
@@ -615,7 +616,7 @@ function ReplyForm({
           </button>
         }
       />
-      {error !== null ? <p className="comment-error">{error}</p> : null}
+      {error !== null ? <p className="m-0 text-[0.85rem] text-danger-fg">{error}</p> : null}
     </form>
   );
 }
@@ -684,9 +685,9 @@ function PostRow({
   const edited = post.updatedAt !== post.createdAt;
 
   return (
-    <li className="comment-row">
-      <div className="comment-meta">
-        <span className="comment-avatar" aria-hidden="true">
+    <li className="grid gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-3">
+      <div className="flex items-center gap-2">
+        <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded-[50%] bg-surface-accent" aria-hidden="true">
           <Cover
             url={resolveAvatar(post.authorAvatar, post.authorName)}
             seed={post.authorName}
@@ -694,8 +695,8 @@ function PostRow({
             imgClassName="user-avatar"
           />
         </span>
-        <span className="comment-author">{post.authorName}</span>
-        <span className="comment-date">
+        <span className="text-[0.9rem] font-semibold text-text">{post.authorName}</span>
+        <span className="ml-auto text-[0.8rem] text-text-secondary">
           {formatDate(post.createdAt)}
           {edited ? " · edited" : ""}
         </span>
@@ -710,7 +711,7 @@ function PostRow({
             disabled={busy}
             onChange={setDraft}
           />
-          <div className="comment-actions">
+          <div className="flex items-center gap-2">
             <button
               className="primary-button"
               type="button"
@@ -735,9 +736,9 @@ function PostRow({
         </>
       ) : (
         <>
-          <p className="comment-body">{linkify(post.body)}</p>
+          <p className="m-0 text-[0.95rem] wrap-anywhere whitespace-pre-wrap text-text [&_a]:text-accent-fg [&_a]:wrap-anywhere">{linkify(post.body)}</p>
           {canEdit || canDelete || canReport ? (
-            <div className="comment-actions">
+            <div className="flex items-center gap-2">
               {canEdit ? (
                 <button
                   className="comment-action"
@@ -772,7 +773,7 @@ function PostRow({
           ) : null}
         </>
       )}
-      {error !== null ? <p className="comment-error">{error}</p> : null}
+      {error !== null ? <p className="m-0 text-[0.85rem] text-danger-fg">{error}</p> : null}
     </li>
   );
 }

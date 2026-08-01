@@ -92,11 +92,11 @@ export function PopupSelect({
   };
 
   return (
-    <div className="popup-select">
+    <div className="popup-select relative grid">
       <button
         ref={btnRef}
         id={id}
-        className={`popup-select-trigger${className ? ` ${className}` : ""}`}
+        className={`popup-select-trigger text-left${className ? ` ${className}` : ""}`}
         type="button"
         aria-label={ariaLabel}
         aria-haspopup="true"

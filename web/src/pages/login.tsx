@@ -14,6 +14,18 @@ type AuthMode = "login" | "register";
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
+// Shared across the four auth views so every screen stays byte-identical.
+// The auth-screen/auth-panel shell keeps its components.css classes: the mount fade,
+// the 767px block and the panel's color-mix background can't be utilities.
+const ART =
+  "pointer-events-none absolute inset-y-0 right-0 h-full w-auto object-contain object-right select-none [@media(max-width:767px)]:opacity-40";
+const FORM = "mt-6 grid gap-4";
+const LABEL = "grid gap-[7px] font-extrabold text-text-label";
+const INPUT =
+  "min-h-11 w-full rounded-md border border-[rgba(255,255,255,0.18)] bg-[rgba(255,255,255,0.08)] px-3 py-0 text-[color:var(--text-bright)] focus-visible:border-accent-fg focus-visible:outline-3 focus-visible:outline-accent";
+const TOGGLE =
+  "absolute top-1/2 right-1.5 inline-flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[#9aa39d] hover:text-[color:var(--text-bright)] focus-visible:text-[color:var(--text-bright)] [&_.icon]:size-[18px]";
+
 type ViewState =
   | { kind: "form" }
   | { kind: "verify"; email: string; cooldownActive: boolean }
@@ -110,7 +122,7 @@ function AuthForm({
   return (
     <div className="auth-screen">
       <img
-        className="auth-art"
+        className={ART}
         src={loginArt}
         alt=""
         aria-hidden="true"
@@ -120,15 +132,22 @@ function AuthForm({
         <div>
           <h1 id="auth-title">{title}</h1>
         </div>
-        <form className="auth-form" onSubmit={onSubmit}>
-          <label>
+        <form className={FORM} onSubmit={onSubmit}>
+          <label className={LABEL}>
             <span>Email</span>
-            <input name="email" type="email" autoComplete="email" required />
+            <input
+              className={INPUT}
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+            />
           </label>
-          <label>
+          <label className={LABEL}>
             <span>Password</span>
-            <div className="password-field">
+            <div className="relative">
               <input
+                className={`${INPUT} pr-11`}
                 name="password"
                 type={showPassword ? "text" : "password"}
                 autoComplete={isRegister ? "new-password" : "current-password"}
@@ -136,7 +155,7 @@ function AuthForm({
                 minLength={8}
               />
               <button
-                className="password-toggle"
+                className={TOGGLE}
                 type="button"
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 aria-pressed={showPassword}
@@ -241,7 +260,7 @@ function VerifyView({
   return (
     <div className="auth-screen">
       <img
-        className="auth-art"
+        className={ART}
         src={loginArt}
         alt=""
         aria-hidden="true"
@@ -255,10 +274,11 @@ function VerifyView({
           </p>
           <p className="auth-hint">Not in your inbox? Check your spam folder.</p>
         </div>
-        <form className="auth-form" onSubmit={onSubmit}>
-          <label>
+        <form className={FORM} onSubmit={onSubmit}>
+          <label className={LABEL}>
             <span>Verification code</span>
             <input
+              className={INPUT}
               name="code"
               type="text"
               inputMode="numeric"
@@ -325,7 +345,7 @@ function ForgotView({
   return (
     <div className="auth-screen">
       <img
-        className="auth-art"
+        className={ART}
         src={loginArt}
         alt=""
         aria-hidden="true"
@@ -338,10 +358,16 @@ function ForgotView({
             Enter your email and we&apos;ll send a reset code.
           </p>
         </div>
-        <form className="auth-form" onSubmit={onSubmit}>
-          <label>
+        <form className={FORM} onSubmit={onSubmit}>
+          <label className={LABEL}>
             <span>Email</span>
-            <input name="email" type="email" autoComplete="email" required />
+            <input
+              className={INPUT}
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+            />
           </label>
           <button className="primary-button" type="submit" disabled={busy}>
             {busy ? "Sending" : "Send reset code"}
@@ -396,7 +422,7 @@ function ResetView({
   return (
     <div className="auth-screen">
       <img
-        className="auth-art"
+        className={ART}
         src={loginArt}
         alt=""
         aria-hidden="true"
@@ -411,10 +437,11 @@ function ResetView({
           </p>
           <p className="auth-hint">Not in your inbox? Check your spam folder.</p>
         </div>
-        <form className="auth-form" onSubmit={onSubmit}>
-          <label>
+        <form className={FORM} onSubmit={onSubmit}>
+          <label className={LABEL}>
             <span>Reset code</span>
             <input
+              className={INPUT}
               name="code"
               type="text"
               inputMode="numeric"
@@ -424,10 +451,11 @@ function ResetView({
               required
             />
           </label>
-          <label>
+          <label className={LABEL}>
             <span>New password</span>
-            <div className="password-field">
+            <div className="relative">
               <input
+                className={`${INPUT} pr-11`}
                 name="newPassword"
                 type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
@@ -435,7 +463,7 @@ function ResetView({
                 minLength={8}
               />
               <button
-                className="password-toggle"
+                className={TOGGLE}
                 type="button"
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 aria-pressed={showPassword}

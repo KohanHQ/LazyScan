@@ -1,0 +1,20 @@
+/* Single entry for the app's global stylesheets. The order below is load-bearing
+   and is the reason this file exists (Tailwind migration Stage 6, F-071):
+
+   1. tailwind.css   declares the layer order, then theme + utilities.
+   2. tokens.css     unlayered :root — every `@theme inline` alias resolves here.
+   3. reset.css      bare-element resets in `@layer base`, so utilities beat them.
+   4. components.css the handrolled remainder, unlayered, beats every layer.
+   5. effects.css    LAST: its reduced-motion overrides for .skeleton-block::after
+                     and .state-loading-dots span tie on specificity with the
+                     animation rules in components.css, so only document order
+                     decides them. Moving this import up silently kills both
+                     overrides, with no build-time signal.
+
+   reader.css is imported separately from main.tsx and stays last of all: its
+   `--reader-*` namespace is invariant and deliberately out of this pipeline. */
+@import "./tailwind.css";
+@import "./tokens.css";
+@import "./reset.css";
+@import "./components.css";
+@import "./effects.css";

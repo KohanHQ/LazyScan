@@ -101,10 +101,10 @@ export function ForumReportsPanel(): ReactElement {
   const showPager = hasPrevious || hasNext;
 
   return (
-    <section className="manage-panel settings-panel">
+    <section className="manage-panel text-left">
       <div className="settings-heading-row">
         <h2 className="settings-heading">Forum reports</h2>
-        <p className="settings-health-chips">
+        <p className="m-0 flex gap-1.5">
           <button
             type="button"
             className={`settings-health-chip settings-health-chip-button${status === "open" ? " is-active" : ""}${totals.open > 0 ? " is-bad" : ""}`}
@@ -138,15 +138,15 @@ export function ForumReportsPanel(): ReactElement {
 
       <div aria-busy={loading} style={loading ? { opacity: 0.6 } : undefined}>
         {!ready ? (
-          <p className="settings-note">Loading reports…</p>
+          <p className="mb-3.5 text-[0.85rem] text-text-muted">Loading reports…</p>
         ) : reports.length === 0 ? (
-          <p className="settings-note">
+          <p className="mb-3.5 text-[0.85rem] text-text-muted">
             {status === "open"
               ? "No open reports. The queue is clear."
               : "No dismissed reports."}
           </p>
         ) : (
-          <ol className="settings-logs">
+          <ol className="m-0 mb-3 flex list-none flex-col gap-2 p-0">
             {reports.map((report) => (
               <ReportRow
                 key={report.id}
@@ -233,8 +233,8 @@ function ReportRow({
   const disabled = busy || busyPanel;
 
   return (
-    <li className="settings-log-row">
-      <p className="settings-log-meta">
+    <li className="rounded-[10px] border border-border px-3 py-2">
+      <p className="m-0 flex flex-wrap items-center gap-2 text-[0.75rem] text-text-muted">
         <span className="settings-health-chip">{report.reason}</span>{" "}
         <span>{report.targetType === "thread" ? "Thread" : "Reply"}</span>
         {" by "}
@@ -244,11 +244,11 @@ function ReportRow({
         {" · "}
         <span>{formatDate(report.createdAt)}</span>
       </p>
-      <p className="forum-report-snippet">{report.targetSnippet}</p>
+      <p className="mb-1 text-[0.9rem] wrap-anywhere whitespace-pre-wrap text-text">{report.targetSnippet}</p>
       {report.note !== null ? (
-        <p className="forum-report-note">{report.note}</p>
+        <p className="mb-1.5 border-l-2 border-l-border-strong pl-2.5 text-[0.85rem] wrap-anywhere whitespace-pre-wrap text-text-secondary">{report.note}</p>
       ) : null}
-      <div className="comment-actions">
+      <div className="flex items-center gap-2">
         {/* Post reports carry no thread id in the DTO, so only thread targets
             can be linked back to a page. */}
         {report.targetType === "thread" ? (

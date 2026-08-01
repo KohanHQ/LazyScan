@@ -107,8 +107,10 @@ function FavoritesContent(): ReactElement {
   return (
     <>
       <PageHeading title="Favorites" />
-      <div className="library-tabs" role="tablist">
+      <div className="mb-5 flex gap-2 border-b border-b-border-strong" role="tablist">
         {TABS.map((entry) => (
+          // .library-tab stays: unlayered `button { font: inherit }` beats font
+          // utilities, and `border: none` + a 2px bottom edge is not expressible.
           <button
             key={entry.key}
             className={`library-tab${entry.key === tab ? " is-active" : ""}`}
@@ -121,11 +123,18 @@ function FavoritesContent(): ReactElement {
           </button>
         ))}
       </div>
-      <div className="library-filters">
-        <div className="library-filter-group">
-          <label className="library-filter-label" htmlFor="library-sort">
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-1">
+          {/* Two .library-filter-label rules cascade into one another; the
+              utilities below are the merged result, not either rule alone. */}
+          <label
+            className="mb-1.5 text-[0.75rem] font-bold text-text-secondary uppercase"
+            htmlFor="library-sort"
+          >
             Sort
           </label>
+          {/* .library-filter-select stays: it styles a <button>, and unlayered
+              `button { font: inherit }` beats its font-size utility. */}
           <PopupSelect
             className="library-filter-select"
             id="library-sort"
@@ -139,10 +148,14 @@ function FavoritesContent(): ReactElement {
             onChange={onSortChange}
           />
         </div>
-        <div className="library-filter-group">
-          <label className="library-filter-label" htmlFor="library-year">
+        <div className="flex flex-col gap-1">
+          <label
+            className="mb-1.5 text-[0.75rem] font-bold text-text-secondary uppercase"
+            htmlFor="library-year"
+          >
             Year
           </label>
+          {/* .library-filter-input stays: `input { font: inherit }`, same trap. */}
           <input
             type="text"
             className="library-filter-input"
@@ -154,6 +167,7 @@ function FavoritesContent(): ReactElement {
             onKeyDown={onYearKeyDown}
           />
         </div>
+        {/* .library-filter-clear stays: font-size + font-weight on a <button>. */}
         <button
           className="library-filter-clear"
           type="button"
@@ -182,8 +196,13 @@ function FavoritesContent(): ReactElement {
             />
           )
         ) : (
-          <section className="manga-grid" aria-label={label}>
+          <section
+            className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4.5"
+            aria-label={label}
+          >
             {entries.map((entry) => (
+              // .library-card stays: it is the hook for `.library-card > .manga-card`,
+              // which stretches a card this page cannot add a class to.
               <div className="library-card" key={entry.manga.id}>
                 <MangaCard manga={entry.manga} />
                 <RemoveButton
@@ -210,6 +229,8 @@ function RemoveButton(props: {
 }): ReactElement {
   const [busy, setBusy] = useState(false);
   return (
+    // .library-remove stays: unlayered `button { font: inherit }` beats the font
+    // utilities, and `button:disabled` beats the disabled: ones (.65 vs .6).
     <button
       className="library-remove"
       type="button"

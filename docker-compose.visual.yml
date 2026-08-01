@@ -1,0 +1,34 @@
+# Containerized Playwright screenshot gate for web/. Browsers exist only in this
+# image — never on the host. Committed on purpose (docker-compose.override.yml is
+# gitignored local-only and must not carry this).
+#
+# The target is the real `web` service (nginx serving the built SPA), so pixels
+# match production. Source changes need a rebuild first:
+#
+#   docker compose build web && docker compose up -d web
+#   docker compose exec -T shared-postgres \
+#     psql -U lazyscan -d lazyscan -v ON_ERROR_STOP=1 < web/visual/seed.sql
+#   docker compose -f docker-compose.yml -f docker-compose.visual.yml run --rm visual
+#
+# First run / intentional visual change — regenerate baselines, then verify:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.visual.yml run --rm visual --update-snapshots
+#
+# --update-snapshots only rewrites baselines whose diff EXCEEDS the tolerance, so
+# a sub-tolerance change survives it. To truly re-cut a page, delete its PNG
+# under web/visual/__screenshots__/ first.
+#
+# Gate to accept a commit: two consecutive plain runs, zero diff.
+
+services:
+  visual:
+    build: ./web/visual
+    working_dir: /harness
+    depends_on: [web]
+    environment:
+      VISUAL_BASE_URL: http://web
+    volumes:
+      - ./web/visual:/harness/visual
+    # Chromium needs more than the default 64 MB of /dev/shm.
+    shm_size: 1gb
+    profiles: [visual]

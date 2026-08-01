@@ -14,7 +14,7 @@ export function Page(props: {
   children: ReactNode;
 }): ReactElement {
   const { stack = true, className = "" } = props;
-  const containerClass = ["page-content", stack ? "page-stack" : "", className]
+  const containerClass = ["w-full", stack ? "page-stack" : "", className]
     .filter(Boolean)
     .join(" ");
   return (
