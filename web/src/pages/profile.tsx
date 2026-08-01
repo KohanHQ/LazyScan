@@ -429,10 +429,8 @@ function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
               maxLength={256}
               value={bio}
               onChange={setBio}
+              hint="Shown on your public profile."
             />
-            <small>
-              Up to 256 characters. Shown on your profile when it is public.
-            </small>
           </label>
           {isOwner ? (
             <label>
@@ -455,8 +453,8 @@ function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
               ariaLabel="Profile visibility"
               value={profileVisibility}
               options={[
-                { value: "public", label: "Public — others can find your profile" },
-                { value: "private", label: "Private — hidden from username lookup" },
+                { value: "public", label: "Public. Others can find your profile" },
+                { value: "private", label: "Private. Hidden from username lookup" },
               ]}
               onChange={(value) =>
                 setProfileVisibility(value as ProfileVisibility)
@@ -471,8 +469,8 @@ function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
               ariaLabel="Library shelf"
               value={shelfVisibility}
               options={[
-                { value: "private", label: "Private — keep your favorites to yourself" },
-                { value: "public", label: "Public — show favorites on your profile" },
+                { value: "private", label: "Private. Keep your favorites to yourself" },
+                { value: "public", label: "Public. Show favorites on your profile" },
               ]}
               onChange={(value) => setShelfVisibility(value as ProfileVisibility)}
             />

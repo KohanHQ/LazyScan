@@ -605,6 +605,7 @@ function ReplyForm({
         value={body}
         disabled={busy}
         onChange={setBody}
+        hint="Be kind. Keep it on topic."
         action={
           <button
             className="primary-button"

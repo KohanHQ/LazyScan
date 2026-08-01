@@ -291,6 +291,7 @@ function NewThreadForm({ slug }: { slug: string }): ReactElement {
         value={body}
         disabled={busy}
         onChange={setBody}
+        hint="Give enough detail to start the discussion."
         action={
           <button
             className="primary-button"

@@ -231,7 +231,7 @@ function CommentForm({
         value={body}
         disabled={busy}
         onChange={setBody}
-        hint="Be kind — spoilers get flagged."
+        hint="Be kind. Spoilers get flagged."
         action={
           <button
             className="primary-button"

@@ -124,6 +124,7 @@ export function ForumReportDialog({
             value={note}
             disabled={busy}
             onChange={setNote}
+            hint="Reports go to the moderators."
           />
         </div>
         <DialogFooter>
