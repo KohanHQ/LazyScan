@@ -1,6 +1,6 @@
 // Package convert is the image service's pipeline: the reader profile from
 // known-constraints.md (EXIF auto-rotate, fit inside 1080x1920, never
-// enlarge, WebP q88, input <= 10MB) on libvips via govips — the same engine
+// enlarge, WebP q88, input <= 20MB) on libvips via govips — the same engine
 // the LazyScan sharp pipeline wraps. Output is visually equivalent to sharp;
 // pixel-exactness is not promised (different libvips builds), the
 // dimension/format/quality rules are.
@@ -19,8 +19,8 @@ import (
 var ErrUnprocessable = errors.New("unprocessable image")
 
 const (
-	// MaxInputBytes mirrors the API's MAX_IMAGE_UPLOAD_BYTES (10MB).
-	MaxInputBytes = 10 * 1024 * 1024
+	// MaxInputBytes mirrors the API's MAX_IMAGE_UPLOAD_BYTES (20MB).
+	MaxInputBytes = 20 * 1024 * 1024
 
 	maxWidth  = 1080
 	maxHeight = 1920

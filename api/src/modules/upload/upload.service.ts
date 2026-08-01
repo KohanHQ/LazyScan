@@ -118,7 +118,7 @@ export async function createAvatarUpload(
 
   if (isGifAvatar) {
     if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
-      throw badRequest("Image file too large. Maximum size is 10MB", {
+      throw badRequest("Image file too large. Maximum size is 20MB", {
         code: "FILE_TOO_LARGE",
         details: { maxSize: MAX_IMAGE_UPLOAD_BYTES, actualSize: file.size },
       });

@@ -28,7 +28,7 @@ import { cbzSupported, extractCbz, isArchiveFile } from "@/utils/cbz";
 import { validateChapterNumbers } from "@/utils/validation";
 import { navigateTo } from "@/router";
 
-const MAX_BYTES = 10 * 1024 * 1024;
+const MAX_BYTES = 20 * 1024 * 1024;
 const MAX_FILES = 300;
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 // Progress poll backs off: responsive early, then ramps toward the cap so a long
@@ -144,8 +144,8 @@ function ChapterForm({
     ? "image/png,image/jpeg,image/webp,.cbz,.zip"
     : "image/png,image/jpeg,image/webp";
   const hint = archiveOk
-    ? `PNG, JPEG, or WebP — or a CBZ/ZIP archive. Up to ${MAX_FILES} pages, 10MB each. Pages are ordered by filename.`
-    : `PNG, JPEG, or WebP. Up to ${MAX_FILES} pages, 10MB each. Pages are ordered by filename.`;
+    ? `PNG, JPEG, or WebP — or a CBZ/ZIP archive. Up to ${MAX_FILES} pages, 20MB each. Pages are ordered by filename.`
+    : `PNG, JPEG, or WebP. Up to ${MAX_FILES} pages, 20MB each. Pages are ordered by filename.`;
 
   // Resolved at pick time (loose images, or a dropped CBZ/ZIP unzipped into its
   // pages); submit reads this, not the raw input FileList.
@@ -820,7 +820,7 @@ function validateSelection(title: string, files: File[]): string | null {
       return `Unsupported file type for "${file.name}". Use PNG, JPEG, or WebP.`;
     }
     if (file.size > MAX_BYTES) {
-      return `"${file.name}" exceeds the 10MB per-page limit.`;
+      return `"${file.name}" exceeds the 20MB per-page limit.`;
     }
   }
   return null;
