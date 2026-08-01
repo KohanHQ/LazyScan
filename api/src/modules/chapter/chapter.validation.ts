@@ -67,7 +67,7 @@ export class ChapterValidator {
 
       if (file.sizeBytes && file.sizeBytes > MAX_IMAGE_UPLOAD_BYTES) {
         throw new BusinessRuleError(
-          "Image file too large. Maximum size is 10MB",
+          "Image file too large. Maximum size is 20MB",
           "FILE_TOO_LARGE",
           {
             filename: file.filename,

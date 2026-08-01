@@ -105,7 +105,7 @@ func TestConvert_OutputIsWebP(t *testing.T) {
 func TestConvert_RejectsOversizeInput(t *testing.T) {
 	_, err := New().Convert(make([]byte, MaxInputBytes+1), Default())
 	if !errors.Is(err, ErrUnprocessable) {
-		t.Errorf("error = %v, want ErrUnprocessable for input over 10MB", err)
+		t.Errorf("error = %v, want ErrUnprocessable for input over 20MB", err)
 	}
 }
 

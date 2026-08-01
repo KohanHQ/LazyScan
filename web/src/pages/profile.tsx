@@ -441,7 +441,7 @@ function ProfileEditForm({ profile }: { profile: Profile }): ReactElement {
                 accept="image/png,image/jpeg,image/webp,image/gif"
               />
               <small>
-                PNG, JPEG, WebP, or GIF up to 10MB. Animated GIFs are kept as-is.
+                PNG, JPEG, WebP, or GIF up to 20MB. Animated GIFs are kept as-is.
                 Replaces the generated avatar; uploaded on save.
               </small>
             </label>
